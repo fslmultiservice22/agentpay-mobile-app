@@ -9,6 +9,9 @@ import { useBalanceSync } from '@/hooks/use-balance-sync';
 import { useTransactionHistory, type Transaction } from '@/hooks/use-transaction-history';
 import { useGasEstimation, type GasEstimate } from '@/hooks/use-gas-estimation';
 import { useTokenSwap, type Token, type SwapQuote } from '@/hooks/use-token-swap';
+import { usePortfolioDashboard, type PortfolioAsset, type PortfolioMetrics } from '@/hooks/use-portfolio-dashboard';
+import { useStaking, type StakingPool, type StakingPosition } from '@/hooks/use-staking';
+import { useLimitOrders, type LimitOrder } from '@/hooks/use-limit-orders';
 
 interface WalletContextType {
   address: string | null;
@@ -38,6 +41,24 @@ interface WalletContextType {
   supportedTokens?: Token[];
   getSwapQuote?: (inputToken: Token, outputToken: Token, inputAmount: string) => Promise<SwapQuote | null>;
   executeSwap?: (quote: SwapQuote) => Promise<{ success: boolean; transactionHash?: string; error?: string }>;
+  // Portfolio Dashboard
+  portfolioAssets?: PortfolioAsset[];
+  portfolioMetrics?: PortfolioMetrics | null;
+  updatePortfolio?: (assets: PortfolioAsset[]) => Promise<void>;
+  getPortfolioValueHistory?: (days: number) => Array<{ timestamp: number; value: number }>;
+  calculateTotalReturn?: () => number;
+  // Staking
+  stakingPools?: StakingPool[];
+  stakingPositions?: StakingPosition[];
+  stake?: (poolId: string, amount: string) => Promise<{ success: boolean; transactionHash?: string; error?: string }>;
+  unstake?: (poolId: string, amount: string) => Promise<{ success: boolean; transactionHash?: string; error?: string }>;
+  claimRewards?: (poolId: string) => Promise<{ success: boolean; transactionHash?: string; error?: string }>;
+  // Limit Orders
+  limitOrders?: LimitOrder[];
+  createLimitOrder?: (fromToken: string, toToken: string, fromAmount: string, toAmount: string, triggerPrice: string) => Promise<LimitOrder | null>;
+  cancelOrder?: (orderId: string) => Promise<boolean>;
+  getActiveOrders?: () => LimitOrder[];
+  getFilledOrders?: () => LimitOrder[];
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -60,6 +81,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const { transactions: txHistory, addTransaction, updateTransactionStatus } = useTransactionHistory(address, provider);
   const { estimateGas, getGasPrice } = useGasEstimation(provider);
   const { supportedTokens, getSwapQuote, executeSwap } = useTokenSwap(provider, signer);
+  const { currentPortfolio, metrics: portfolioMetrics, updatePortfolio, getPortfolioValueHistory, calculateTotalReturn } = usePortfolioDashboard(address);
+  const { pools: stakingPools, positions: stakingPositions, stake, unstake, claimRewards } = useStaking(signer);
+  const { orders: limitOrders, createLimitOrder, cancelOrder, getActiveOrders, getFilledOrders } = useLimitOrders(address);
   
   const balanceSyncConfig = useMemo(
     () => ({
@@ -333,6 +357,24 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     supportedTokens,
     getSwapQuote,
     executeSwap,
+    // Portfolio Dashboard
+    portfolioAssets: currentPortfolio,
+    portfolioMetrics,
+    updatePortfolio,
+    getPortfolioValueHistory,
+    calculateTotalReturn,
+    // Staking
+    stakingPools,
+    stakingPositions,
+    stake,
+    unstake,
+    claimRewards,
+    // Limit Orders
+    limitOrders,
+    createLimitOrder,
+    cancelOrder,
+    getActiveOrders,
+    getFilledOrders,
   };
 
   return (

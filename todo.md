@@ -29,3 +29,9 @@
 - [x] Implementare Gas Estimation
 - [x] Implementare Token Swap
 - [ ] Testare tutte le funzionalità
+
+## Advanced Features - Fase 4
+- [x] Implementare Portfolio Dashboard
+- [x] Implementare Staking Interface
+- [x] Implementare Limit Orders
+- [ ] Testare tutte le funzionalità
