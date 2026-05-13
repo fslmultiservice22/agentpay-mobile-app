@@ -2,7 +2,8 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "types": ["node", "nativewind/types"],
+    "skipLibCheck": true,
+    "types": ["nativewind/types"],
     "paths": {
       "@/*": ["./*"],
       "@shared/*": ["./shared/*"]
