@@ -1,0 +1,11 @@
+# AgentPay Wallet TODO
+- [ ] Phase 1: Web3 Auth
+- [ ] Phase 2: Dashboard
+- [ ] Phase 3: Send Payment
+- [ ] Phase 4: Receive Payment
+- [ ] Phase 5: Transaction History
+- [ ] Phase 6: Settings
+- [ ] Phase 7: Biometric Security
+- [ ] Phase 8: Animations
+- [ ] Phase 9: Testing
+- [ ] Phase 10: Deployment

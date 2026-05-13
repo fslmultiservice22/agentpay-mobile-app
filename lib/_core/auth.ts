@@ -15,7 +15,9 @@ export async function getSessionToken(): Promise<string | null> {
   try {
     // Web platform uses cookie-based auth, no manual token management needed
     if (Platform.OS === "web") {
-      console.log("[Auth] Web platform uses cookie-based auth, skipping token retrieval");
+      console.log(
+        "[Auth] Web platform uses cookie-based auth, skipping token retrieval",
+      );
       return null;
     }
 
@@ -37,12 +39,17 @@ export async function setSessionToken(token: string): Promise<void> {
   try {
     // Web platform uses cookie-based auth, no manual token management needed
     if (Platform.OS === "web") {
-      console.log("[Auth] Web platform uses cookie-based auth, skipping token storage");
+      console.log(
+        "[Auth] Web platform uses cookie-based auth, skipping token storage",
+      );
       return;
     }
 
     // Use SecureStore for native
-    console.log("[Auth] Setting session token...", token.substring(0, 20) + "...");
+    console.log(
+      "[Auth] Setting session token...",
+      token.substring(0, 20) + "...",
+    );
     await SecureStore.setItemAsync(SESSION_TOKEN_KEY, token);
     console.log("[Auth] Session token stored in SecureStore successfully");
   } catch (error) {
@@ -55,7 +62,9 @@ export async function removeSessionToken(): Promise<void> {
   try {
     // Web platform uses cookie-based auth, logout is handled by server clearing cookie
     if (Platform.OS === "web") {
-      console.log("[Auth] Web platform uses cookie-based auth, skipping token removal");
+      console.log(
+        "[Auth] Web platform uses cookie-based auth, skipping token removal",
+      );
       return;
     }
 
