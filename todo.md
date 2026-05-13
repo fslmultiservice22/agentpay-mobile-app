@@ -35,3 +35,9 @@
 - [x] Implementare Staking Interface
 - [x] Implementare Limit Orders
 - [ ] Testare tutte le funzionalità
+
+## Advanced Features - Fase 5
+- [x] Implementare Price Alerts
+- [x] Implementare DeFi Yield Farming
+- [x] Implementare NFT Gallery
+- [ ] Testare tutte le funzionalità

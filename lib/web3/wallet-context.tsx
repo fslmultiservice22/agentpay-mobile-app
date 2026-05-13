@@ -12,6 +12,9 @@ import { useTokenSwap, type Token, type SwapQuote } from '@/hooks/use-token-swap
 import { usePortfolioDashboard, type PortfolioAsset, type PortfolioMetrics } from '@/hooks/use-portfolio-dashboard';
 import { useStaking, type StakingPool, type StakingPosition } from '@/hooks/use-staking';
 import { useLimitOrders, type LimitOrder } from '@/hooks/use-limit-orders';
+import { usePriceAlerts, type PriceAlert } from '@/hooks/use-price-alerts';
+import { useDefiFarming, type FarmingPool, type FarmingPosition, type YieldData } from '@/hooks/use-defi-farming';
+import { useNFTGallery, type NFT, type NFTCollection } from '@/hooks/use-nft-gallery';
 
 interface WalletContextType {
   address: string | null;
@@ -59,6 +62,27 @@ interface WalletContextType {
   cancelOrder?: (orderId: string) => Promise<boolean>;
   getActiveOrders?: () => LimitOrder[];
   getFilledOrders?: () => LimitOrder[];
+  // Price Alerts
+  priceAlerts?: PriceAlert[];
+  createPriceAlert?: (token: string, symbol: string, targetPrice: string, condition: 'above' | 'below') => Promise<PriceAlert | null>;
+  cancelPriceAlert?: (alertId: string) => Promise<boolean>;
+  getActivePriceAlerts?: () => PriceAlert[];
+  // DeFi Farming
+  farmingPools?: FarmingPool[];
+  farmingPositions?: FarmingPosition[];
+  depositFarming?: (poolId: string, amount: string) => Promise<{ success: boolean; transactionHash?: string; error?: string }>;
+  withdrawFarming?: (poolId: string) => Promise<{ success: boolean; transactionHash?: string; error?: string }>;
+  claimFarmingRewards?: (poolId: string) => Promise<{ success: boolean; transactionHash?: string; error?: string }>;
+  getTotalFarmingYield?: () => YieldData;
+  // NFT Gallery
+  nfts?: NFT[];
+  addNFT?: (nft: NFT) => Promise<boolean>;
+  removeNFT?: (nftId: string) => Promise<boolean>;
+  updateNFTPrice?: (nftId: string, currentPrice: string) => Promise<boolean>;
+  getNFTsByCollection?: (collection: string) => NFT[];
+  getNFTsByRarity?: (rarity: NFT['rarity']) => NFT[];
+  calculateNFTGalleryValue?: () => string;
+  getNFTGalleryStats?: () => any;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -84,6 +108,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const { currentPortfolio, metrics: portfolioMetrics, updatePortfolio, getPortfolioValueHistory, calculateTotalReturn } = usePortfolioDashboard(address);
   const { pools: stakingPools, positions: stakingPositions, stake, unstake, claimRewards } = useStaking(signer);
   const { orders: limitOrders, createLimitOrder, cancelOrder, getActiveOrders, getFilledOrders } = useLimitOrders(address);
+  const { alerts: priceAlerts, createAlert: createPriceAlert, cancelAlert: cancelPriceAlert, getActiveAlerts: getActivePriceAlerts } = usePriceAlerts(address);
+  const { pools: farmingPools, positions: farmingPositions, deposit: depositFarming, withdraw: withdrawFarming, claimRewards: claimFarmingRewards, getTotalYield: getTotalFarmingYield } = useDefiFarming(signer);
+  const { nfts, addNFT, removeNFT, updateNFTPrice, getNFTsByCollection, getNFTsByRarity, calculateTotalValue: calculateNFTGalleryValue, getGalleryStats: getNFTGalleryStats } = useNFTGallery(address);
   
   const balanceSyncConfig = useMemo(
     () => ({
@@ -375,6 +402,27 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     cancelOrder,
     getActiveOrders,
     getFilledOrders,
+    // Price Alerts
+    priceAlerts,
+    createPriceAlert,
+    cancelPriceAlert,
+    getActivePriceAlerts,
+    // DeFi Farming
+    farmingPools,
+    farmingPositions,
+    depositFarming,
+    withdrawFarming,
+    claimFarmingRewards,
+    getTotalFarmingYield,
+    // NFT Gallery
+    nfts,
+    addNFT,
+    removeNFT,
+    updateNFTPrice,
+    getNFTsByCollection,
+    getNFTsByRarity,
+    calculateNFTGalleryValue,
+    getNFTGalleryStats,
   };
 
   return (
