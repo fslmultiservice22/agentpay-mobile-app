@@ -6,6 +6,9 @@ import { useMetaMaskConnection } from '@/hooks/use-metamask-connection';
 import { useWalletConnect } from '@/hooks/use-walletconnect';
 import { useTransactionSigning } from '@/hooks/use-transaction-signing';
 import { useBalanceSync } from '@/hooks/use-balance-sync';
+import { useTransactionHistory, type Transaction } from '@/hooks/use-transaction-history';
+import { useGasEstimation, type GasEstimate } from '@/hooks/use-gas-estimation';
+import { useTokenSwap, type Token, type SwapQuote } from '@/hooks/use-token-swap';
 
 interface WalletContextType {
   address: string | null;
@@ -24,6 +27,17 @@ interface WalletContextType {
   checkMetaMaskInstalled?: () => Promise<boolean>;
   balanceSyncEnabled?: boolean;
   setBalanceSyncEnabled?: (enabled: boolean) => void;
+  // Transaction History
+  transactions?: Transaction[];
+  addTransaction?: (tx: Transaction) => Promise<void>;
+  updateTransactionStatus?: (txHash: string, status: 'pending' | 'confirmed' | 'failed', blockNumber?: number) => Promise<void>;
+  // Gas Estimation
+  estimateGas?: (to: string, value: string) => Promise<GasEstimate | null>;
+  getGasPrice?: () => Promise<string | null>;
+  // Token Swap
+  supportedTokens?: Token[];
+  getSwapQuote?: (inputToken: Token, outputToken: Token, inputAmount: string) => Promise<SwapQuote | null>;
+  executeSwap?: (quote: SwapQuote) => Promise<{ success: boolean; transactionHash?: string; error?: string }>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -43,6 +57,10 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const { checkMetaMaskInstalled } = useMetaMaskConnection();
   const { connect: connectWC, disconnect: disconnectWC, isConnected: wcConnected, session: wcSession } = useWalletConnect();
   const { signTransaction: signTx, signMessage: signMsg } = useTransactionSigning();
+  const { transactions: txHistory, addTransaction, updateTransactionStatus } = useTransactionHistory(address, provider);
+  const { estimateGas, getGasPrice } = useGasEstimation(provider);
+  const { supportedTokens, getSwapQuote, executeSwap } = useTokenSwap(provider, signer);
+  
   const balanceSyncConfig = useMemo(
     () => ({
       address: address || '',
@@ -298,12 +316,23 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     disconnect,
     getBalance,
     sendTransaction,
-    signTransaction: signTransaction,
-    signMessage: signMessage,
+    signTransaction,
+    signMessage,
     error,
     checkMetaMaskInstalled,
     balanceSyncEnabled,
     setBalanceSyncEnabled,
+    // Transaction History
+    transactions: txHistory,
+    addTransaction,
+    updateTransactionStatus,
+    // Gas Estimation
+    estimateGas,
+    getGasPrice,
+    // Token Swap
+    supportedTokens,
+    getSwapQuote,
+    executeSwap,
   };
 
   return (

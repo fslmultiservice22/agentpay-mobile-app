@@ -23,3 +23,9 @@
 - [x] Implementare Transaction Signing
 - [x] Implementare Real-time Balance Sync
 - [ ] Testare tutte le funzionalità
+
+## Advanced Features - Fase 3
+- [x] Implementare Transaction History
+- [x] Implementare Gas Estimation
+- [x] Implementare Token Swap
+- [ ] Testare tutte le funzionalità
