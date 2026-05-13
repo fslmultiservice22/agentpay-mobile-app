@@ -53,3 +53,9 @@
 - [x] Implementare Real-time Price Feeds
 - [x] Implementare Push Notifications
 - [ ] Testare tutte le funzionalità
+
+## Mobile Screens & Security - Fase 8 (FINALE)
+- [x] Implementare Schermate Aggiuntive
+- [x] Implementare Biometric Authentication
+- [x] Implementare Backup & Recovery
+- [ ] Testare tutte le funzionalità

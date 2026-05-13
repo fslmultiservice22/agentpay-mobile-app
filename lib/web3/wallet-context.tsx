@@ -20,6 +20,8 @@ import { useAnalyticsDashboard, type AnalyticsData, type ChartData } from '@/hoo
 import { useCrossChainBridge, type Chain, type BridgeToken, type BridgeTransaction } from '@/hooks/use-cross-chain-bridge';
 import { usePriceFeeds, type PriceData } from '@/hooks/use-price-feeds';
 import { useAdvancedNotifications, type NotificationPreferences, type StoredNotification } from '@/hooks/use-advanced-notifications';
+import { useBiometricAuth, type BiometricAuthState } from '@/hooks/use-biometric-auth';
+import { useBackupRecovery, type BackupData, type RecoveryStatus } from '@/hooks/use-backup-recovery';
 
 interface WalletContextType {
   address: string | null;
@@ -128,6 +130,20 @@ interface WalletContextType {
   deleteNotification?: (notificationId: string) => Promise<boolean>;
   getUnreadNotificationCount?: () => number;
   getNotificationsByType?: (type: StoredNotification['type']) => StoredNotification[];
+  // Biometric Authentication
+  biometricAuth?: BiometricAuthState & {
+    authenticate: () => Promise<boolean>;
+    enableBiometric: () => Promise<boolean>;
+    disableBiometric: () => Promise<boolean>;
+    logout: () => Promise<void>;
+  };
+  // Backup & Recovery
+  backupData?: BackupData | null;
+  recoveryStatus?: RecoveryStatus;
+  backupSeedPhrase?: (seedPhrase: string, password: string, method?: 'local' | 'cloud') => Promise<boolean>;
+  recoverFromSeedPhrase?: (seedPhrase: string, password: string) => Promise<{ success: boolean; address?: string; error?: string }>;
+  verifyBackup?: (seedPhrase: string) => Promise<boolean>;
+  deleteBackup?: () => Promise<boolean>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -161,6 +177,8 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const { chains: bridgeChains, tokens: bridgeTokens, transactions: bridgeTransactions, initiateBridge, getBridgeFee, estimateBridgeTime, getBridgeStats } = useCrossChainBridge(signer);
   const { prices, getPrice, getPrices, startPricePolling, stopPricePolling, calculateValue, convertBetweenTokens } = usePriceFeeds();
   const { notifications, preferences: notificationPreferences, sendNotification, updatePreferences: updateNotificationPreferences, markAsRead: markNotificationAsRead, deleteNotification, getUnreadCount: getUnreadNotificationCount, getNotificationsByType } = useAdvancedNotifications(address);
+  const { isAvailable: biometricIsAvailable, isFaceIDAvailable, isTouchIDAvailable, isEnabled: biometricIsEnabled, isAuthenticated, isLoading: biometricIsLoading, error: biometricError, authenticate, enableBiometric, disableBiometric, logout } = useBiometricAuth();
+  const { backupData, recoveryStatus, backupSeedPhrase, recoverFromSeedPhrase, verifyBackup, deleteBackup } = useBackupRecovery(address);
   
   const balanceSyncConfig = useMemo(
     () => ({
@@ -513,6 +531,27 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     deleteNotification,
     getUnreadNotificationCount,
     getNotificationsByType,
+    // Biometric Authentication
+    biometricAuth: {
+      isAvailable: biometricIsAvailable,
+      isFaceIDAvailable,
+      isTouchIDAvailable,
+      isEnabled: biometricIsEnabled,
+      isAuthenticated,
+      isLoading: biometricIsLoading,
+      error: biometricError,
+      authenticate,
+      enableBiometric,
+      disableBiometric,
+      logout,
+    },
+    // Backup & Recovery
+    backupData,
+    recoveryStatus,
+    backupSeedPhrase,
+    recoverFromSeedPhrase,
+    verifyBackup,
+    deleteBackup,
   };
 
   return (
