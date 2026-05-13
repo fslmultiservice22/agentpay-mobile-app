@@ -18,6 +18,8 @@ import { useNFTGallery, type NFT, type NFTCollection } from '@/hooks/use-nft-gal
 import { useDAOGovernance, type DAOProposal, type DAOMember, type DAOTreasury } from '@/hooks/use-dao-governance';
 import { useAnalyticsDashboard, type AnalyticsData, type ChartData } from '@/hooks/use-analytics-dashboard';
 import { useCrossChainBridge, type Chain, type BridgeToken, type BridgeTransaction } from '@/hooks/use-cross-chain-bridge';
+import { usePriceFeeds, type PriceData } from '@/hooks/use-price-feeds';
+import { useAdvancedNotifications, type NotificationPreferences, type StoredNotification } from '@/hooks/use-advanced-notifications';
 
 interface WalletContextType {
   address: string | null;
@@ -109,6 +111,23 @@ interface WalletContextType {
   getBridgeFee?: (sourceChain: number, destinationChain: number, amount: string) => string;
   estimateBridgeTime?: (sourceChain: number, destinationChain: number) => string;
   getBridgeStats?: () => any;
+  // Price Feeds
+  prices?: Record<string, PriceData>;
+  getPrice?: (symbol: string) => PriceData | null;
+  getPrices?: (symbols: string[]) => PriceData[];
+  startPricePolling?: (symbols: string[], intervalMs?: number) => void;
+  stopPricePolling?: () => void;
+  calculateValue?: (symbol: string, amount: string, targetCurrency?: string) => string;
+  convertBetweenTokens?: (fromSymbol: string, toSymbol: string, fromAmount: string) => string;
+  // Advanced Notifications
+  notifications?: StoredNotification[];
+  notificationPreferences?: NotificationPreferences;
+  sendNotification?: (title: string, body: string, type: StoredNotification['type'], data?: Record<string, any>) => Promise<boolean>;
+  updateNotificationPreferences?: (newPreferences: Partial<NotificationPreferences>) => Promise<boolean>;
+  markNotificationAsRead?: (notificationId: string) => Promise<boolean>;
+  deleteNotification?: (notificationId: string) => Promise<boolean>;
+  getUnreadNotificationCount?: () => number;
+  getNotificationsByType?: (type: StoredNotification['type']) => StoredNotification[];
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -140,6 +159,8 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const { proposals: daoProposals, members: daoMembers, treasury: daoTreasury, createProposal: createDAOProposal, castVote: castDAOVote, delegateVotes: delegateDAOVotes, executeProposal: executeDAOProposal, getProposalStats: getDAOProposalStats } = useDAOGovernance(signer);
   const { metrics: analyticsMetrics, chartData: analyticsChartData, loadAnalytics, getChartDataForPeriod: getAnalyticsChartDataForPeriod, getPerformanceStats: getAnalyticsPerformanceStats } = useAnalyticsDashboard(address);
   const { chains: bridgeChains, tokens: bridgeTokens, transactions: bridgeTransactions, initiateBridge, getBridgeFee, estimateBridgeTime, getBridgeStats } = useCrossChainBridge(signer);
+  const { prices, getPrice, getPrices, startPricePolling, stopPricePolling, calculateValue, convertBetweenTokens } = usePriceFeeds();
+  const { notifications, preferences: notificationPreferences, sendNotification, updatePreferences: updateNotificationPreferences, markAsRead: markNotificationAsRead, deleteNotification, getUnreadCount: getUnreadNotificationCount, getNotificationsByType } = useAdvancedNotifications(address);
   
   const balanceSyncConfig = useMemo(
     () => ({
@@ -475,6 +496,23 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     getBridgeFee,
     estimateBridgeTime,
     getBridgeStats,
+    // Price Feeds
+    prices,
+    getPrice,
+    getPrices,
+    startPricePolling,
+    stopPricePolling,
+    calculateValue,
+    convertBetweenTokens,
+    // Advanced Notifications
+    notifications,
+    notificationPreferences,
+    sendNotification,
+    updateNotificationPreferences,
+    markNotificationAsRead,
+    deleteNotification,
+    getUnreadNotificationCount,
+    getNotificationsByType,
   };
 
   return (
