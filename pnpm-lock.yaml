@@ -93,7 +93,7 @@ importers:
         specifier: ^55.0.13
         version: 55.0.13(expo@54.0.34)
       expo-notifications:
-        specifier: ~0.32.15
+        specifier: ~0.32.17
         version: 0.32.17(expo@54.0.34)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
       expo-router:
         specifier: ~6.0.19
