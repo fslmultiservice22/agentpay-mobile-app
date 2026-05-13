@@ -1,8 +1,11 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useMemo } from 'react';
 import { ethers } from 'ethers';
 import { Platform, Linking } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useMetaMaskConnection } from '@/hooks/use-metamask-connection';
+import { useWalletConnect } from '@/hooks/use-walletconnect';
+import { useTransactionSigning } from '@/hooks/use-transaction-signing';
+import { useBalanceSync } from '@/hooks/use-balance-sync';
 
 interface WalletContextType {
   address: string | null;
@@ -15,8 +18,12 @@ interface WalletContextType {
   disconnect: () => void;
   getBalance: () => Promise<string>;
   sendTransaction: (to: string, amount: string) => Promise<string>;
+  signTransaction: (to: string, amount: string) => Promise<string>;
+  signMessage: (message: string) => Promise<string>;
   error: string | null;
   checkMetaMaskInstalled?: () => Promise<boolean>;
+  balanceSyncEnabled?: boolean;
+  setBalanceSyncEnabled?: (enabled: boolean) => void;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -32,7 +39,21 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [provider, setProvider] = useState<ethers.Provider | null>(null);
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [balanceSyncEnabled, setBalanceSyncEnabled] = useState(true);
   const { checkMetaMaskInstalled } = useMetaMaskConnection();
+  const { connect: connectWC, disconnect: disconnectWC, isConnected: wcConnected, session: wcSession } = useWalletConnect();
+  const { signTransaction: signTx, signMessage: signMsg } = useTransactionSigning();
+  const balanceSyncConfig = useMemo(
+    () => ({
+      address: address || '',
+      provider,
+      interval: 10000,
+      enabled: balanceSyncEnabled && isConnected,
+    }),
+    [address, provider, balanceSyncEnabled, isConnected],
+  );
+
+  const { balance: syncedBalance, refresh: refreshBalance } = useBalanceSync(balanceSyncConfig);
 
   // Inizializza provider Sepolia
   useEffect(() => {
@@ -110,13 +131,21 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const connectWalletConnect = useCallback(async () => {
     try {
       setError(null);
-      // TODO: Implementare WalletConnect v2
-      setError('WalletConnect coming soon');
+      const result = await connectWC();
+      
+      if (result.success && result.address) {
+        setAddress(result.address);
+        setIsConnected(true);
+        setNetwork('sepolia');
+        setBalance('0');
+      } else {
+        setError(result.error || 'WalletConnect connection failed');
+      }
     } catch (err) {
       console.error('WalletConnect connection error:', err);
       setError('WalletConnect connection failed');
     }
-  }, []);
+  }, [connectWC]);
 
   // Connessione locale (test)
   const connectLocal = useCallback(async () => {
@@ -161,7 +190,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       console.error('Connection error:', err);
       setError(err instanceof Error ? err.message : 'Connection failed');
     }
-  }, [connectMetaMask, connectWalletConnect, connectLocal, checkMetaMaskInstalled]);
+  }, [connectMetaMask, connectWalletConnect, connectLocal, checkMetaMaskInstalled, connectWC]);
 
   const disconnect = useCallback(() => {
     setAddress(null);
@@ -169,7 +198,8 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setBalance(null);
     setSigner(null);
     setError(null);
-  }, []);
+    disconnectWC();
+  }, [disconnectWC]);
 
   const getBalance = useCallback(async (): Promise<string> => {
     if (!provider || !address) {
@@ -200,17 +230,67 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         throw new Error('Transaction failed');
       }
 
+      // Aggiorna il balance dopo la transazione
+      await refreshBalance();
+
       return receipt.hash;
     } catch (err) {
       console.error('Transaction error:', err);
       throw err;
     }
-  }, [provider, signer]);
+  }, [provider, signer, refreshBalance]);
+
+  const signTransaction = useCallback(async (to: string, amount: string): Promise<string> => {
+    if (!signer) {
+      throw new Error('Wallet not connected');
+    }
+
+    try {
+      const result = await signTx(
+        {
+          to,
+          value: amount,
+        },
+        signer,
+      );
+
+      if (!result.success || !result.signedTx) {
+        throw new Error(result.error || 'Transaction signing failed');
+      }
+
+      return result.signedTx.rawTransaction;
+    } catch (err) {
+      console.error('Transaction signing error:', err);
+      throw err;
+    }
+  }, [signer, signTx]);
+
+  const signMessage = useCallback(async (message: string): Promise<string> => {
+    if (!signer) {
+      throw new Error('Wallet not connected');
+    }
+
+    try {
+      const result = await signMsg(message, signer);
+
+      if (!result.success || !result.signedTx) {
+        throw new Error(result.error || 'Message signing failed');
+      }
+
+      return result.signedTx.signature;
+    } catch (err) {
+      console.error('Message signing error:', err);
+      throw err;
+    }
+  }, [signer, signMsg]);
+
+  // Usa il balance sincronizzato se disponibile
+  const displayBalance = balanceSyncEnabled && syncedBalance ? syncedBalance : balance;
 
   const value: WalletContextType = {
     address,
     isConnected,
-    balance,
+    balance: displayBalance,
     network,
     provider,
     signer,
@@ -218,11 +298,19 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     disconnect,
     getBalance,
     sendTransaction,
+    signTransaction: signTransaction,
+    signMessage: signMessage,
     error,
     checkMetaMaskInstalled,
+    balanceSyncEnabled,
+    setBalanceSyncEnabled,
   };
 
-  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
+  return (
+    <WalletContext.Provider value={value}>
+      {children}
+    </WalletContext.Provider>
+  );
 };
 
 export const useWallet = (): WalletContextType => {
@@ -232,3 +320,5 @@ export const useWallet = (): WalletContextType => {
   }
   return context;
 };
+
+export { WalletContext };

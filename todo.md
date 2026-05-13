@@ -17,3 +17,9 @@
 - [x] Implementare deep linking per MetaMask
 - [x] Aggiungere gestione errori robusta
 - [ ] Testare connessione su dispositivo Android
+
+## Advanced Features - Fase 2
+- [x] Implementare WalletConnect v2
+- [x] Implementare Transaction Signing
+- [x] Implementare Real-time Balance Sync
+- [ ] Testare tutte le funzionalità
