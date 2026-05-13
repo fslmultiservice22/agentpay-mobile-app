@@ -3,6 +3,7 @@ import { Text, View, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { ScreenContainer } from '@/components/screen-container';
+import { QRCodeComponent } from '@/components/qr-code';
 
 export default function ReceiveScreen() {
   const router = useRouter();
@@ -23,12 +24,9 @@ export default function ReceiveScreen() {
           <Text className="text-base text-muted">Share your wallet address</Text>
         </View>
 
-        {/* QR Code Placeholder */}
-        <View className="bg-surface border border-border rounded-lg p-6 items-center justify-center h-64">
-          <View className="bg-gray-200 w-48 h-48 items-center justify-center rounded-lg">
-            <Text className="text-gray-600 font-semibold">QR Code</Text>
-            <Text className="text-gray-500 text-sm mt-2">Scan to receive funds</Text>
-          </View>
+        {/* QR Code */}
+        <View className="bg-surface border border-border rounded-lg p-6 items-center justify-center">
+          <QRCodeComponent value={walletAddress} size={200} />
         </View>
 
         {/* Wallet Address */}

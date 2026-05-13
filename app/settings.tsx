@@ -1,17 +1,33 @@
-import { useState } from 'react';
-import { Text, View, TouchableOpacity, Switch } from 'react-native';
+import { useState, useEffect } from 'react';
+import { Text, View, TouchableOpacity, Switch, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/screen-container';
+import { useBiometric } from '@/hooks/use-biometric';
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { isBiometricAvailable, biometricType, authenticate } = useBiometric();
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [biometric, setBiometric] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+
+  const handleBiometricToggle = async (value: boolean) => {
+    if (value && isBiometricAvailable) {
+      const authenticated = await authenticate();
+      if (authenticated) {
+        setBiometric(true);
+        setBiometricEnabled(true);
+      }
+    } else {
+      setBiometric(false);
+      setBiometricEnabled(false);
+    }
+  };
 
   return (
     <ScreenContainer className="p-4">
-      <View className="gap-6 flex-1">
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="gap-6">
         <View className="gap-2">
           <Text className="text-3xl font-bold text-foreground">Settings</Text>
           <Text className="text-base text-muted">Customize your wallet experience</Text>
@@ -34,13 +50,15 @@ export default function SettingsScreen() {
         <View className="gap-4">
           <Text className="text-lg font-semibold text-foreground">Security</Text>
           
-          <View className="bg-surface border border-border rounded-lg p-4 flex-row items-center justify-between">
-            <View>
-              <Text className="text-foreground font-semibold">Biometric Lock</Text>
-              <Text className="text-muted text-sm">Use Face ID or Fingerprint</Text>
+          {isBiometricAvailable && (
+            <View className="bg-surface border border-border rounded-lg p-4 flex-row items-center justify-between">
+              <View>
+                <Text className="text-foreground font-semibold">{biometricType || 'Biometric'} Lock</Text>
+                <Text className="text-muted text-sm">Use {biometricType || 'biometric'} to unlock</Text>
+              </View>
+              <Switch value={biometric} onValueChange={handleBiometricToggle} />
             </View>
-            <Switch value={biometric} onValueChange={setBiometric} />
-          </View>
+          )}
 
           <TouchableOpacity className="bg-surface border border-border rounded-lg p-4">
             <Text className="text-foreground font-semibold">Change Password</Text>
@@ -83,7 +101,7 @@ export default function SettingsScreen() {
         >
           <Text className="text-foreground font-semibold text-base">Back</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </ScreenContainer>
   );
 }
