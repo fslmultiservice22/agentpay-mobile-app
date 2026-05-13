@@ -11,3 +11,9 @@
 - [x] Phase 10: Advanced Validation
 - [x] Phase 11: Push Notifications
 - [ ] Phase 12: Final Testing & Deployment
+
+## Bug Fix - MetaMask Connection
+- [x] Diagnosticare problema connessione MetaMask su Android
+- [x] Implementare deep linking per MetaMask
+- [x] Aggiungere gestione errori robusta
+- [ ] Testare connessione su dispositivo Android
