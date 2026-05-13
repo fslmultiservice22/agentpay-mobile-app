@@ -15,6 +15,9 @@ import { useLimitOrders, type LimitOrder } from '@/hooks/use-limit-orders';
 import { usePriceAlerts, type PriceAlert } from '@/hooks/use-price-alerts';
 import { useDefiFarming, type FarmingPool, type FarmingPosition, type YieldData } from '@/hooks/use-defi-farming';
 import { useNFTGallery, type NFT, type NFTCollection } from '@/hooks/use-nft-gallery';
+import { useDAOGovernance, type DAOProposal, type DAOMember, type DAOTreasury } from '@/hooks/use-dao-governance';
+import { useAnalyticsDashboard, type AnalyticsData, type ChartData } from '@/hooks/use-analytics-dashboard';
+import { useCrossChainBridge, type Chain, type BridgeToken, type BridgeTransaction } from '@/hooks/use-cross-chain-bridge';
 
 interface WalletContextType {
   address: string | null;
@@ -83,6 +86,29 @@ interface WalletContextType {
   getNFTsByRarity?: (rarity: NFT['rarity']) => NFT[];
   calculateNFTGalleryValue?: () => string;
   getNFTGalleryStats?: () => any;
+  // DAO Governance
+  daoProposals?: DAOProposal[];
+  daoMembers?: DAOMember[];
+  daoTreasury?: DAOTreasury | null;
+  createDAOProposal?: (title: string, description: string) => Promise<{ success: boolean; proposalId?: string; error?: string }>;
+  castDAOVote?: (proposalId: string, support: 0 | 1 | 2) => Promise<{ success: boolean; transactionHash?: string; error?: string }>;
+  delegateDAOVotes?: (delegatee: string) => Promise<{ success: boolean; transactionHash?: string; error?: string }>;
+  executeDAOProposal?: (proposalId: string) => Promise<{ success: boolean; transactionHash?: string; error?: string }>;
+  getDAOProposalStats?: () => any;
+  // Analytics Dashboard
+  analyticsMetrics?: AnalyticsData | null;
+  analyticsChartData?: ChartData | null;
+  loadAnalytics?: () => Promise<void>;
+  getAnalyticsChartDataForPeriod?: (days: number) => ChartData;
+  getAnalyticsPerformanceStats?: () => any;
+  // Cross-chain Bridge
+  bridgeChains?: Chain[];
+  bridgeTokens?: BridgeToken[];
+  bridgeTransactions?: BridgeTransaction[];
+  initiateBridge?: (sourceChain: number, destinationChain: number, token: string, amount: string) => Promise<{ success: boolean; transactionId?: string; error?: string }>;
+  getBridgeFee?: (sourceChain: number, destinationChain: number, amount: string) => string;
+  estimateBridgeTime?: (sourceChain: number, destinationChain: number) => string;
+  getBridgeStats?: () => any;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -111,6 +137,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const { alerts: priceAlerts, createAlert: createPriceAlert, cancelAlert: cancelPriceAlert, getActiveAlerts: getActivePriceAlerts } = usePriceAlerts(address);
   const { pools: farmingPools, positions: farmingPositions, deposit: depositFarming, withdraw: withdrawFarming, claimRewards: claimFarmingRewards, getTotalYield: getTotalFarmingYield } = useDefiFarming(signer);
   const { nfts, addNFT, removeNFT, updateNFTPrice, getNFTsByCollection, getNFTsByRarity, calculateTotalValue: calculateNFTGalleryValue, getGalleryStats: getNFTGalleryStats } = useNFTGallery(address);
+  const { proposals: daoProposals, members: daoMembers, treasury: daoTreasury, createProposal: createDAOProposal, castVote: castDAOVote, delegateVotes: delegateDAOVotes, executeProposal: executeDAOProposal, getProposalStats: getDAOProposalStats } = useDAOGovernance(signer);
+  const { metrics: analyticsMetrics, chartData: analyticsChartData, loadAnalytics, getChartDataForPeriod: getAnalyticsChartDataForPeriod, getPerformanceStats: getAnalyticsPerformanceStats } = useAnalyticsDashboard(address);
+  const { chains: bridgeChains, tokens: bridgeTokens, transactions: bridgeTransactions, initiateBridge, getBridgeFee, estimateBridgeTime, getBridgeStats } = useCrossChainBridge(signer);
   
   const balanceSyncConfig = useMemo(
     () => ({
@@ -423,6 +452,29 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     getNFTsByRarity,
     calculateNFTGalleryValue,
     getNFTGalleryStats,
+    // DAO Governance
+    daoProposals,
+    daoMembers,
+    daoTreasury,
+    createDAOProposal,
+    castDAOVote,
+    delegateDAOVotes,
+    executeDAOProposal,
+    getDAOProposalStats,
+    // Analytics Dashboard
+    analyticsMetrics,
+    analyticsChartData,
+    loadAnalytics,
+    getAnalyticsChartDataForPeriod,
+    getAnalyticsPerformanceStats,
+    // Cross-chain Bridge
+    bridgeChains,
+    bridgeTokens,
+    bridgeTransactions,
+    initiateBridge,
+    getBridgeFee,
+    estimateBridgeTime,
+    getBridgeStats,
   };
 
   return (
