@@ -24,6 +24,9 @@ import { useBiometricAuth, type BiometricAuthState } from '@/hooks/use-biometric
 import { useBackupRecovery, type BackupData, type RecoveryStatus } from '@/hooks/use-backup-recovery';
 import { useTransactionConfirmation, type TransactionDetails } from '@/hooks/use-transaction-confirmation';
 import { useInAppBrowser, type BrowserHistory } from '@/hooks/use-inapp-browser';
+import { useOnboarding, type OnboardingStep } from '@/hooks/use-onboarding';
+import { useFiatOnramp, type FiatProvider, type FiatTransaction } from '@/hooks/use-fiat-onramp';
+import { useReferralProgram, type ReferralStats, type ReferralReward } from '@/hooks/use-referral-program';
 
 interface WalletContextType {
   address: string | null;
@@ -150,6 +153,12 @@ interface WalletContextType {
   transactionConfirmation?: ReturnType<typeof useTransactionConfirmation>;
   // In-app Browser
   inAppBrowser?: ReturnType<typeof useInAppBrowser>;
+  // Onboarding
+  onboarding?: ReturnType<typeof useOnboarding>;
+  // Fiat On-ramp
+  fiatOnramp?: ReturnType<typeof useFiatOnramp>;
+  // Referral Program
+  referralProgram?: ReturnType<typeof useReferralProgram>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -187,6 +196,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const { backupData, recoveryStatus, backupSeedPhrase, recoverFromSeedPhrase, verifyBackup, deleteBackup } = useBackupRecovery(address);
   const transactionConfirmation = useTransactionConfirmation();
   const inAppBrowser = useInAppBrowser();
+  const onboarding = useOnboarding();
+  const fiatOnramp = useFiatOnramp();
+  const referralProgram = useReferralProgram(address);
   
   const balanceSyncConfig = useMemo(
     () => ({
@@ -564,6 +576,12 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     transactionConfirmation,
     // In-app Browser
     inAppBrowser,
+    // Onboarding
+    onboarding,
+    // Fiat On-ramp
+    fiatOnramp,
+    // Referral Program
+    referralProgram,
   };
 
   return (

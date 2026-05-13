@@ -65,3 +65,9 @@
 - [x] Implementare Transaction Confirmation Modals
 - [x] Implementare In-app Browser
 - [ ] Testare tutte le funzionalità
+
+## Growth & Monetization - Fase 10 (FINALE ASSOLUTO)
+- [x] Implementare Onboarding Flow
+- [x] Implementare Fiat On-ramp
+- [x] Implementare Referral Program
+- [ ] Testare tutte le funzionalità
