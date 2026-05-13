@@ -1,0 +1,165 @@
+import { ScrollView, Text, View, TouchableOpacity, Switch, StyleSheet } from 'react-native';
+import { ScreenContainer } from '@/components/screen-container';
+import { useWallet } from '@/lib/web3/wallet-context';
+import { useColors } from '@/hooks/use-colors';
+import { useState } from 'react';
+
+export default function SettingsScreen() {
+  const colors = useColors();
+  const wallet = useWallet();
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: { paddingVertical: 16, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
+    title: { fontSize: 28, fontWeight: '700', color: colors.foreground },
+    section: { marginVertical: 16, paddingHorizontal: 16 },
+    sectionTitle: { fontSize: 12, color: colors.muted, marginBottom: 12, fontWeight: '600', textTransform: 'uppercase' },
+    card: { backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
+    settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
+    settingLabel: { fontSize: 14, fontWeight: '600', color: colors.foreground },
+    settingDescription: { fontSize: 12, color: colors.muted, marginTop: 4 },
+    button: { backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16, marginBottom: 12 },
+    buttonText: { color: colors.background, fontSize: 14, fontWeight: '700', textAlign: 'center' },
+    dangerButton: { backgroundColor: colors.error, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16 },
+    addressText: { fontSize: 12, color: colors.muted, fontFamily: 'monospace', marginTop: 8 },
+  });
+
+  return (
+    <ScreenContainer className="flex-1">
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Settings</Text>
+        </View>
+
+        {/* Account Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <View style={styles.card}>
+            <View style={[styles.settingRow, { borderBottomWidth: 0 }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingLabel}>Wallet Address</Text>
+                <Text style={styles.addressText}>{wallet?.address?.substring(0, 6)}...{wallet?.address?.substring(-4)}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Security Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Security</Text>
+          <View style={styles.card}>
+            <View style={styles.settingRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingLabel}>Biometric Authentication</Text>
+                <Text style={styles.settingDescription}>Use Face ID or fingerprint</Text>
+              </View>
+              <Switch
+                value={biometricEnabled}
+                onValueChange={setBiometricEnabled}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={biometricEnabled ? colors.background : colors.muted}
+              />
+            </View>
+
+            <View style={styles.settingRow}>
+              <TouchableOpacity style={{ flex: 1 }}>
+                <Text style={styles.settingLabel}>Backup Wallet</Text>
+                <Text style={styles.settingDescription}>Save seed phrase securely</Text>
+              </TouchableOpacity>
+              <Text style={{ fontSize: 20, color: colors.muted }}>›</Text>
+            </View>
+
+            <View style={[styles.settingRow, { borderBottomWidth: 0 }]}>
+              <TouchableOpacity style={{ flex: 1 }}>
+                <Text style={styles.settingLabel}>Change Password</Text>
+                <Text style={styles.settingDescription}>Update your wallet password</Text>
+              </TouchableOpacity>
+              <Text style={{ fontSize: 20, color: colors.muted }}>›</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Notifications Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Notifications</Text>
+          <View style={styles.card}>
+            <View style={styles.settingRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingLabel}>Push Notifications</Text>
+                <Text style={styles.settingDescription}>Alerts for transactions & prices</Text>
+              </View>
+              <Switch
+                value={notificationsEnabled}
+                onValueChange={setNotificationsEnabled}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={notificationsEnabled ? colors.background : colors.muted}
+              />
+            </View>
+
+            <View style={[styles.settingRow, { borderBottomWidth: 0 }]}>
+              <TouchableOpacity style={{ flex: 1 }}>
+                <Text style={styles.settingLabel}>Notification Preferences</Text>
+                <Text style={styles.settingDescription}>Customize alert types</Text>
+              </TouchableOpacity>
+              <Text style={{ fontSize: 20, color: colors.muted }}>›</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Display Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Display</Text>
+          <View style={styles.card}>
+            <View style={[styles.settingRow, { borderBottomWidth: 0 }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingLabel}>Dark Mode</Text>
+                <Text style={styles.settingDescription}>Reduce eye strain</Text>
+              </View>
+              <Switch
+                value={darkMode}
+                onValueChange={setDarkMode}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={darkMode ? colors.background : colors.muted}
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Actions Section */}
+        <View style={styles.section}>
+          <TouchableOpacity style={styles.button}>
+            <Text style={styles.buttonText}>Export Private Key</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.button, styles.dangerButton]}>
+            <Text style={styles.buttonText}>Disconnect Wallet</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* About Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>About</Text>
+          <View style={styles.card}>
+            <View style={styles.settingRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingLabel}>App Version</Text>
+              </View>
+              <Text style={styles.settingDescription}>1.0.0</Text>
+            </View>
+
+            <View style={[styles.settingRow, { borderBottomWidth: 0 }]}>
+              <TouchableOpacity style={{ flex: 1 }}>
+                <Text style={styles.settingLabel}>Terms of Service</Text>
+              </TouchableOpacity>
+              <Text style={{ fontSize: 20, color: colors.muted }}>›</Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    </ScreenContainer>
+  );
+}

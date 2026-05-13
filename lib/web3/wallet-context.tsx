@@ -22,6 +22,8 @@ import { usePriceFeeds, type PriceData } from '@/hooks/use-price-feeds';
 import { useAdvancedNotifications, type NotificationPreferences, type StoredNotification } from '@/hooks/use-advanced-notifications';
 import { useBiometricAuth, type BiometricAuthState } from '@/hooks/use-biometric-auth';
 import { useBackupRecovery, type BackupData, type RecoveryStatus } from '@/hooks/use-backup-recovery';
+import { useTransactionConfirmation, type TransactionDetails } from '@/hooks/use-transaction-confirmation';
+import { useInAppBrowser, type BrowserHistory } from '@/hooks/use-inapp-browser';
 
 interface WalletContextType {
   address: string | null;
@@ -144,6 +146,10 @@ interface WalletContextType {
   recoverFromSeedPhrase?: (seedPhrase: string, password: string) => Promise<{ success: boolean; address?: string; error?: string }>;
   verifyBackup?: (seedPhrase: string) => Promise<boolean>;
   deleteBackup?: () => Promise<boolean>;
+  // Transaction Confirmation
+  transactionConfirmation?: ReturnType<typeof useTransactionConfirmation>;
+  // In-app Browser
+  inAppBrowser?: ReturnType<typeof useInAppBrowser>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -179,6 +185,8 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const { notifications, preferences: notificationPreferences, sendNotification, updatePreferences: updateNotificationPreferences, markAsRead: markNotificationAsRead, deleteNotification, getUnreadCount: getUnreadNotificationCount, getNotificationsByType } = useAdvancedNotifications(address);
   const { isAvailable: biometricIsAvailable, isFaceIDAvailable, isTouchIDAvailable, isEnabled: biometricIsEnabled, isAuthenticated, isLoading: biometricIsLoading, error: biometricError, authenticate, enableBiometric, disableBiometric, logout } = useBiometricAuth();
   const { backupData, recoveryStatus, backupSeedPhrase, recoverFromSeedPhrase, verifyBackup, deleteBackup } = useBackupRecovery(address);
+  const transactionConfirmation = useTransactionConfirmation();
+  const inAppBrowser = useInAppBrowser();
   
   const balanceSyncConfig = useMemo(
     () => ({
@@ -552,6 +560,10 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     recoverFromSeedPhrase,
     verifyBackup,
     deleteBackup,
+    // Transaction Confirmation
+    transactionConfirmation,
+    // In-app Browser
+    inAppBrowser,
   };
 
   return (
