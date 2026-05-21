@@ -42,6 +42,9 @@ import { useOfflineMode, type OfflineData } from '@/hooks/use-offline-mode';
 import { useKYC, type UserKYC } from '@/hooks/use-kyc';
 import { useAdvancedSecurity } from '@/hooks/use-advanced-security';
 import { useSupportChat, type SupportConversation } from '@/hooks/use-support-chat';
+import { useRateLimiting } from '@/hooks/use-rate-limiting';
+import { useActivityLogging } from '@/hooks/use-activity-logging';
+import { usePaymentGateway } from '@/hooks/use-payment-gateway';
 
 interface WalletContextType {
   address: string | null;
@@ -204,6 +207,12 @@ interface WalletContextType {
   advancedSecurity?: ReturnType<typeof useAdvancedSecurity>;
   // Support Chat
   supportChat?: ReturnType<typeof useSupportChat>;
+  // Rate Limiting
+  rateLimiting?: ReturnType<typeof useRateLimiting>;
+  // Activity Logging
+  activityLogging?: ReturnType<typeof useActivityLogging>;
+  // Payment Gateway
+  paymentGateway?: ReturnType<typeof usePaymentGateway>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -259,6 +268,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const kyc = useKYC();
   const advancedSecurity = useAdvancedSecurity();
   const supportChat = useSupportChat();
+  const rateLimiting = useRateLimiting();
+  const activityLogging = useActivityLogging();
+  const paymentGateway = usePaymentGateway();
   
   const balanceSyncConfig = useMemo(
     () => ({
@@ -672,6 +684,12 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     advancedSecurity,
     // Support Chat
     supportChat,
+    // Rate Limiting
+    rateLimiting,
+    // Activity Logging
+    activityLogging,
+    // Payment Gateway
+    paymentGateway,
   };
 
   return (
