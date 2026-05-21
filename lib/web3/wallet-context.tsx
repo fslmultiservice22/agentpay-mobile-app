@@ -39,6 +39,9 @@ import { useABTesting, type ABTest } from '@/hooks/use-ab-testing';
 import { useVoiceCommands } from '@/hooks/use-voice-commands';
 import { useI18n, type Language } from '@/hooks/use-i18n';
 import { useOfflineMode, type OfflineData } from '@/hooks/use-offline-mode';
+import { useKYC, type UserKYC } from '@/hooks/use-kyc';
+import { useAdvancedSecurity } from '@/hooks/use-advanced-security';
+import { useSupportChat, type SupportConversation } from '@/hooks/use-support-chat';
 
 interface WalletContextType {
   address: string | null;
@@ -195,6 +198,12 @@ interface WalletContextType {
   i18n?: ReturnType<typeof useI18n>;
   // Offline Mode
   offlineMode?: ReturnType<typeof useOfflineMode>;
+  // KYC & Compliance
+  kyc?: ReturnType<typeof useKYC>;
+  // Advanced Security
+  advancedSecurity?: ReturnType<typeof useAdvancedSecurity>;
+  // Support Chat
+  supportChat?: ReturnType<typeof useSupportChat>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -247,6 +256,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const voiceCommands = useVoiceCommands();
   const i18n = useI18n();
   const offlineMode = useOfflineMode();
+  const kyc = useKYC();
+  const advancedSecurity = useAdvancedSecurity();
+  const supportChat = useSupportChat();
   
   const balanceSyncConfig = useMemo(
     () => ({
@@ -654,6 +666,12 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     i18n,
     // Offline Mode
     offlineMode,
+    // KYC & Compliance
+    kyc,
+    // Advanced Security
+    advancedSecurity,
+    // Support Chat
+    supportChat,
   };
 
   return (
