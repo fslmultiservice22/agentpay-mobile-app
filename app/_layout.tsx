@@ -46,10 +46,11 @@ export default function RootLayout() {
   // Handle deep links from MetaMask
   useEffect(() => {
     const handleDeepLink = ({ url }: { url: string }) => {
+      console.log('Deep link received:', url);
       const route = url.replace(/.*?:\/\//g, '');
-      console.log('Deep link received:', route);
       
-      if (route.includes('wallet-connect')) {
+      // Handle MetaMask responses
+      if (route.includes('wallet-connect') || route.includes('wc') || url.includes('agentpay://')) {
         // MetaMask ha risposto, naviga alla home
         router.push('/(tabs)');
       }
