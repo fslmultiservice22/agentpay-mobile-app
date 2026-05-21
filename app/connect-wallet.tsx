@@ -11,7 +11,7 @@ export default function ConnectWalletScreen() {
   const colors = useColors();
   const [loading, setLoading] = useState<string | null>(null);
 
-  const handleConnect = async (type: 'metamask' | 'walletconnect' | 'local') => {
+  const handleConnect = async (type: 'metamask' | 'walletconnect' | 'okx' | 'local') => {
     setLoading(type);
     try {
       await connect(type);
@@ -80,6 +80,23 @@ export default function ConnectWalletScreen() {
                   <Text className="text-sm text-muted mt-1">Scan QR code to connect</Text>
                 </View>
                 {loading === 'walletconnect' && <ActivityIndicator color={colors.primary} />}
+              </View>
+            </TouchableOpacity>
+
+            {/* OKX Wallet */}
+            <TouchableOpacity
+              onPress={() => handleConnect('okx')}
+              disabled={loading !== null}
+              className={`rounded-2xl p-6 border ${
+                loading === 'okx' ? 'bg-gray-200' : 'bg-surface'
+              } border-border active:opacity-80`}
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-1">
+                  <Text className="text-lg font-semibold text-foreground">OKX Wallet</Text>
+                  <Text className="text-sm text-muted mt-1">Connect via OKX Wallet (X Layer)</Text>
+                </View>
+                {loading === 'okx' && <ActivityIndicator color={colors.primary} />}
               </View>
             </TouchableOpacity>
 

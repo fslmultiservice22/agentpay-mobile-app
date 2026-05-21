@@ -56,7 +56,7 @@ export interface WalletContextType {
   network: string | null;
   provider: ethers.Provider | null;
   signer: ethers.Signer | null;
-  connect: (type: 'metamask' | 'walletconnect' | 'local') => Promise<void>;
+  connect: (type: 'metamask' | 'walletconnect' | 'okx' | 'local') => Promise<void>;
   disconnect: () => void;
   getBalance: () => Promise<string>;
   sendTransaction: (to: string, amount: string) => Promise<string>;
@@ -403,7 +403,67 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, []);
 
-  const connect = useCallback(async (type: 'metamask' | 'walletconnect' | 'local') => {
+  // Connessione OKX Wallet
+  const connectOKX = useCallback(async () => {
+    try {
+      setError(null);
+
+      // Verifica se OKX Wallet è installato
+      const okxUrl = 'okx://';
+      const isInstalled = await Linking.canOpenURL(okxUrl);
+
+      if (!isInstalled) {
+        // Prova ad aprire il link di download
+        const storeUrl = Platform.OS === 'android'
+          ? 'https://play.google.com/store/apps/details?id=com.okex.gpt'
+          : 'https://apps.apple.com/app/okx-wallet/id1627420704';
+        
+        await Linking.openURL(storeUrl);
+        setError('OKX Wallet not installed. Opening app store...');
+        return;
+      }
+
+      // Genera un ID univoco per la sessione
+      const sessionId = `agentpay_${Date.now()}`;
+      await SecureStore.setItemAsync('okx_session_id', sessionId);
+
+      // Costruisci l'URL di deep linking per OKX Wallet (X Layer)
+      const deepLinkUrl = `okx://dapp?url=agentpay://wallet-connect&sessionId=${sessionId}`;
+
+      // Apri OKX Wallet
+      await Linking.openURL(deepLinkUrl);
+
+      // Simula la connessione con delay
+      setTimeout(async () => {
+        try {
+          // X Layer RPC endpoint
+          const xlayerRpc = 'https://rpc.xlayer.tech';
+          const testProvider = new ethers.JsonRpcProvider(xlayerRpc);
+          const testAddress = '0x' + 'b'.repeat(40);
+          
+          setAddress(testAddress);
+          setIsConnected(true);
+          setProvider(testProvider);
+          setNetwork('X Layer (OKX)');
+          
+          try {
+            const bal = await testProvider.getBalance(testAddress);
+            setBalance(ethers.formatEther(bal));
+          } catch (balErr) {
+            setBalance('0');
+          }
+        } catch (err) {
+          console.error('OKX connection error:', err);
+          setError('Failed to connect to OKX Wallet');
+        }
+      }, 2000);
+    } catch (err) {
+      console.error('OKX connection error:', err);
+      setError(err instanceof Error ? err.message : 'Connection failed');
+    }
+  }, []);
+
+  const connect = useCallback(async (type: 'metamask' | 'walletconnect' | 'okx' | 'local') => {
     try {
       switch (type) {
         case 'metamask':
@@ -411,6 +471,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           break;
         case 'walletconnect':
           await connectWalletConnect();
+          break;
+        case 'okx':
+          await connectOKX();
           break;
         case 'local':
           await connectLocal();
@@ -422,7 +485,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       console.error('Connection error:', err);
       setError(err instanceof Error ? err.message : 'Connection failed');
     }
-  }, [connectMetaMask, connectWalletConnect, connectLocal, checkMetaMaskInstalled, connectWC]);
+  }, [connectMetaMask, connectWalletConnect, connectOKX, connectLocal, checkMetaMaskInstalled, connectWC]);
 
   const disconnect = useCallback(() => {
     setAddress(null);
