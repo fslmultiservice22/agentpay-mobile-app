@@ -27,6 +27,9 @@ import { useInAppBrowser, type BrowserHistory } from '@/hooks/use-inapp-browser'
 import { useOnboarding, type OnboardingStep } from '@/hooks/use-onboarding';
 import { useFiatOnramp, type FiatProvider, type FiatTransaction } from '@/hooks/use-fiat-onramp';
 import { useReferralProgram, type ReferralStats, type ReferralReward } from '@/hooks/use-referral-program';
+import { useNotificationReminders, type ReminderSchedule } from '@/hooks/use-notification-reminders';
+import { useSocialSharing, type ShareContent, type SocialPlatform } from '@/hooks/use-social-sharing';
+import { useLeaderboard, type LeaderboardUser } from '@/hooks/use-leaderboard';
 
 interface WalletContextType {
   address: string | null;
@@ -159,6 +162,12 @@ interface WalletContextType {
   fiatOnramp?: ReturnType<typeof useFiatOnramp>;
   // Referral Program
   referralProgram?: ReturnType<typeof useReferralProgram>;
+  // Notification Reminders
+  notificationReminders?: ReturnType<typeof useNotificationReminders>;
+  // Social Sharing
+  socialSharing?: ReturnType<typeof useSocialSharing>;
+  // Leaderboard
+  leaderboard?: ReturnType<typeof useLeaderboard>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -199,6 +208,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const onboarding = useOnboarding();
   const fiatOnramp = useFiatOnramp();
   const referralProgram = useReferralProgram(address);
+  const notificationReminders = useNotificationReminders();
+  const socialSharing = useSocialSharing();
+  const leaderboard = useLeaderboard(address);
   
   const balanceSyncConfig = useMemo(
     () => ({
@@ -582,6 +594,12 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     fiatOnramp,
     // Referral Program
     referralProgram,
+    // Notification Reminders
+    notificationReminders,
+    // Social Sharing
+    socialSharing,
+    // Leaderboard
+    leaderboard,
   };
 
   return (

@@ -71,3 +71,9 @@
 - [x] Implementare Fiat On-ramp
 - [x] Implementare Referral Program
 - [ ] Testare tutte le funzionalità
+
+## Engagement & Community - Fase 11 (FINALE ASSOLUTO DEFINITIVO)
+- [x] Implementare Push Notification Reminders
+- [x] Implementare Social Sharing
+- [x] Implementare Leaderboard
+- [ ] Testare tutte le funzionalità
