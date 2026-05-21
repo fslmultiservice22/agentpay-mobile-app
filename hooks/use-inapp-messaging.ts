@@ -170,7 +170,7 @@ export function useInAppMessaging() {
         await AsyncStorage.setItem('agentpay_inapp_campaigns', JSON.stringify(updated));
 
         // Add messages to active messages
-        const allMessages = [...messages, ...campaign.messages];
+        const allMessages = [...(messages as InAppMessage[]), ...campaign.messages];
         setMessages(allMessages);
         await AsyncStorage.setItem('agentpay_inapp_messages', JSON.stringify(allMessages));
       } catch (error) {

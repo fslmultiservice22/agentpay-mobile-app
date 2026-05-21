@@ -98,8 +98,8 @@ export function useBiometricAuth() {
       // Esegui l'autenticazione biometrica
       const result = await LocalAuthentication.authenticateAsync({
         disableDeviceFallback: false,
-        reason: 'Authenticate to access your wallet',
-      });
+        fallbackLabel: 'Authenticate to access your wallet',
+      } as any);
 
       if (result.success) {
         // Salva il timestamp di autenticazione
@@ -117,7 +117,7 @@ export function useBiometricAuth() {
               isAuthenticated: false,
             }));
           }
-        }, 5 * 60 * 1000); // 5 minuti
+        }, 5 * 60 * 1000) as unknown as NodeJS.Timeout; // 5 minuti
 
         if (isMountedRef.current) {
           setState(prev => ({

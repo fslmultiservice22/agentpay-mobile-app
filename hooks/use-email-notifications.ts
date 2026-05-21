@@ -37,7 +37,7 @@ export interface EmailPreference {
   frequency: 'immediate' | 'daily' | 'weekly' | 'never';
 }
 
-export interface EmailTemplate {
+export interface EmailTemplateConfig {
   name: EmailTemplate;
   subject: string;
   htmlContent: string;
@@ -47,7 +47,7 @@ export interface EmailTemplate {
 export function useEmailNotifications() {
   const [emails, setEmails] = useState<EmailNotification[]>([]);
   const [preferences, setPreferences] = useState<Map<string, EmailPreference>>(new Map());
-  const [templates, setTemplates] = useState<Map<EmailTemplate['name'], EmailTemplate>>(
+  const [templates, setTemplates] = useState<Map<EmailTemplate, EmailTemplateConfig>>(
     new Map([
       [
         'welcome',
@@ -279,7 +279,7 @@ export function useEmailNotifications() {
 
   // Add custom template
   const addTemplate = useCallback(
-    (template: EmailTemplate) => {
+    (template: EmailTemplateConfig) => {
       setTemplates((prev) => new Map([...prev, [template.name, template]]));
       return true;
     },

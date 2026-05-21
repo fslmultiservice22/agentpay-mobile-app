@@ -19,7 +19,7 @@ import { useDAOGovernance, type DAOProposal, type DAOMember, type DAOTreasury } 
 import { useAnalyticsDashboard, type AnalyticsData, type ChartData } from '@/hooks/use-analytics-dashboard';
 import { useCrossChainBridge, type Chain, type BridgeToken, type BridgeTransaction } from '@/hooks/use-cross-chain-bridge';
 import { usePriceFeeds, type PriceData } from '@/hooks/use-price-feeds';
-import { useAdvancedNotifications, type NotificationPreference } from '@/hooks/use-advanced-notifications';
+import { useAdvancedNotifications, type StoredNotification, type NotificationPreferences } from '@/hooks/use-advanced-notifications';
 import { useWebhooks } from '@/hooks/use-webhooks';
 import { useEmailNotifications } from '@/hooks/use-email-notifications';
 import { useAdvancedAnalytics } from '@/hooks/use-advanced-analytics';
@@ -50,18 +50,6 @@ import { useActivityLogging } from '@/hooks/use-activity-logging';
 import { usePaymentGateway } from '@/hooks/use-payment-gateway';
 
 export interface WalletContextType {
-  // Wallet connection
-  address: string | null;
-  isConnected: boolean;
-  connectWallet: (provider: string) => Promise<void>;
-  disconnectWallet: () => Promise<void>;
-  // All hook functions
-  webhooks: ReturnType<typeof useWebhooks>;
-  emailNotifications: ReturnType<typeof useEmailNotifications>;
-  advancedAnalytics: ReturnType<typeof useAdvancedAnalytics>;
-}
-
-interface WalletContextType {
   address: string | null;
   isConnected: boolean;
   balance: string | null;

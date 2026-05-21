@@ -286,7 +286,7 @@ export function usePriceAlerts(address: string | null) {
 
     checkIntervalRef.current = setInterval(() => {
       cleanupTriggeredAlerts();
-    }, 60000); // Controlla ogni minuto
+    }, 60000) as unknown as NodeJS.Timeout; // Controlla ogni minuto
   }, [cleanupTriggeredAlerts]);
 
   // Ferma il controllo periodico

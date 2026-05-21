@@ -88,7 +88,7 @@ export function useBalanceSync({
     // Configura l'intervallo
     intervalRef.current = setInterval(() => {
       updateBalance();
-    }, interval);
+    }, interval) as unknown as NodeJS.Timeout;
 
     return () => {
       if (intervalRef.current) {
@@ -122,7 +122,7 @@ export function useBalanceSync({
     if (enabled && provider && address) {
       intervalRef.current = setInterval(() => {
         updateBalance();
-      }, newInterval);
+      }, newInterval) as unknown as NodeJS.Timeout;
     }
   }, [enabled, provider, address, updateBalance]);
 

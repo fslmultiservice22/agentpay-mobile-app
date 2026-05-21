@@ -52,7 +52,7 @@ export function useCrashAnalytics() {
       return;
     }
     try {
-      Sentry.withScope((scope) => {
+      Sentry.withScope((scope: any) => {
         if (context) {
           Object.entries(context).forEach(([key, value]) => {
             scope.setContext(key, value);
@@ -73,7 +73,7 @@ export function useCrashAnalytics() {
         return;
       }
       try {
-        Sentry.withScope((scope) => {
+        Sentry.withScope((scope: any) => {
           if (context) {
             Object.entries(context).forEach(([key, value]) => {
               scope.setContext(key, value);

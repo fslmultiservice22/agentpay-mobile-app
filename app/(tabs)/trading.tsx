@@ -218,7 +218,7 @@ export default function TradingScreen() {
               <Text style={styles.feeLabel}>Slippage</Text>
               <Text style={styles.feeValue}>0.5%</Text>
             </View>
-            <View style={[styles.feeRow, { borderTopWidth: 1, borderTopColor: colors.border, paddingTopMargin: 8, marginTop: 8 }]}>
+            <View style={[styles.feeRow, { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8, marginTop: 8 }]}>
               <Text style={[styles.feeLabel, { fontWeight: '600' }]}>Total Cost</Text>
               <Text style={[styles.feeValue, { color: colors.primary }]}>$12.50</Text>
             </View>

@@ -294,7 +294,7 @@ export function useLimitOrders(address: string | null) {
 
     checkIntervalRef.current = setInterval(() => {
       cleanupExpiredOrders();
-    }, 60000); // Controlla ogni minuto
+    }, 60000) as unknown as NodeJS.Timeout; // Controlla ogni minuto
   }, [cleanupExpiredOrders]);
 
   // Ferma il controllo periodico

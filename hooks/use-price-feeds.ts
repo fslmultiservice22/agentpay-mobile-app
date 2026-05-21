@@ -172,7 +172,7 @@ export function usePriceFeeds() {
 
       pollIntervalRef.current = setInterval(() => {
         fetchPrices(symbols);
-      }, intervalMs);
+      }, intervalMs) as unknown as NodeJS.Timeout;
     },
     [fetchPrices],
   );

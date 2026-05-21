@@ -170,7 +170,7 @@ export function useNotificationReminders() {
           body: reminder.body,
           data: { reminderId: reminder.id },
         },
-        trigger: { seconds: 1 },
+        trigger: { seconds: 1 } as any,
       });
 
       // Aggiorna il reminder
@@ -242,7 +242,7 @@ export function useNotificationReminders() {
         if (delayMs > 0) {
           const timeout = setTimeout(() => {
             sendReminder(reminder);
-          }, delayMs);
+          }, delayMs) as unknown as NodeJS.Timeout;
 
           notificationTimeoutsRef.current.set(reminder.id, timeout);
         }

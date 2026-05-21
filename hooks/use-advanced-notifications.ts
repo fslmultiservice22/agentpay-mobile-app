@@ -142,7 +142,7 @@ export function useAdvancedNotifications(address: string | null) {
           content: {
             title,
             body,
-            sound: state.preferences.soundEnabled ? 'default' : null,
+            sound: state.preferences.soundEnabled ? 'default' : undefined,
             vibrate: state.preferences.vibrationEnabled ? [0, 250, 250, 250] : undefined,
             data: data || {},
           },
