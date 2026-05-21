@@ -77,3 +77,9 @@
 - [x] Implementare Social Sharing
 - [x] Implementare Leaderboard
 - [ ] Testare tutte le funzionalità
+
+## Build Fix - pnpm Install Issue
+- [x] Correggere package.json (versione pnpm downgrade)
+- [x] Aggiornare .npmrc con configurazione npm
+- [x] Creare eas.json per Expo Application Services
+- [ ] Testare build APK con eas build
