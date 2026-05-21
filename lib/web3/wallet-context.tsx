@@ -33,6 +33,9 @@ import { useLeaderboard, type LeaderboardUser } from '@/hooks/use-leaderboard';
 import { useTutorials, type Tutorial } from '@/hooks/use-tutorials';
 import { useDarkModeToggle } from '@/hooks/use-dark-mode-toggle';
 import { useCrashAnalytics } from '@/hooks/use-crash-analytics';
+import { useAnalyticsScreen, type AnalyticsMetrics } from '@/hooks/use-analytics-screen';
+import { useInAppMessaging, type InAppMessage } from '@/hooks/use-inapp-messaging';
+import { useABTesting, type ABTest } from '@/hooks/use-ab-testing';
 
 interface WalletContextType {
   address: string | null;
@@ -177,6 +180,12 @@ interface WalletContextType {
   darkMode?: ReturnType<typeof useDarkModeToggle>;
   // Crash Analytics
   crashAnalytics?: ReturnType<typeof useCrashAnalytics>;
+  // Analytics Screen
+  analyticsScreen?: ReturnType<typeof useAnalyticsScreen>;
+  // In-app Messaging
+  inAppMessaging?: ReturnType<typeof useInAppMessaging>;
+  // A/B Testing
+  abTesting?: ReturnType<typeof useABTesting>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -223,6 +232,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const tutorials = useTutorials();
   const darkMode = useDarkModeToggle();
   const crashAnalytics = useCrashAnalytics();
+  const analyticsScreen = useAnalyticsScreen();
+  const inAppMessaging = useInAppMessaging();
+  const abTesting = useABTesting();
   
   const balanceSyncConfig = useMemo(
     () => ({
@@ -618,6 +630,12 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     darkMode,
     // Crash Analytics
     crashAnalytics,
+    // Analytics Screen
+    analyticsScreen,
+    // In-app Messaging
+    inAppMessaging,
+    // A/B Testing
+    abTesting,
   };
 
   return (
