@@ -30,6 +30,9 @@ import { useReferralProgram, type ReferralStats, type ReferralReward } from '@/h
 import { useNotificationReminders, type ReminderSchedule } from '@/hooks/use-notification-reminders';
 import { useSocialSharing, type ShareContent, type SocialPlatform } from '@/hooks/use-social-sharing';
 import { useLeaderboard, type LeaderboardUser } from '@/hooks/use-leaderboard';
+import { useTutorials, type Tutorial } from '@/hooks/use-tutorials';
+import { useDarkModeToggle } from '@/hooks/use-dark-mode-toggle';
+import { useCrashAnalytics } from '@/hooks/use-crash-analytics';
 
 interface WalletContextType {
   address: string | null;
@@ -168,6 +171,12 @@ interface WalletContextType {
   socialSharing?: ReturnType<typeof useSocialSharing>;
   // Leaderboard
   leaderboard?: ReturnType<typeof useLeaderboard>;
+  // Tutorials
+  tutorials?: ReturnType<typeof useTutorials>;
+  // Dark Mode Toggle
+  darkMode?: ReturnType<typeof useDarkModeToggle>;
+  // Crash Analytics
+  crashAnalytics?: ReturnType<typeof useCrashAnalytics>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -211,6 +220,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const notificationReminders = useNotificationReminders();
   const socialSharing = useSocialSharing();
   const leaderboard = useLeaderboard(address);
+  const tutorials = useTutorials();
+  const darkMode = useDarkModeToggle();
+  const crashAnalytics = useCrashAnalytics();
   
   const balanceSyncConfig = useMemo(
     () => ({
@@ -600,6 +612,12 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     socialSharing,
     // Leaderboard
     leaderboard,
+    // Tutorials
+    tutorials,
+    // Dark Mode Toggle
+    darkMode,
+    // Crash Analytics
+    crashAnalytics,
   };
 
   return (

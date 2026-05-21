@@ -83,3 +83,9 @@
 - [x] Aggiornare .npmrc con configurazione npm
 - [x] Creare eas.json per Expo Application Services
 - [ ] Testare build APK con eas build
+
+## Final Enhancements - Fase 12
+- [x] Implementare In-app Tutorials
+- [x] Implementare Dark Mode Toggle
+- [x] Implementare Crash Analytics con Sentry
+- [ ] Testare tutte le funzionalità
