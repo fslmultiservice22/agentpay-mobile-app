@@ -415,10 +415,16 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       if (!isInstalled) {
         // Prova ad aprire il link di download
         const storeUrl = Platform.OS === 'android'
-          ? 'https://play.google.com/store/apps/details?id=com.okex.gpt'
+          ? 'https://play.google.com/store/apps/details?id=com.okx.wallet'
           : 'https://apps.apple.com/app/okx-wallet/id1627420704';
         
-        await Linking.openURL(storeUrl);
+        try {
+          await Linking.openURL(storeUrl);
+        } catch (err) {
+          console.error('Failed to open store:', err);
+          // Se il link diretto non funziona, prova il link generico
+          await Linking.openURL('https://play.google.com/store/apps/details?id=com.okx.wallet');
+        }
         setError('OKX Wallet not installed. Opening app store...');
         return;
       }
