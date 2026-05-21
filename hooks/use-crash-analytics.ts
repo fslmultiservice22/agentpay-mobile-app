@@ -1,5 +1,12 @@
 import { useEffect, useCallback } from 'react';
-import * as Sentry from '@sentry/react-native';
+
+// Sentry is optional - only import if available
+let Sentry: any = null;
+try {
+  Sentry = require('@sentry/react-native');
+} catch (error) {
+  console.warn('Sentry not installed, crash analytics disabled');
+}
 
 export interface CrashEvent {
   id: string;
@@ -21,6 +28,7 @@ const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN || 'https://examplePublicK
 export function useCrashAnalytics() {
   // Initialize Sentry on mount
   useEffect(() => {
+    if (!Sentry) return;
     try {
       Sentry.init({
         dsn: SENTRY_DSN,
@@ -39,6 +47,10 @@ export function useCrashAnalytics() {
 
   // Capture exception
   const captureException = useCallback((error: Error, context?: Record<string, any>) => {
+    if (!Sentry) {
+      console.error('Crash analytics not available:', error);
+      return;
+    }
     try {
       Sentry.withScope((scope) => {
         if (context) {
@@ -55,7 +67,11 @@ export function useCrashAnalytics() {
 
   // Capture message
   const captureMessage = useCallback(
-    (message: string, level: Sentry.SeverityLevel = 'info', context?: Record<string, any>) => {
+    (message: string, level: any = 'info', context?: Record<string, any>) => {
+      if (!Sentry) {
+        console.log('Crash analytics message:', message);
+        return;
+      }
       try {
         Sentry.withScope((scope) => {
           if (context) {
@@ -74,6 +90,7 @@ export function useCrashAnalytics() {
 
   // Set user context
   const setUserContext = useCallback((userId: string, email?: string, username?: string) => {
+    if (!Sentry) return;
     try {
       Sentry.setUser({
         id: userId,
@@ -87,6 +104,7 @@ export function useCrashAnalytics() {
 
   // Clear user context
   const clearUserContext = useCallback(() => {
+    if (!Sentry) return;
     try {
       Sentry.setUser(null);
     } catch (error) {
@@ -99,9 +117,10 @@ export function useCrashAnalytics() {
     (
       message: string,
       category: string,
-      level: Sentry.SeverityLevel = 'info',
+      level: any = 'info',
       data?: Record<string, any>
     ) => {
+      if (!Sentry) return;
       try {
         Sentry.addBreadcrumb({
           message,
@@ -119,6 +138,7 @@ export function useCrashAnalytics() {
 
   // Track transaction
   const startTransaction = useCallback((name: string, op: string) => {
+    if (!Sentry) return null;
     try {
       return Sentry.startTransaction({
         name,
@@ -132,6 +152,7 @@ export function useCrashAnalytics() {
 
   // Capture transaction
   const captureTransaction = useCallback((transaction: any) => {
+    if (!Sentry) return;
     try {
       if (transaction) {
         transaction.finish();
@@ -143,6 +164,9 @@ export function useCrashAnalytics() {
 
   // Get crash report
   const getCrashReport = useCallback(async () => {
+    if (!Sentry) {
+      return { totalCrashes: 0, lastCrash: null, crashRate: 0 };
+    }
     try {
       // This would typically fetch from Sentry API
       // For now, return mock data
