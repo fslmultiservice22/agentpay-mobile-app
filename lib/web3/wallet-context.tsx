@@ -36,6 +36,9 @@ import { useCrashAnalytics } from '@/hooks/use-crash-analytics';
 import { useAnalyticsScreen, type AnalyticsMetrics } from '@/hooks/use-analytics-screen';
 import { useInAppMessaging, type InAppMessage } from '@/hooks/use-inapp-messaging';
 import { useABTesting, type ABTest } from '@/hooks/use-ab-testing';
+import { useVoiceCommands } from '@/hooks/use-voice-commands';
+import { useI18n, type Language } from '@/hooks/use-i18n';
+import { useOfflineMode, type OfflineData } from '@/hooks/use-offline-mode';
 
 interface WalletContextType {
   address: string | null;
@@ -186,6 +189,12 @@ interface WalletContextType {
   inAppMessaging?: ReturnType<typeof useInAppMessaging>;
   // A/B Testing
   abTesting?: ReturnType<typeof useABTesting>;
+  // Voice Commands
+  voiceCommands?: ReturnType<typeof useVoiceCommands>;
+  // i18n
+  i18n?: ReturnType<typeof useI18n>;
+  // Offline Mode
+  offlineMode?: ReturnType<typeof useOfflineMode>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -235,6 +244,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const analyticsScreen = useAnalyticsScreen();
   const inAppMessaging = useInAppMessaging();
   const abTesting = useABTesting();
+  const voiceCommands = useVoiceCommands();
+  const i18n = useI18n();
+  const offlineMode = useOfflineMode();
   
   const balanceSyncConfig = useMemo(
     () => ({
@@ -636,6 +648,12 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     inAppMessaging,
     // A/B Testing
     abTesting,
+    // Voice Commands
+    voiceCommands,
+    // i18n
+    i18n,
+    // Offline Mode
+    offlineMode,
   };
 
   return (
