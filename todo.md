@@ -211,3 +211,12 @@
 - [x] Implementare ranking e badges
 - [x] Creare test suite con 29 test passati
 - [x] Test totali: 228 test passati
+
+## Automated Copy Trade Rebalancing - Fase 30 (NUOVO)
+- [x] Creare hook useAutoRebalancing per gestire il rebilanciamento
+- [x] Implementare logica di sincronizzazione in tempo reale
+- [x] Aggiungere notifiche di rebilanciamento (rebalancing-notifications.ts)
+- [x] Implementare UI per il rebalancing dashboard (rebalancing-dashboard.tsx)
+- [x] Aggiungere traduzioni in 8 lingue
+- [x] Creare test suite con 11 test passati
+- [x] Test totali: 294 test passati (293 passati + 1 skipped)

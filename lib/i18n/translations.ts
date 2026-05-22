@@ -45,6 +45,23 @@ export const translations: Record<Language, Record<string, string>> = {
     'trading.noHistory': 'No swap history yet',
     'trading.error': 'Error loading swap rates',
     
+    // Rebalancing
+    'rebalancing.title': 'Auto Rebalancing',
+    'rebalancing.enabled': 'Enabled',
+    'rebalancing.disabled': 'Disabled',
+    'rebalancing.threshold': 'Rebalancing Threshold',
+    'rebalancing.frequency': 'Frequency',
+    'rebalancing.maxPerDay': 'Max per Day',
+    'rebalancing.history': 'Rebalancing History',
+    'rebalancing.stats': 'Statistics',
+    'rebalancing.successRate': 'Success Rate',
+    'rebalancing.totalRebalances': 'Total Rebalances',
+    'rebalancing.lastRebalance': 'Last Rebalance',
+    'rebalancing.completed': 'Rebalancing Completed',
+    'rebalancing.failed': 'Rebalancing Failed',
+    'rebalancing.started': 'Rebalancing Started',
+    'rebalancing.noHistory': 'No rebalancing history yet',
+    
     // Portfolio
     'portfolio.title': 'Portfolio',
     'portfolio.totalValue': 'Total Value',
@@ -178,6 +195,23 @@ export const translations: Record<Language, Record<string, string>> = {
     'trading.noHistory': 'Nessuna cronologia di scambi',
     'trading.error': 'Errore nel caricamento dei tassi di scambio',
     
+    // Rebalancing
+    'rebalancing.title': 'Ribilanciamento Automatico',
+    'rebalancing.enabled': 'Abilitato',
+    'rebalancing.disabled': 'Disabilitato',
+    'rebalancing.threshold': 'Soglia di Ribilanciamento',
+    'rebalancing.frequency': 'Frequenza',
+    'rebalancing.maxPerDay': 'Max al Giorno',
+    'rebalancing.history': 'Cronologia Ribilanciamento',
+    'rebalancing.stats': 'Statistiche',
+    'rebalancing.successRate': 'Tasso di Successo',
+    'rebalancing.totalRebalances': 'Ribilanciamenti Totali',
+    'rebalancing.lastRebalance': 'Ultimo Ribilanciamento',
+    'rebalancing.completed': 'Ribilanciamento Completato',
+    'rebalancing.failed': 'Ribilanciamento Fallito',
+    'rebalancing.started': 'Ribilanciamento Avviato',
+    'rebalancing.noHistory': 'Nessuna cronologia di ribilanciamento',
+    
     // Portfolio
     'portfolio.title': 'Portafoglio',
     'portfolio.totalValue': 'Valore Totale',
@@ -310,6 +344,23 @@ export const translations: Record<Language, Record<string, string>> = {
     'trading.swapHistory': 'Historial de Intercambios',
     'trading.noHistory': 'Sin historial de intercambios',
     'trading.error': 'Error al cargar tasas de intercambio',
+    
+    // Rebalancing
+    'rebalancing.title': 'Reequilibrio Automático',
+    'rebalancing.enabled': 'Habilitado',
+    'rebalancing.disabled': 'Deshabilitado',
+    'rebalancing.threshold': 'Umbral de Reequilibrio',
+    'rebalancing.frequency': 'Frecuencia',
+    'rebalancing.maxPerDay': 'Máx por Día',
+    'rebalancing.history': 'Historial de Reequilibrio',
+    'rebalancing.stats': 'Estadísticas',
+    'rebalancing.successRate': 'Tasa de Éxito',
+    'rebalancing.totalRebalances': 'Reequilibrios Totales',
+    'rebalancing.lastRebalance': 'Último Reequilibrio',
+    'rebalancing.completed': 'Reequilibrio Completado',
+    'rebalancing.failed': 'Reequilibrio Fallido',
+    'rebalancing.started': 'Reequilibrio Iniciado',
+    'rebalancing.noHistory': 'Sin historial de reequilibrio',
     
     // Portfolio
     'portfolio.title': 'Cartera',
