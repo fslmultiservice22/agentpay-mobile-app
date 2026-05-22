@@ -7,10 +7,12 @@ import { use1inchSwap } from '@/hooks/use-1inch-swap';
 import { useSwapHistory } from '@/hooks/use-swap-history';
 import { usePortfolioSync } from '@/hooks/use-portfolio-sync';
 import { SlippageControl } from '@/components/slippage-control';
+import { useI18n } from '@/hooks/use-i18n';
 
 export default function TradingScreen() {
   const colors = useColors();
   const wallet = useWallet();
+  const { t } = useI18n();
   const { getQuote } = use1inchSwap();
   const { addSwap, getRecentSwaps } = useSwapHistory();
   const { syncAfterSwap } = usePortfolioSync();
@@ -38,7 +40,7 @@ export default function TradingScreen() {
 
   const handleSwap = async () => {
     if (!fromAmount || parseFloat(fromAmount) <= 0) {
-      setError('Please enter a valid amount');
+      setError(t('trading.error'));
       return;
     }
 
@@ -63,14 +65,14 @@ export default function TradingScreen() {
 
       await syncAfterSwap(fromToken, toToken, amount, receivedAmount, 2850);
 
-      alert(`Swap successful!\nYou will receive ${receivedAmount.toFixed(2)} ${toToken}`);
+      alert(`${t('payment.success')}\n${t('trading.to')} ${receivedAmount.toFixed(2)} ${toToken}`);
 
       setTimeout(() => {
         setFromAmount('');
         setToAmount('');
       }, 2000);
     } catch (err) {
-      setError('Swap failed. Please try again.');
+      setError(t('payment.error'));
       console.error('Swap error:', err);
     } finally {
       setLoading(false);
@@ -207,16 +209,16 @@ export default function TradingScreen() {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Trading</Text>
+          <Text style={styles.title}>{t('trading.title')}</Text>
         </View>
 
         {/* Swap Card */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Swap Tokens</Text>
+          <Text style={styles.sectionTitle}>{t('trading.swap')}</Text>
           
           <View style={styles.card}>
             {/* From Token */}
-            <Text style={styles.label}>From</Text>
+            <Text style={styles.label}>{t('trading.from')}</Text>
             <View style={styles.tokenSelector}>
               <TextInput
                 style={[styles.input, { flex: 1, marginRight: 12 }]}
@@ -248,7 +250,7 @@ export default function TradingScreen() {
             </View>
 
             {/* To Token */}
-            <Text style={styles.label}>To</Text>
+            <Text style={styles.label}>{t('trading.to')}</Text>
             <View style={styles.tokenSelector}>
               <TextInput
                 style={[styles.input, { flex: 1, marginRight: 12 }]}
@@ -264,7 +266,7 @@ export default function TradingScreen() {
 
             {/* Price Info */}
             <View style={styles.priceInfo}>
-              <Text style={styles.priceLabel}>Rate</Text>
+              <Text style={styles.priceLabel}>{t('trading.rate')}</Text>
               <Text style={styles.priceValue}>1 {fromToken} = 2,850 {toToken}</Text>
             </View>
           </View>
@@ -277,7 +279,7 @@ export default function TradingScreen() {
 
         {/* Fee Info */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Transaction Details</Text>
+          <Text style={styles.sectionTitle}>{t('common.edit')}</Text>
           
           <View style={styles.feeInfo}>
             <View style={styles.feeRow}>
@@ -308,12 +310,12 @@ export default function TradingScreen() {
           onPress={handleSwap}
           disabled={loading || !fromAmount}
         >
-          <Text style={styles.swapButtonText}>{loading ? 'Processing...' : 'Review Swap'}</Text>
+          <Text style={styles.swapButtonText}>{loading ? t('common.loading') : t('trading.reviewSwap')}</Text>
         </TouchableOpacity>
 
         {/* Recent Swaps */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Swaps</Text>
+          <Text style={styles.sectionTitle}>{t('trading.swapHistory')}</Text>
           
           {recentSwaps.length > 0 ? (
             recentSwaps.map((swap) => (
@@ -332,7 +334,7 @@ export default function TradingScreen() {
             ))
           ) : (
             <View style={styles.card}>
-              <Text style={[styles.feeLabel, { textAlign: 'center' }]}>No recent swaps</Text>
+              <Text style={[styles.feeLabel, { textAlign: 'center' }]}>{t('trading.noHistory')}</Text>
             </View>
           )}
         </View>

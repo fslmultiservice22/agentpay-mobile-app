@@ -4,11 +4,13 @@ import { useState } from "react";
 import { ScreenContainer } from "@/components/screen-container";
 import { useWallet } from "@/lib/web3/wallet-context";
 import { useColors } from "@/hooks/use-colors";
+import { useI18n } from "@/hooks/use-i18n";
 
 export default function HomeScreen() {
   const router = useRouter();
   const { address, balance, network, isConnected } = useWallet();
   const colors = useColors();
+  const { t } = useI18n();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = async () => {
@@ -22,13 +24,13 @@ export default function HomeScreen() {
     return (
       <ScreenContainer className="p-6">
         <View className="flex-1 justify-center items-center gap-6">
-          <Text className="text-3xl font-bold text-foreground">AgentPay Wallet</Text>
-          <Text className="text-base text-muted text-center">Connect your wallet to get started</Text>
+          <Text className="text-3xl font-bold text-foreground">{t('home.title')}</Text>
+          <Text className="text-base text-muted text-center">{t('home.subtitle')}</Text>
           <TouchableOpacity
             onPress={() => router.push('/connect-wallet')}
             className="bg-primary px-8 py-3 rounded-full"
           >
-            <Text className="text-background font-semibold text-lg">Connect Wallet</Text>
+            <Text className="text-background font-semibold text-lg">{t('home.connectWallet')}</Text>
           </TouchableOpacity>
         </View>
       </ScreenContainer>
@@ -44,18 +46,18 @@ export default function HomeScreen() {
         <View className="flex-1 gap-6">
           {/* Network Indicator */}
           <View className="flex-row justify-between items-center">
-            <Text className="text-sm font-semibold text-muted">Ethereum Mainnet</Text>
+            <Text className="text-sm font-semibold text-muted">{t('home.network')}</Text>
             <TouchableOpacity
-              onPress={() => console.log('Settings action')}
+              onPress={() => router.push('/settings')}
               className="px-3 py-1 bg-surface rounded-full border border-border"
             >
-              <Text className="text-xs text-foreground font-medium">Settings</Text>
+              <Text className="text-xs text-foreground font-medium">{t('home.settings')}</Text>
             </TouchableOpacity>
           </View>
 
           {/* Balance Card */}
           <View className="bg-gradient-to-r from-primary to-secondary rounded-3xl p-8 gap-4">
-            <Text className="text-sm text-white opacity-80">Total Balance</Text>
+            <Text className="text-sm text-white opacity-80">{t('home.balance')}</Text>
             <Text className="text-5xl font-bold text-white">${balance || '0.00'}</Text>
             <View className="flex-row justify-between pt-4 border-t border-white/20">
               <View>
@@ -72,31 +74,31 @@ export default function HomeScreen() {
           {/* Quick Actions */}
           <View className="flex-row gap-4 justify-between">
             <TouchableOpacity
-              onPress={() => console.log('Send action')}
+              onPress={() => router.push('/dashboard')}
               className="flex-1 bg-surface rounded-2xl p-4 items-center border border-border"
             >
               <Text className="text-2xl mb-2">📤</Text>
-              <Text className="font-semibold text-foreground text-sm">Send</Text>
+              <Text className="font-semibold text-foreground text-sm">{t('payment.send')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => console.log('Receive action')}
+              onPress={() => router.push('/dashboard')}
               className="flex-1 bg-surface rounded-2xl p-4 items-center border border-border"
             >
               <Text className="text-2xl mb-2">📥</Text>
-              <Text className="font-semibold text-foreground text-sm">Receive</Text>
+              <Text className="font-semibold text-foreground text-sm">{t('payment.receive')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => console.log('History action')}
+              onPress={() => router.push('/dashboard')}
               className="flex-1 bg-surface rounded-2xl p-4 items-center border border-border"
             >
               <Text className="text-2xl mb-2">📋</Text>
-              <Text className="font-semibold text-foreground text-sm">History</Text>
+              <Text className="font-semibold text-foreground text-sm">{t('common.edit')}</Text>
             </TouchableOpacity>
           </View>
 
           {/* Recent Transactions */}
           <View className="gap-3">
-            <Text className="text-lg font-bold text-foreground">Recent Transactions</Text>
+            <Text className="text-lg font-bold text-foreground">{t('dashboard.recentTransactions')}</Text>
             {[
               { type: 'sent', amount: '0.5', to: '0x1234...5678', status: 'Confirmed' },
               { type: 'received', amount: '1.2', from: '0x8765...4321', status: 'Confirmed' },
@@ -111,7 +113,7 @@ export default function HomeScreen() {
                   <Text className="text-2xl">{tx.type === 'sent' ? '📤' : '📥'}</Text>
                   <View className="flex-1">
                     <Text className="font-semibold text-foreground">
-                      {tx.type === 'sent' ? 'Sent to' : 'Received from'}
+                      {tx.type === 'sent' ? t('payment.send') : t('payment.receive')}
                     </Text>
                     <Text className="text-xs text-muted">{tx.type === 'sent' ? tx.to : tx.from}</Text>
                   </View>
@@ -128,7 +130,7 @@ export default function HomeScreen() {
 
           {/* Wallet Address */}
           <View className="bg-surface rounded-xl p-4 border border-border mt-4">
-            <Text className="text-xs text-muted mb-2">Wallet Address</Text>
+            <Text className="text-xs text-muted mb-2">{t('wallet.address')}</Text>
             <TouchableOpacity className="flex-row justify-between items-center">
               <Text className="font-mono text-sm text-foreground">{address?.slice(0, 10)}...{address?.slice(-8)}</Text>
               <Text className="text-lg">📋</Text>

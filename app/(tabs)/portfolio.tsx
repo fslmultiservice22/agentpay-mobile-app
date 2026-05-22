@@ -3,10 +3,12 @@ import { ScreenContainer } from '@/components/screen-container';
 import { useWallet } from '@/lib/web3/wallet-context';
 import { useColors } from '@/hooks/use-colors';
 import { usePortfolioSync } from '@/hooks/use-portfolio-sync';
+import { useI18n } from '@/hooks/use-i18n';
 
 export default function PortfolioScreen() {
   const colors = useColors();
   const wallet = useWallet();
+  const { t } = useI18n();
   const { portfolio, loading, error } = usePortfolioSync();
 
   const styles = StyleSheet.create({
@@ -32,13 +34,13 @@ export default function PortfolioScreen() {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Portfolio</Text>
+          <Text style={styles.title}>{t('portfolio.title')}</Text>
         </View>
 
         {/* Total Value Card */}
         <View style={styles.section}>
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Total Value</Text>
+            <Text style={styles.sectionTitle}>{t('portfolio.totalValue')}</Text>
             {loading ? (
               <ActivityIndicator size="large" color={colors.primary} />
             ) : portfolio ? (
@@ -49,14 +51,14 @@ export default function PortfolioScreen() {
                 </Text>
               </>
             ) : (
-              <Text style={styles.change}>Error loading portfolio</Text>
+              <Text style={styles.change}>{t('common.error')}</Text>
             )}
           </View>
         </View>
 
         {/* Assets */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Assets</Text>
+          <Text style={styles.sectionTitle}>{t('portfolio.assets')}</Text>
           <View style={styles.card}>
             {portfolio?.assets.map((asset, index) => (
               <View key={asset.symbol} style={[styles.assetRow, { borderBottomWidth: index === portfolio.assets.length - 1 ? 0 : 1 }]}>
@@ -77,7 +79,7 @@ export default function PortfolioScreen() {
 
         {/* Statistics */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Statistics</Text>
+          <Text style={styles.sectionTitle}>{t('common.edit')}</Text>
           <View style={styles.card}>
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>24h High</Text>
