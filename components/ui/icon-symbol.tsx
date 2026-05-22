@@ -17,7 +17,37 @@ type IconSymbolName = keyof typeof MAPPING;
  * - see SF Symbols in the [SF Symbols](https://developer.apple.com/sf-symbols/) app.
  */
 const MAPPING = {
+  // Home
   "house.fill": "home",
+  // Trading
+  "chart.line.uptrend.xyaxis": "trending-up",
+  // Portfolio
+  "briefcase.fill": "work",
+  // Dashboard
+  "square.grid.2x2.fill": "dashboard",
+  // Copy Trade
+  "doc.text.fill": "description",
+  // Leaderboard
+  "star.fill": "star",
+  // Settings
+  "gear": "settings",
+  // Alerts
+  "bell.fill": "notifications",
+  // Swap
+  "arrow.left.arrow.right": "swap-horiz",
+  // Gas
+  "bolt.fill": "flash-on",
+  // Rebalance
+  "arrow.2.squarepath": "sync",
+  // Multi Portfolio
+  "folder.fill": "folder",
+  // Swap Analytics
+  "chart.bar.fill": "bar-chart",
+  // Credit
+  "creditcard.fill": "credit-card",
+  // Social Trading
+  "network": "people",
+  // Fallback icons
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",
   "chevron.right": "chevron-right",
