@@ -41,6 +41,8 @@ import { useInAppMessaging, type InAppMessage } from '@/hooks/use-inapp-messagin
 import { useABTesting, type ABTest } from '@/hooks/use-ab-testing';
 import { useVoiceCommands } from '@/hooks/use-voice-commands';
 import { useI18n, type Language } from '@/hooks/use-i18n';
+import { useBlockchain } from '@/lib/blockchain/blockchain-context';
+import { BLOCKCHAINS } from '@/lib/blockchain/blockchain-config';
 import { useOfflineMode, type OfflineData } from '@/hooks/use-offline-mode';
 import { useKYC, type UserKYC } from '@/hooks/use-kyc';
 import { useAdvancedSecurity } from '@/hooks/use-advanced-security';
@@ -66,6 +68,7 @@ export interface WalletContextType {
   checkMetaMaskInstalled?: () => Promise<boolean>;
   balanceSyncEnabled?: boolean;
   setBalanceSyncEnabled?: (enabled: boolean) => void;
+  updateNetworkInfo?: (newNetwork: string) => void;
   // Transaction History
   transactions?: Transaction[];
   addTransaction?: (tx: Transaction) => Promise<void>;
@@ -223,11 +226,12 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 const METAMASK_DEEPLINK = 'https://metamask.app.link/dapp/';
 const RPC_URL = 'https://eth-sepolia.g.alchemy.com/v2/demo';
 
-export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { selectedBlockchain } = useBlockchain();
   const [address, setAddress] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [balance, setBalance] = useState<string | null>(null);
-  const [network, setNetwork] = useState<string | null>(null);
+  const [network, setNetwork] = useState<string | null>(BLOCKCHAINS[selectedBlockchain].name);
   const [provider, setProvider] = useState<ethers.Provider | null>(null);
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -469,8 +473,14 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, []);
 
-  const connect = useCallback(async (type: 'metamask' | 'walletconnect' | 'okx' | 'local') => {
-    try {
+  // Update network when blockchain changes
+  useEffect(() => {
+    setNetwork(BLOCKCHAINS[selectedBlockchain].name);
+  }, [selectedBlockchain]);
+
+  const connect = useCallback(
+    async (type: 'metamask' | 'walletconnect' | 'okx' | 'local') => {
+      try {
       switch (type) {
         case 'metamask':
           await connectMetaMask();
@@ -492,6 +502,10 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       setError(err instanceof Error ? err.message : 'Connection failed');
     }
   }, [connectMetaMask, connectWalletConnect, connectOKX, connectLocal, checkMetaMaskInstalled, connectWC]);
+
+  const updateNetworkInfo = useCallback((newNetwork: string) => {
+    setNetwork(newNetwork);
+  }, []);
 
   const disconnect = useCallback(() => {
     setAddress(null);
@@ -591,7 +605,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const value: WalletContextType = {
     address,
     isConnected,
-    balance: displayBalance,
+    balance,
     network,
     provider,
     signer,
@@ -605,6 +619,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     checkMetaMaskInstalled,
     balanceSyncEnabled,
     setBalanceSyncEnabled,
+    updateNetworkInfo,
     // Transaction History
     transactions: txHistory,
     addTransaction,

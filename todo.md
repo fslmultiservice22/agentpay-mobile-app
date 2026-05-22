@@ -141,3 +141,12 @@
 - [x] Aggiornare home screen con blockchain indicator
 - [x] Aggiungere traduzioni per tutti i blockchain in 8 lingue
 - [x] Creare test suite per blockchain (12 test passati)
+
+## Network Switching - Fase 21 (NUOVO)
+- [x] Creare hook useNetworkSwitch per gestire il cambio di rete
+- [x] Aggiornare wallet context per supportare blockchain switching
+- [x] Implementare hook useMultiChainBalance per gestire balance su più blockchain
+- [x] Aggiungere animazioni di transizione (SlideInRight, FadeIn, FadeOut)
+- [x] Aggiungere haptic feedback al blockchain switching
+- [x] Creare test suite per network switching (11 test passati)
+- [x] Test totali: 45 test passati

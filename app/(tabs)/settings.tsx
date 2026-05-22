@@ -1,4 +1,4 @@
-import { ScrollView, Text, View, TouchableOpacity, Switch, StyleSheet, Modal, FlatList } from 'react-native';
+import { ScrollView, Text, View, TouchableOpacity, Modal, FlatList, StyleSheet, Platform, Switch } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useWallet } from '@/lib/web3/wallet-context';
 import { useColors } from '@/hooks/use-colors';
@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useI18n, type Language } from '@/hooks/use-i18n';
 import { useBlockchain } from '@/lib/blockchain/blockchain-context';
 import { BLOCKCHAINS, type BlockchainId } from '@/lib/blockchain/blockchain-config';
+import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutLeft } from 'react-native-reanimated';
 
 export default function SettingsScreen() {
   const colors = useColors();
@@ -48,6 +49,15 @@ export default function SettingsScreen() {
   };
 
   const handleBlockchainChange = async (newBlockchain: BlockchainId) => {
+    // Add haptic feedback
+    if (Platform.OS !== 'web') {
+      try {
+        const Haptics = require('expo-haptics');
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch (err) {
+        // Haptics not available
+      }
+    }
     await setSelectedBlockchain(newBlockchain);
     setBlockchainModalVisible(false);
   };
@@ -230,15 +240,28 @@ export default function SettingsScreen() {
               data={availableLanguages}
               keyExtractor={(item) => item}
               renderItem={({ item: lang }) => (
-                <TouchableOpacity
-                  style={styles.languageItem}
-                  onPress={() => handleLanguageChange(lang as Language)}
-                >
-                  <Text style={language === lang ? styles.selectedLanguageText : styles.languageItemText}>
-                    {getNativeLanguageName(lang as Language)}
-                  </Text>
-                  {language === lang && <Text style={styles.checkmark}>✓</Text>}
-                </TouchableOpacity>
+            <Animated.View
+              entering={SlideInRight.duration(300)}
+              exiting={SlideOutLeft.duration(300)}
+            >
+              <TouchableOpacity
+                style={styles.languageItem}
+                onPress={() => handleLanguageChange(lang as Language)}
+              >
+                <Text style={language === lang ? styles.selectedLanguageText : styles.languageItemText}>
+                  {getNativeLanguageName(lang as Language)}
+                </Text>
+                {language === lang && (
+                  <Animated.Text
+                    entering={FadeIn.duration(200)}
+                    exiting={FadeOut.duration(200)}
+                    style={styles.checkmark}
+                  >
+                    ✓
+                  </Animated.Text>
+                )}
+              </TouchableOpacity>
+            </Animated.View>
               )}
               scrollEnabled={false}
             />
@@ -268,18 +291,36 @@ export default function SettingsScreen() {
               data={availableBlockchains}
               keyExtractor={(item) => item}
               renderItem={({ item: blockchain }) => (
-                <TouchableOpacity
-                  style={styles.languageItem}
-                  onPress={() => handleBlockchainChange(blockchain)}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                    <Text style={{ fontSize: 20, marginRight: 12 }}>{BLOCKCHAINS[blockchain].icon}</Text>
-                    <Text style={selectedBlockchain === blockchain ? styles.selectedLanguageText : styles.languageItemText}>
-                      {BLOCKCHAINS[blockchain].name}
-                    </Text>
-                  </View>
-                  {selectedBlockchain === blockchain && <Text style={styles.checkmark}>✓</Text>}
-                </TouchableOpacity>
+            <Animated.View
+              entering={SlideInRight.duration(300)}
+              exiting={SlideOutLeft.duration(300)}
+            >
+              <TouchableOpacity
+                style={styles.languageItem}
+                onPress={() => handleBlockchainChange(blockchain)}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                  <Animated.Text
+                    entering={FadeIn.duration(200)}
+                    style={{ fontSize: 20, marginRight: 12 }}
+                  >
+                    {BLOCKCHAINS[blockchain].icon}
+                  </Animated.Text>
+                  <Text style={selectedBlockchain === blockchain ? styles.selectedLanguageText : styles.languageItemText}>
+                    {BLOCKCHAINS[blockchain].name}
+                  </Text>
+                </View>
+                {selectedBlockchain === blockchain && (
+                  <Animated.Text
+                    entering={FadeIn.duration(200)}
+                    exiting={FadeOut.duration(200)}
+                    style={styles.checkmark}
+                  >
+                    ✓
+                  </Animated.Text>
+                )}
+              </TouchableOpacity>
+            </Animated.View>
               )}
               scrollEnabled={false}
             />
