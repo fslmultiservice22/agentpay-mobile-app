@@ -1,4 +1,4 @@
-import { ScrollView, Text, View, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import { useI18n } from '@/hooks/use-i18n';
@@ -81,7 +81,7 @@ export default function PortfolioScreen() {
 
         {/* Statistics */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('common.statistics')}</Text>
+          <Text style={styles.sectionTitle}>{t('portfolio.statistics')}</Text>
           <View style={styles.card}>
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>24h High</Text>
