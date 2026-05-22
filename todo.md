@@ -203,3 +203,11 @@
 - [x] Implementare copy trading
 - [x] Creare test suite con 21 test passati
 - [x] Test totali: 205 test passati
+
+## Trader Leaderboard - Fase 29 (NUOVO)
+- [x] Creare hook useTraderLeaderboard con classifica globale
+- [x] Implementare UI per il leaderboard (leaderboard.tsx)
+- [x] Aggiungere filtri per timeframe e metriche
+- [x] Implementare ranking e badges
+- [x] Creare test suite con 29 test passati
+- [x] Test totali: 228 test passati
