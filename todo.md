@@ -195,3 +195,11 @@
 - [x] Implementare grafici candlestick con CandlestickChart component
 - [x] Creare test suite con 27 test passati
 - [x] Test totali: 184 test passati
+
+## Social Trading Features - Fase 28 (NUOVO)
+- [x] Creare hook useSocialTrading per gestire i profili trader
+- [x] Implementare UI per il social trading dashboard (social-trading.tsx)
+- [x] Aggiungere funzionalità di follow/unfollow
+- [x] Implementare copy trading
+- [x] Creare test suite con 21 test passati
+- [x] Test totali: 205 test passati
