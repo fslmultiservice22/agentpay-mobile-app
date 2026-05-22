@@ -1,15 +1,25 @@
-import { ScrollView, Text, View, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { ScrollView, Text, View, StyleSheet } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
-import { useWallet } from '@/lib/web3/wallet-context';
 import { useColors } from '@/hooks/use-colors';
-import { usePortfolioSync } from '@/hooks/use-portfolio-sync';
 import { useI18n } from '@/hooks/use-i18n';
 
 export default function PortfolioScreen() {
   const colors = useColors();
-  const wallet = useWallet();
   const { t } = useI18n();
-  const { portfolio, loading, error } = usePortfolioSync();
+
+  // Mock portfolio data
+  const portfolio = {
+    totalValue: 125000,
+    totalChange: 5000,
+    totalChangePercent: 4.17,
+    assets: [
+      { symbol: 'ETH', amount: 5.5, value: 18700, changePercent24h: 2.5 },
+      { symbol: 'USDC', amount: 50000, value: 50000, changePercent24h: 0 },
+      { symbol: 'MATIC', amount: 25000, value: 18500, changePercent24h: -1.2 },
+      { symbol: 'ARB', amount: 8000, value: 12800, changePercent24h: 3.8 },
+      { symbol: 'OP', amount: 6000, value: 25000, changePercent24h: 5.2 },
+    ],
+  };
 
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
@@ -31,7 +41,7 @@ export default function PortfolioScreen() {
 
   return (
     <ScreenContainer className="flex-1">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} style={styles.container}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }} style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>{t('portfolio.title')}</Text>
@@ -41,18 +51,10 @@ export default function PortfolioScreen() {
         <View style={styles.section}>
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>{t('portfolio.totalValue')}</Text>
-            {loading ? (
-              <ActivityIndicator size="large" color={colors.primary} />
-            ) : portfolio ? (
-              <>
-                <Text style={styles.totalValue}>${portfolio.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
-                <Text style={[styles.change, { color: portfolio.totalChange >= 0 ? colors.success : colors.error }]}>
-                  {portfolio.totalChange >= 0 ? '\u2191' : '\u2193'} ${Math.abs(portfolio.totalChange).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({portfolio.totalChangePercent.toFixed(2)}%)
-                </Text>
-              </>
-            ) : (
-              <Text style={styles.change}>{t('common.error')}</Text>
-            )}
+            <Text style={styles.totalValue}>${portfolio.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+            <Text style={[styles.change, { color: portfolio.totalChange >= 0 ? colors.success : colors.error }]}>
+              {portfolio.totalChange >= 0 ? '↑' : '↓'} ${Math.abs(portfolio.totalChange).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({portfolio.totalChangePercent.toFixed(2)}%)
+            </Text>
           </View>
         </View>
 
@@ -60,7 +62,7 @@ export default function PortfolioScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('portfolio.assets')}</Text>
           <View style={styles.card}>
-            {portfolio?.assets.map((asset, index) => (
+            {portfolio.assets.map((asset, index) => (
               <View key={asset.symbol} style={[styles.assetRow, { borderBottomWidth: index === portfolio.assets.length - 1 ? 0 : 1 }]}>
                 <View>
                   <Text style={styles.assetName}>{asset.symbol}</Text>
@@ -69,7 +71,7 @@ export default function PortfolioScreen() {
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={styles.assetValue}>${asset.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
                   <Text style={[styles.assetAmount, { color: asset.changePercent24h >= 0 ? colors.success : colors.error }]}>
-                    {asset.changePercent24h >= 0 ? '\u2191' : '\u2193'} {Math.abs(asset.changePercent24h).toFixed(1)}%
+                    {asset.changePercent24h >= 0 ? '↑' : '↓'} {Math.abs(asset.changePercent24h).toFixed(1)}%
                   </Text>
                 </View>
               </View>
@@ -79,7 +81,7 @@ export default function PortfolioScreen() {
 
         {/* Statistics */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('common.edit')}</Text>
+          <Text style={styles.sectionTitle}>{t('common.statistics')}</Text>
           <View style={styles.card}>
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>24h High</Text>
