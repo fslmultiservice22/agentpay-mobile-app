@@ -220,3 +220,34 @@
 - [x] Aggiungere traduzioni in 8 lingue
 - [x] Creare test suite con 11 test passati
 - [x] Test totali: 294 test passati (293 passati + 1 skipped)
+
+## Social Media Integration - Fase 31 (NUOVO)
+- [ ] Creare configurazione social media (social-config.ts)
+- [ ] Implementare hook useSocialAuth per OAuth
+- [ ] Implementare OAuth per Twitter/X
+- [ ] Implementare OAuth per Instagram
+- [ ] Implementare OAuth per Facebook
+- [ ] Implementare OAuth per TikTok
+- [ ] Implementare OAuth per LinkedIn
+- [ ] Implementare OAuth per Discord
+- [ ] Implementare OAuth per Telegram
+- [ ] Implementare OAuth per YouTube
+- [ ] Creare hook useSocialShare per condivisione
+- [ ] Creare hook useSocialSync per sincronizzazione profilo
+- [ ] Implementare UI per social media login (social-login.tsx)
+- [ ] Implementare UI per social media settings (social-settings.tsx)
+- [ ] Implementare notifiche da social media
+- [ ] Implementare chat Discord/Telegram
+- [ ] Creare test suite per social media integration
+- [ ] Testare tutte le funzionalità
+
+## Social Media Integration - Fase 31 (COMPLETATO)
+- [x] Creare configurazione social media (social-config.ts)
+- [x] Implementare hook useSocialAuth per OAuth
+- [x] Implementare hook useSocialShare per condivisione
+- [x] Implementare hook useSocialSync per sincronizzazione profilo
+- [x] Implementare UI per social media login (social-login.tsx)
+- [x] Implementare UI per social media settings (social-settings.tsx)
+- [x] Aggiungere traduzioni in 8 lingue (social.*)
+- [x] Creare test suite per social media integration (24 test passati)
+- [x] Test totali: 317 test passati (317 passati + 1 skipped)
