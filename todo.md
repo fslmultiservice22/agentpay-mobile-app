@@ -189,3 +189,9 @@
 - [x] Aggiungere create/delete/toggle alert functionality
 - [x] Creare test suite con 25 test passati
 - [x] Test totali: 157 test passati
+
+## Advanced Trading Dashboard - Fase 27 (NUOVO)
+- [x] Creare hook useTradingDashboard per gestire i dati di trading
+- [x] Implementare grafici candlestick con CandlestickChart component
+- [x] Creare test suite con 27 test passati
+- [x] Test totali: 184 test passati
