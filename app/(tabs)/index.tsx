@@ -7,7 +7,6 @@ import { useColors } from "@/hooks/use-colors";
 import { useI18n } from "@/hooks/use-i18n";
 import { useBlockchain } from "@/lib/blockchain/blockchain-context";
 import { BLOCKCHAINS } from "@/lib/blockchain/blockchain-config";
-import { LinearGradient } from "expo-linear-gradient";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -28,18 +27,13 @@ export default function HomeScreen() {
       <ScreenContainer className="p-0">
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
           {/* Hero Section */}
-          <LinearGradient
-            colors={[colors.primary, '#0a5a7a']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            className="px-6 py-12 gap-4"
-          >
+          <View className="bg-primary px-6 py-12 gap-4">
             <View className="items-center gap-4">
               <Text className="text-5xl">💰</Text>
               <Text className="text-4xl font-bold text-white text-center">{t('home.title')}</Text>
               <Text className="text-base text-white/80 text-center">{t('home.subtitle')}</Text>
             </View>
-          </LinearGradient>
+          </View>
 
           {/* Features Section */}
           <View className="px-6 py-8 gap-4">
@@ -88,13 +82,8 @@ export default function HomeScreen() {
         contentContainerStyle={{ flexGrow: 1 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Header with Gradient */}
-        <LinearGradient
-          colors={[colors.primary, '#0a5a7a']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          className="px-6 py-6 gap-4"
-        >
+        {/* Header with Primary Background */}
+        <View className="bg-primary px-6 py-6 gap-4">
           <View className="flex-row justify-between items-center">
             <View>
               <Text className="text-white/80 text-sm">{t('home.balance')}</Text>
@@ -113,7 +102,7 @@ export default function HomeScreen() {
             <Text className="text-lg">{BLOCKCHAINS[selectedBlockchain].icon}</Text>
             <Text className="text-white text-xs font-semibold">{BLOCKCHAINS[selectedBlockchain].name}</Text>
           </View>
-        </LinearGradient>
+        </View>
 
         {/* Main Content */}
         <View className="px-6 py-6 gap-6">
