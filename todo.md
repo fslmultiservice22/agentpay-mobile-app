@@ -158,3 +158,11 @@
 - [x] Aggiungere validazione e gestione errori (19 test passati)
 - [x] Creare test suite per validazione (15 test passati)
 - [x] Test totali: 64 test passati
+
+## Portfolio Multi-Chain Aggregator - Fase 23 (NUOVO)
+- [x] Creare hook usePortfolioAggregator per aggregare dati multi-chain
+- [x] Implementare UI per la dashboard del portfolio (portfolio-multi.tsx)
+- [x] Aggiungere grafici PieChart e BarChart per visualizzazione
+- [x] Implementare calcolo dei guadagni/perdite (FIFO, LIFO, Average)
+- [x] Creare test suite con 19 test passati
+- [x] Test totali: 83 test passati
