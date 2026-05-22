@@ -242,6 +242,14 @@
 - [ ] Testare tutte le funzionalità
 
 ## Social Media Integration - Fase 31 (COMPLETATO)
+
+## Project Bug Fixes - Fase 32 (COMPLETATO)
+- [x] Aggiunto tutte le 16 schermate al tab bar
+- [x] Portfolio ora visibile e funzionante
+- [x] Social Login e Social Settings integrate nel tab bar
+- [x] Corrette tutte le traduzioni per rebalancing (15 chiavi)
+- [x] Test totali: 317 test passati (317 passati + 1 skipped)
+- [x] Zero TypeScript errors
 - [x] Creare configurazione social media (social-config.ts)
 - [x] Implementare hook useSocialAuth per OAuth
 - [x] Implementare hook useSocialShare per condivisione
