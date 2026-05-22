@@ -5,12 +5,15 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useWallet } from "@/lib/web3/wallet-context";
 import { useColors } from "@/hooks/use-colors";
 import { useI18n } from "@/hooks/use-i18n";
+import { useBlockchain } from "@/lib/blockchain/blockchain-context";
+import { BLOCKCHAINS } from "@/lib/blockchain/blockchain-config";
 
 export default function HomeScreen() {
   const router = useRouter();
   const { address, balance, network, isConnected } = useWallet();
   const colors = useColors();
   const { t } = useI18n();
+  const { selectedBlockchain } = useBlockchain();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = async () => {
@@ -46,7 +49,10 @@ export default function HomeScreen() {
         <View className="flex-1 gap-6">
           {/* Network Indicator */}
           <View className="flex-row justify-between items-center">
-            <Text className="text-sm font-semibold text-muted">{t('home.network')}</Text>
+            <View className="flex-row items-center gap-2">
+              <Text className="text-lg">{BLOCKCHAINS[selectedBlockchain].icon}</Text>
+              <Text className="text-sm font-semibold text-muted">{BLOCKCHAINS[selectedBlockchain].name}</Text>
+            </View>
             <TouchableOpacity
               onPress={() => router.push('/settings')}
               className="px-3 py-1 bg-surface rounded-full border border-border"

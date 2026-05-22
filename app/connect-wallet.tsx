@@ -4,11 +4,13 @@ import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/screen-container';
 import { useWallet } from '@/lib/web3/wallet-context';
 import { useColors } from '@/hooks/use-colors';
+import { useI18n } from '@/hooks/use-i18n';
 
 export default function ConnectWalletScreen() {
   const router = useRouter();
   const { connect, isConnected, error } = useWallet();
   const colors = useColors();
+  const { t } = useI18n();
   const [loading, setLoading] = useState<string | null>(null);
 
   const handleConnect = async (type: 'metamask' | 'walletconnect' | 'okx' | 'local') => {
@@ -37,7 +39,7 @@ export default function ConnectWalletScreen() {
           {/* Header */}
           <View className="items-center gap-2">
             <Text className="text-4xl font-bold text-foreground">AgentPay</Text>
-            <Text className="text-base text-muted">Connect Your Wallet</Text>
+            <Text className="text-base text-muted">{t('wallet.connectDesc')}</Text>
           </View>
 
           {/* Error Message */}
@@ -59,8 +61,8 @@ export default function ConnectWalletScreen() {
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-1">
-                  <Text className="text-lg font-semibold text-foreground">MetaMask</Text>
-                  <Text className="text-sm text-muted mt-1">Connect via MetaMask</Text>
+                  <Text className="text-lg font-semibold text-foreground">{t('wallet.metamask')}</Text>
+                  <Text className="text-sm text-muted mt-1">{t('wallet.metamaskDesc')}</Text>
                 </View>
                 {loading === 'metamask' && <ActivityIndicator color={colors.primary} />}
               </View>
@@ -76,8 +78,8 @@ export default function ConnectWalletScreen() {
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-1">
-                  <Text className="text-lg font-semibold text-foreground">WalletConnect</Text>
-                  <Text className="text-sm text-muted mt-1">Scan QR code to connect</Text>
+                  <Text className="text-lg font-semibold text-foreground">{t('wallet.walletconnect')}</Text>
+                  <Text className="text-sm text-muted mt-1">{t('wallet.walletconnectDesc')}</Text>
                 </View>
                 {loading === 'walletconnect' && <ActivityIndicator color={colors.primary} />}
               </View>
@@ -93,8 +95,8 @@ export default function ConnectWalletScreen() {
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-1">
-                  <Text className="text-lg font-semibold text-foreground">OKX Wallet</Text>
-                  <Text className="text-sm text-muted mt-1">Connect via OKX Wallet (X Layer)</Text>
+                  <Text className="text-lg font-semibold text-foreground">{t('wallet.okx')}</Text>
+                  <Text className="text-sm text-muted mt-1">{t('wallet.okxDesc')}</Text>
                 </View>
                 {loading === 'okx' && <ActivityIndicator color={colors.primary} />}
               </View>

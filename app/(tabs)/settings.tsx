@@ -4,15 +4,19 @@ import { useWallet } from '@/lib/web3/wallet-context';
 import { useColors } from '@/hooks/use-colors';
 import { useState } from 'react';
 import { useI18n, type Language } from '@/hooks/use-i18n';
+import { useBlockchain } from '@/lib/blockchain/blockchain-context';
+import { BLOCKCHAINS, type BlockchainId } from '@/lib/blockchain/blockchain-config';
 
 export default function SettingsScreen() {
   const colors = useColors();
   const wallet = useWallet();
   const { t, language, setLanguage, availableLanguages, getNativeLanguageName } = useI18n();
+  const { selectedBlockchain, setSelectedBlockchain, availableBlockchains } = useBlockchain();
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const [blockchainModalVisible, setBlockchainModalVisible] = useState(false);
 
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
@@ -43,6 +47,11 @@ export default function SettingsScreen() {
     setLanguageModalVisible(false);
   };
 
+  const handleBlockchainChange = async (newBlockchain: BlockchainId) => {
+    await setSelectedBlockchain(newBlockchain);
+    setBlockchainModalVisible(false);
+  };
+
   return (
     <ScreenContainer className="flex-1">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} style={styles.container}>
@@ -64,17 +73,28 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Language Section */}
+        {/* Language & Blockchain Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.language')}</Text>
           <View style={styles.card}>
             <TouchableOpacity
-              style={[styles.settingRow, { borderBottomWidth: 0 }]}
+              style={styles.settingRow}
               onPress={() => setLanguageModalVisible(true)}
             >
               <View style={{ flex: 1 }}>
                 <Text style={styles.settingLabel}>{t('settings.language')}</Text>
                 <Text style={styles.settingDescription}>{getNativeLanguageName(language as Language)}</Text>
+              </View>
+              <Text style={{ fontSize: 20, color: colors.muted }}>›</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.settingRow, { borderBottomWidth: 0 }]}
+              onPress={() => setBlockchainModalVisible(true)}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingLabel}>{t('settings.blockchain')}</Text>
+                <Text style={styles.settingDescription}>{BLOCKCHAINS[selectedBlockchain].name}</Text>
               </View>
               <Text style={{ fontSize: 20, color: colors.muted }}>›</Text>
             </TouchableOpacity>
@@ -88,7 +108,7 @@ export default function SettingsScreen() {
             <View style={styles.settingRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.settingLabel}>{t('settings.biometric')}</Text>
-                <Text style={styles.settingDescription}>Use Face ID or fingerprint</Text>
+                <Text style={styles.settingDescription}>{t('settings.biometricDesc')}</Text>
               </View>
               <Switch
                 value={biometricEnabled}
@@ -100,16 +120,16 @@ export default function SettingsScreen() {
 
             <View style={styles.settingRow}>
               <TouchableOpacity style={{ flex: 1 }}>
-                <Text style={styles.settingLabel}>Backup Wallet</Text>
-                <Text style={styles.settingDescription}>Save seed phrase securely</Text>
+                <Text style={styles.settingLabel}>{t('settings.backup')}</Text>
+                <Text style={styles.settingDescription}>{t('settings.backupDesc')}</Text>
               </TouchableOpacity>
               <Text style={{ fontSize: 20, color: colors.muted }}>›</Text>
             </View>
 
             <View style={[styles.settingRow, { borderBottomWidth: 0 }]}>
               <TouchableOpacity style={{ flex: 1 }}>
-                <Text style={styles.settingLabel}>Change Password</Text>
-                <Text style={styles.settingDescription}>Update your wallet password</Text>
+                <Text style={styles.settingLabel}>{t('settings.changePassword')}</Text>
+                <Text style={styles.settingDescription}>{t('settings.changePasswordDesc')}</Text>
               </TouchableOpacity>
               <Text style={{ fontSize: 20, color: colors.muted }}>›</Text>
             </View>
@@ -123,7 +143,7 @@ export default function SettingsScreen() {
             <View style={styles.settingRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.settingLabel}>{t('settings.notifications')}</Text>
-                <Text style={styles.settingDescription}>Alerts for transactions & prices</Text>
+                <Text style={styles.settingDescription}>{t('settings.notificationsDesc')}</Text>
               </View>
               <Switch
                 value={notificationsEnabled}
@@ -135,8 +155,8 @@ export default function SettingsScreen() {
 
             <View style={[styles.settingRow, { borderBottomWidth: 0 }]}>
               <TouchableOpacity style={{ flex: 1 }}>
-                <Text style={styles.settingLabel}>Notification Preferences</Text>
-                <Text style={styles.settingDescription}>Customize alert types</Text>
+                <Text style={styles.settingLabel}>{t('settings.notificationPreferences')}</Text>
+                <Text style={styles.settingDescription}>{t('settings.notificationPreferencesDesc')}</Text>
               </TouchableOpacity>
               <Text style={{ fontSize: 20, color: colors.muted }}>›</Text>
             </View>
@@ -150,7 +170,7 @@ export default function SettingsScreen() {
             <View style={[styles.settingRow, { borderBottomWidth: 0 }]}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.settingLabel}>{t('settings.darkMode')}</Text>
-                <Text style={styles.settingDescription}>Reduce eye strain</Text>
+                <Text style={styles.settingDescription}>{t('settings.darkModeDesc')}</Text>
               </View>
               <Switch
                 value={darkMode}
@@ -165,7 +185,7 @@ export default function SettingsScreen() {
         {/* Actions Section */}
         <View style={styles.section}>
           <TouchableOpacity style={styles.button}>
-            <Text style={styles.buttonText}>Export Private Key</Text>
+            <Text style={styles.buttonText}>{t('settings.exportPrivateKey')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.button, styles.dangerButton]}>
@@ -186,7 +206,7 @@ export default function SettingsScreen() {
 
             <View style={[styles.settingRow, { borderBottomWidth: 0 }]}>
               <TouchableOpacity style={{ flex: 1 }}>
-                <Text style={styles.settingLabel}>Terms of Service</Text>
+                <Text style={styles.settingLabel}>{t('settings.termsOfService')}</Text>
               </TouchableOpacity>
               <Text style={{ fontSize: 20, color: colors.muted }}>›</Text>
             </View>
@@ -225,6 +245,47 @@ export default function SettingsScreen() {
             <TouchableOpacity
               style={[styles.button, { margin: 16 }]}
               onPress={() => setLanguageModalVisible(false)}
+            >
+              <Text style={styles.buttonText}>{t('common.close')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Blockchain Selection Modal */}
+      <Modal
+        visible={blockchainModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setBlockchainModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t('settings.blockchain')}</Text>
+            </View>
+            <FlatList
+              data={availableBlockchains}
+              keyExtractor={(item) => item}
+              renderItem={({ item: blockchain }) => (
+                <TouchableOpacity
+                  style={styles.languageItem}
+                  onPress={() => handleBlockchainChange(blockchain)}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    <Text style={{ fontSize: 20, marginRight: 12 }}>{BLOCKCHAINS[blockchain].icon}</Text>
+                    <Text style={selectedBlockchain === blockchain ? styles.selectedLanguageText : styles.languageItemText}>
+                      {BLOCKCHAINS[blockchain].name}
+                    </Text>
+                  </View>
+                  {selectedBlockchain === blockchain && <Text style={styles.checkmark}>✓</Text>}
+                </TouchableOpacity>
+              )}
+              scrollEnabled={false}
+            />
+            <TouchableOpacity
+              style={[styles.button, { margin: 16 }]}
+              onPress={() => setBlockchainModalVisible(false)}
             >
               <Text style={styles.buttonText}>{t('common.close')}</Text>
             </TouchableOpacity>

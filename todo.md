@@ -132,3 +132,12 @@
 - [x] Aggiornare componenti UI con traduzioni (Home, Trading, Portfolio, Settings)
 - [x] Implementare language selector nelle impostazioni
 - [x] Testare cambio lingua e persistenza (10 test passati)
+
+## Multi-Blockchain Support - Fase 20 (NUOVO)
+- [x] Creare blockchain config con 5 blockchain (Ethereum, Polygon, BSC, Arbitrum, Optimism)
+- [x] Implementare blockchain context con persistenza su AsyncStorage
+- [x] Aggiungere BlockchainProvider al root layout
+- [x] Creare blockchain selector modal nelle impostazioni
+- [x] Aggiornare home screen con blockchain indicator
+- [x] Aggiungere traduzioni per tutti i blockchain in 8 lingue
+- [x] Creare test suite per blockchain (12 test passati)
