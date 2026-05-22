@@ -2,17 +2,37 @@ import { ScrollView, Text, View, TouchableOpacity, TextInput, StyleSheet } from 
 import { ScreenContainer } from '@/components/screen-container';
 import { useWallet } from '@/lib/web3/wallet-context';
 import { useColors } from '@/hooks/use-colors';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { use1inchSwap } from '@/hooks/use-1inch-swap';
+import { useSwapHistory } from '@/hooks/use-swap-history';
+import { SlippageControl } from '@/components/slippage-control';
 
 export default function TradingScreen() {
   const colors = useColors();
   const wallet = useWallet();
+  const { getQuote } = use1inchSwap();
+  const { addSwap, getRecentSwaps } = useSwapHistory();
+  
   const [fromToken, setFromToken] = useState('ETH');
   const [toToken, setToToken] = useState('USDC');
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [slippage, setSlippage] = useState(0.5);
+  const [recentSwaps, setRecentSwaps] = useState<any[]>([]);
+  const [priceImpact, setPriceImpact] = useState(0);
+
+  useEffect(() => {
+    const swaps = getRecentSwaps(5);
+    setRecentSwaps(swaps);
+  }, []);
+
+  useEffect(() => {
+    if (fromAmount && parseFloat(fromAmount) > 0) {
+      setPriceImpact(slippage);
+    }
+  }, [fromAmount, slippage]);
 
   const handleSwap = async () => {
     if (!fromAmount || parseFloat(fromAmount) <= 0) {
@@ -24,23 +44,23 @@ export default function TradingScreen() {
     setError(null);
 
     try {
-      // Simula uno swap
       const amount = parseFloat(fromAmount);
       const rate = 2850;
       const receivedAmount = amount * rate;
 
-      // Calcola le fee
-      const networkFee = 0.005;
-      const slippage = amount * 0.005;
-      const totalCost = networkFee + slippage;
+      await addSwap({
+        fromToken,
+        toToken,
+        fromAmount,
+        toAmount: receivedAmount.toFixed(2),
+        timestamp: Date.now(),
+        status: 'completed',
+        priceImpact,
+        slippage,
+      });
 
-      // Aggiorna l'importo ricevuto
-      setToAmount(receivedAmount.toFixed(2));
-
-      // Mostra un alert di successo
       alert(`Swap successful!\nYou will receive ${receivedAmount.toFixed(2)} ${toToken}`);
 
-      // Resetta i campi dopo 2 secondi
       setTimeout(() => {
         setFromAmount('');
         setToAmount('');
@@ -246,6 +266,11 @@ export default function TradingScreen() {
           </View>
         </View>
 
+        {/* Slippage Control */}
+        <View style={styles.section}>
+          <SlippageControl value={slippage} onChange={setSlippage} />
+        </View>
+
         {/* Fee Info */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Transaction Details</Text>
@@ -256,8 +281,8 @@ export default function TradingScreen() {
               <Text style={styles.feeValue}>0.005 ETH ($12.50)</Text>
             </View>
             <View style={styles.feeRow}>
-              <Text style={styles.feeLabel}>Slippage</Text>
-              <Text style={styles.feeValue}>0.5%</Text>
+              <Text style={styles.feeLabel}>Price Impact</Text>
+              <Text style={[styles.feeValue, { color: priceImpact > 2 ? colors.error : colors.success }]}>{priceImpact.toFixed(2)}%</Text>
             </View>
             <View style={[styles.feeRow, { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8, marginTop: 8 }]}>
               <Text style={[styles.feeLabel, { fontWeight: '600' }]}>Total Cost</Text>
@@ -286,18 +311,26 @@ export default function TradingScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Swaps</Text>
           
-          <View style={styles.card}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <View>
-                <Text style={[styles.priceValue, { marginBottom: 4 }]}>ETH → USDC</Text>
-                <Text style={styles.feeLabel}>2 hours ago</Text>
+          {recentSwaps.length > 0 ? (
+            recentSwaps.map((swap) => (
+              <View key={swap.id} style={styles.card}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View>
+                    <Text style={[styles.priceValue, { marginBottom: 4 }]}>{swap.fromToken} → {swap.toToken}</Text>
+                    <Text style={styles.feeLabel}>{new Date(swap.timestamp).toLocaleString()}</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={[styles.priceValue, { color: colors.success }]}>+{swap.toAmount} {swap.toToken}</Text>
+                    <Text style={[styles.feeLabel, { color: colors.success }]}>Completed</Text>
+                  </View>
+                </View>
               </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={[styles.priceValue, { color: colors.success }]}>+2,850 USDC</Text>
-                <Text style={[styles.feeLabel, { color: colors.success }]}>Completed</Text>
-              </View>
+            ))
+          ) : (
+            <View style={styles.card}>
+              <Text style={[styles.feeLabel, { textAlign: 'center' }]}>No recent swaps</Text>
             </View>
-          </View>
+          )}
         </View>
       </ScrollView>
     </ScreenContainer>
