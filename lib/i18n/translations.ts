@@ -151,7 +151,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'common.skip': 'Skip',
     'common.done': 'Done',
     'common.retry': 'Retry',
-    'common.loading': 'Loading...',
     
     // Credit Line
     'credit.title': 'Credit Line',
