@@ -11,6 +11,47 @@ export default function TradingScreen() {
   const [toToken, setToToken] = useState('USDC');
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSwap = async () => {
+    if (!fromAmount || parseFloat(fromAmount) <= 0) {
+      setError('Please enter a valid amount');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Simula uno swap
+      const amount = parseFloat(fromAmount);
+      const rate = 2850;
+      const receivedAmount = amount * rate;
+
+      // Calcola le fee
+      const networkFee = 0.005;
+      const slippage = amount * 0.005;
+      const totalCost = networkFee + slippage;
+
+      // Aggiorna l'importo ricevuto
+      setToAmount(receivedAmount.toFixed(2));
+
+      // Mostra un alert di successo
+      alert(`Swap successful!\nYou will receive ${receivedAmount.toFixed(2)} ${toToken}`);
+
+      // Resetta i campi dopo 2 secondi
+      setTimeout(() => {
+        setFromAmount('');
+        setToAmount('');
+      }, 2000);
+    } catch (err) {
+      setError('Swap failed. Please try again.');
+      console.error('Swap error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -225,9 +266,20 @@ export default function TradingScreen() {
           </View>
         </View>
 
+        {/* Error Message */}
+        {error && (
+          <View style={[styles.section, { backgroundColor: colors.error, borderRadius: 12, padding: 12 }]}>
+            <Text style={{ color: colors.background, fontSize: 14 }}>{error}</Text>
+          </View>
+        )}
+
         {/* Swap Button */}
-        <TouchableOpacity style={styles.swapButton}>
-          <Text style={styles.swapButtonText}>Review Swap</Text>
+        <TouchableOpacity 
+          style={[styles.swapButton, { opacity: loading || !fromAmount ? 0.5 : 1 }]}
+          onPress={handleSwap}
+          disabled={loading || !fromAmount}
+        >
+          <Text style={styles.swapButtonText}>{loading ? 'Processing...' : 'Review Swap'}</Text>
         </TouchableOpacity>
 
         {/* Recent Swaps */}
