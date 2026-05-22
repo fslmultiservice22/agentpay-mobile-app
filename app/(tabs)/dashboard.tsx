@@ -6,22 +6,25 @@ import { useP2PTransfer } from '@/hooks/use-p2p-transfer';
 import { useQRPayment } from '@/hooks/use-qr-payment';
 import { usePaymentLinks } from '@/hooks/use-payment-links';
 import { useRecurringPayments } from '@/hooks/use-recurring-payments';
+import { SendPaymentModal } from '@/components/send-payment-modal';
 import { useState } from 'react';
 import { Alert } from 'react-native';
+import { useRouter } from 'expo-router';
 
 export default function DashboardScreen() {
   const colors = useColors();
   const wallet = useWallet();
-  const { sendTransfer } = useP2PTransfer();
-  const { startScanning } = useQRPayment();
+  const router = useRouter();
+  const { sendTransfer, loading: transferLoading } = useP2PTransfer();
   const { createPaymentLink, sharePaymentLink } = usePaymentLinks();
-  const { createRecurringPayment } = useRecurringPayments();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentType, setPaymentType] = useState<'send' | 'receive' | null>(null);
 
   const handleSendPayment = () => {
-    setPaymentType('send');
     setShowPaymentModal(true);
+  };
+
+  const handleSendPaymentSubmit = async (address: string, amount: string) => {
+    await sendTransfer(address, amount, 'ETH');
   };
 
   const handleReceivePayment = async () => {
@@ -32,17 +35,18 @@ export default function DashboardScreen() {
     try {
       const link = await createPaymentLink(wallet.address);
       await sharePaymentLink(link);
+      Alert.alert('Success', 'Payment link copied to clipboard!');
     } catch (err) {
       Alert.alert('Error', 'Failed to create payment link');
     }
   };
 
   const handleQRScan = () => {
-    startScanning();
+    router.push('/qr-scanner');
   };
 
   const handleRecurringPayment = () => {
-    Alert.alert('Recurring Payment', 'Set up a recurring payment');
+    Alert.alert('Recurring Payment', 'Feature coming soon!');
   };
 
   const styles = StyleSheet.create({
@@ -313,6 +317,13 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <SendPaymentModal
+        visible={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onSend={handleSendPaymentSubmit}
+        loading={transferLoading}
+      />
     </ScreenContainer>
   );
 }
