@@ -166,3 +166,11 @@
 - [x] Implementare calcolo dei guadagni/perdite (FIFO, LIFO, Average)
 - [x] Creare test suite con 19 test passati
 - [x] Test totali: 83 test passati
+
+## Gas Price Comparator - Fase 24 (NUOVO)
+- [x] Creare hook useGasPriceComparator per ottenere i gas price
+- [x] Implementare UI per il gas price comparator (gas-comparator.tsx)
+- [x] Aggiungere calcolo dei costi di transazione
+- [x] Implementare raccomandazioni di rete
+- [x] Creare test suite con 21 test passati
+- [x] Test totali: 104 test passati
