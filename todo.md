@@ -274,3 +274,15 @@
 - [x] Aggiungere traduzioni in 8 lingue (social.*)
 - [x] Creare test suite per social media integration (24 test passati)
 - [x] Test totali: 317 test passati (317 passati + 1 skipped)
+
+## Credit Line Feature - Fase 35 (COMPLETATO)
+- [x] Creato hook useCreditLine per gestione della logica
+- [x] Implementato credit dashboard screen (credit-line.tsx)
+- [x] Aggiunto sistema di richiesta e approvazione credito
+- [x] Integrato bank transfer per trasferimento al conto bancario
+- [x] Implementato sistema di rimborsi e pagamenti
+- [x] Aggiunto tab "Credit" al tab bar
+- [x] Traduzioni in 8 lingue (EN, IT, ES, FR, DE, PT, ZH, JA)
+- [x] Tutti i 318 test passati (318 passati + 1 skipped)
+- [x] Zero TypeScript errors
+- [x] Home screen redesign con design moderno
