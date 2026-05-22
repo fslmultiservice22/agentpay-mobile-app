@@ -82,24 +82,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="social-login"
-        options={{
-          title: "Social",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="person.2.fill" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="social-settings"
-        options={{
-          title: "Social Settings",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="gearshape.fill" color={color} />
-          ),
-        }}
-      />
+
       <Tabs.Screen
         name="settings"
         options={{

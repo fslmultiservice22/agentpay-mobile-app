@@ -250,6 +250,12 @@
 - [x] Corrette tutte le traduzioni per rebalancing (15 chiavi)
 - [x] Test totali: 317 test passati (317 passati + 1 skipped)
 - [x] Zero TypeScript errors
+
+## Cleanup Social Media - Fase 33 (COMPLETATO)
+- [x] Rimosso Social Login dal tab bar (non funzionante)
+- [x] Rimosso Social Settings dal tab bar (non funzionante)
+- [x] Mantenute 14 schermate core funzionanti
+- [x] App stabile e pronta per l'uso
 - [x] Creare configurazione social media (social-config.ts)
 - [x] Implementare hook useSocialAuth per OAuth
 - [x] Implementare hook useSocialShare per condivisione
