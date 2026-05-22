@@ -150,3 +150,11 @@
 - [x] Aggiungere haptic feedback al blockchain switching
 - [x] Creare test suite per network switching (11 test passati)
 - [x] Test totali: 45 test passati
+
+## Cross-Chain Swap - Fase 22 (NUOVO)
+- [x] Creare hook useCrossChainSwap per gestire gli swap cross-chain
+- [x] Integrare bridge protocol (Stargate) con configurazione per 5 blockchain
+- [x] Implementare UI per il cross-chain swap con modali per selezione
+- [x] Aggiungere validazione e gestione errori (19 test passati)
+- [x] Creare test suite per validazione (15 test passati)
+- [x] Test totali: 64 test passati
