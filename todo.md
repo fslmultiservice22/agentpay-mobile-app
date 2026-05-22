@@ -182,3 +182,10 @@
 - [x] Implementare export CSV
 - [x] Creare test suite con 28 test passati
 - [x] Test totali: 132 test passati
+
+## Price Alerts & Notifications - Fase 26 (NUOVO)
+- [x] Creare configurazione price alerts (price-alerts-config.ts)
+- [x] Implementare UI per la gestione degli alert (price-alerts.tsx)
+- [x] Aggiungere create/delete/toggle alert functionality
+- [x] Creare test suite con 25 test passati
+- [x] Test totali: 157 test passati
