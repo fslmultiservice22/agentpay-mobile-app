@@ -1,11 +1,13 @@
-import { ScrollView, Text, View, TouchableOpacity, StyleSheet } from 'react-native';
+import { ScrollView, Text, View, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useWallet } from '@/lib/web3/wallet-context';
 import { useColors } from '@/hooks/use-colors';
+import { usePortfolioSync } from '@/hooks/use-portfolio-sync';
 
 export default function PortfolioScreen() {
   const colors = useColors();
   const wallet = useWallet();
+  const { portfolio, loading, error } = usePortfolioSync();
 
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
@@ -37,8 +39,18 @@ export default function PortfolioScreen() {
         <View style={styles.section}>
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Total Value</Text>
-            <Text style={styles.totalValue}>$125,450.50</Text>
-            <Text style={styles.change}>↑ $8,250.25 (7.03%)</Text>
+            {loading ? (
+              <ActivityIndicator size="large" color={colors.primary} />
+            ) : portfolio ? (
+              <>
+                <Text style={styles.totalValue}>${portfolio.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+                <Text style={[styles.change, { color: portfolio.totalChange >= 0 ? colors.success : colors.error }]}>
+                  {portfolio.totalChange >= 0 ? '\u2191' : '\u2193'} ${Math.abs(portfolio.totalChange).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({portfolio.totalChangePercent.toFixed(2)}%)
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.change}>Error loading portfolio</Text>
+            )}
           </View>
         </View>
 
@@ -46,38 +58,20 @@ export default function PortfolioScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Your Assets</Text>
           <View style={styles.card}>
-            <View style={styles.assetRow}>
-              <View>
-                <Text style={styles.assetName}>Ethereum</Text>
-                <Text style={styles.assetAmount}>2.5 ETH</Text>
+            {portfolio?.assets.map((asset, index) => (
+              <View key={asset.symbol} style={[styles.assetRow, { borderBottomWidth: index === portfolio.assets.length - 1 ? 0 : 1 }]}>
+                <View>
+                  <Text style={styles.assetName}>{asset.symbol}</Text>
+                  <Text style={styles.assetAmount}>{asset.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {asset.symbol}</Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={styles.assetValue}>${asset.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+                  <Text style={[styles.assetAmount, { color: asset.changePercent24h >= 0 ? colors.success : colors.error }]}>
+                    {asset.changePercent24h >= 0 ? '\u2191' : '\u2193'} {Math.abs(asset.changePercent24h).toFixed(1)}%
+                  </Text>
+                </View>
               </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.assetValue}>$5,125.00</Text>
-                <Text style={[styles.assetAmount, { color: colors.success }]}>↑ 4.2%</Text>
-              </View>
-            </View>
-
-            <View style={styles.assetRow}>
-              <View>
-                <Text style={styles.assetName}>USDC</Text>
-                <Text style={styles.assetAmount}>50,000 USDC</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.assetValue}>$50,000.00</Text>
-                <Text style={[styles.assetAmount, { color: colors.muted }]}>0%</Text>
-              </View>
-            </View>
-
-            <View style={[styles.assetRow, { borderBottomWidth: 0 }]}>
-              <View>
-                <Text style={styles.assetName}>DAI</Text>
-                <Text style={styles.assetAmount}>25,000 DAI</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.assetValue}>$25,000.00</Text>
-                <Text style={[styles.assetAmount, { color: colors.muted }]}>0%</Text>
-              </View>
-            </View>
+            ))}
           </View>
         </View>
 

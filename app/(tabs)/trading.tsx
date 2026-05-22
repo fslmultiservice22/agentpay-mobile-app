@@ -5,6 +5,7 @@ import { useColors } from '@/hooks/use-colors';
 import { useState, useEffect } from 'react';
 import { use1inchSwap } from '@/hooks/use-1inch-swap';
 import { useSwapHistory } from '@/hooks/use-swap-history';
+import { usePortfolioSync } from '@/hooks/use-portfolio-sync';
 import { SlippageControl } from '@/components/slippage-control';
 
 export default function TradingScreen() {
@@ -12,6 +13,7 @@ export default function TradingScreen() {
   const wallet = useWallet();
   const { getQuote } = use1inchSwap();
   const { addSwap, getRecentSwaps } = useSwapHistory();
+  const { syncAfterSwap } = usePortfolioSync();
   
   const [fromToken, setFromToken] = useState('ETH');
   const [toToken, setToToken] = useState('USDC');
@@ -58,6 +60,8 @@ export default function TradingScreen() {
         priceImpact,
         slippage,
       });
+
+      await syncAfterSwap(fromToken, toToken, amount, receivedAmount, 2850);
 
       alert(`Swap successful!\nYou will receive ${receivedAmount.toFixed(2)} ${toToken}`);
 
