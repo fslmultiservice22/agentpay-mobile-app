@@ -28,11 +28,11 @@ const MAPPING = {
   // Copy Trade
   "doc.text.fill": "description",
   // Leaderboard
-  "star.fill": "star",
+  "star.fill": "star-rate",
   // Settings
   "gear": "settings",
   // Alerts
-  "bell.fill": "notifications",
+  "bell.fill": "notifications-active",
   // Swap
   "arrow.left.arrow.right": "swap-horiz",
   // Gas
@@ -46,7 +46,7 @@ const MAPPING = {
   // Credit
   "creditcard.fill": "credit-card",
   // Social Trading
-  "network": "people",
+  "network": "group",
   // Fallback icons
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",
