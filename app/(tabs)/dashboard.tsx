@@ -2,10 +2,48 @@ import { ScrollView, Text, View, TouchableOpacity, StyleSheet } from 'react-nati
 import { ScreenContainer } from '@/components/screen-container';
 import { useWallet } from '@/lib/web3/wallet-context';
 import { useColors } from '@/hooks/use-colors';
+import { useP2PTransfer } from '@/hooks/use-p2p-transfer';
+import { useQRPayment } from '@/hooks/use-qr-payment';
+import { usePaymentLinks } from '@/hooks/use-payment-links';
+import { useRecurringPayments } from '@/hooks/use-recurring-payments';
+import { useState } from 'react';
+import { Alert } from 'react-native';
 
 export default function DashboardScreen() {
   const colors = useColors();
   const wallet = useWallet();
+  const { sendTransfer } = useP2PTransfer();
+  const { startScanning } = useQRPayment();
+  const { createPaymentLink, sharePaymentLink } = usePaymentLinks();
+  const { createRecurringPayment } = useRecurringPayments();
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentType, setPaymentType] = useState<'send' | 'receive' | null>(null);
+
+  const handleSendPayment = () => {
+    setPaymentType('send');
+    setShowPaymentModal(true);
+  };
+
+  const handleReceivePayment = async () => {
+    if (!wallet.address) {
+      Alert.alert('Error', 'Wallet not connected');
+      return;
+    }
+    try {
+      const link = await createPaymentLink(wallet.address);
+      await sharePaymentLink(link);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to create payment link');
+    }
+  };
+
+  const handleQRScan = () => {
+    startScanning();
+  };
+
+  const handleRecurringPayment = () => {
+    Alert.alert('Recurring Payment', 'Set up a recurring payment');
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -218,6 +256,7 @@ export default function DashboardScreen() {
         {/* Action Buttons */}
         <View style={styles.section}>
           <TouchableOpacity
+            onPress={handleSendPayment}
             style={{
               backgroundColor: colors.primary,
               borderRadius: 12,
@@ -230,6 +269,37 @@ export default function DashboardScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
+            onPress={handleReceivePayment}
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: 12,
+              paddingVertical: 16,
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: colors.border,
+              marginBottom: 12,
+            }}
+          >
+            <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: '700' }}>Receive Payment</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleQRScan}
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: 12,
+              paddingVertical: 16,
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: colors.border,
+              marginBottom: 12,
+            }}
+          >
+            <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: '700' }}>Scan QR Code</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleRecurringPayment}
             style={{
               backgroundColor: colors.surface,
               borderRadius: 12,
@@ -239,7 +309,7 @@ export default function DashboardScreen() {
               borderColor: colors.border,
             }}
           >
-            <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: '700' }}>Receive Payment</Text>
+            <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: '700' }}>Recurring Payment</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
