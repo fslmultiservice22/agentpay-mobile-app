@@ -174,3 +174,11 @@
 - [x] Implementare raccomandazioni di rete
 - [x] Creare test suite con 21 test passati
 - [x] Test totali: 104 test passati
+
+## Swap History Analytics - Fase 25 (NUOVO)
+- [x] Creare hook useSwapAnalytics per aggregare dati degli swap
+- [x] Implementare UI per la dashboard analytics (swap-analytics.tsx)
+- [x] Aggiungere time range filter (7d, 30d, 90d, all)
+- [x] Implementare export CSV
+- [x] Creare test suite con 28 test passati
+- [x] Test totali: 132 test passati
