@@ -15,7 +15,7 @@ export default function WalletExportScreen() {
   const router = useRouter();
   const { config, loadConfig, exportJSON } = useWalletJSON();
 
-  const [jsonString, setJsonString] = useState('');
+  const [jsonString, setJsonString] = useState<string>('');
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -25,7 +25,7 @@ export default function WalletExportScreen() {
   useEffect(() => {
     if (config) {
       const result = exportJSON();
-      if (result.success) {
+      if (result.success && result.json) {
         setJsonString(result.json);
       }
     }
