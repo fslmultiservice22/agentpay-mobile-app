@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 
-// Note: IBAN validator tests skipped - implementation files created but not yet integrated
-// import { validateIBAN, formatIBAN, maskIBAN, getIBANCountry } from '@/lib/iban-validator';
+import { validateIBAN, formatIBAN, maskIBAN, getIBANCountry } from '../lib/iban-validator';
 
-describe.skip('IBAN Validator', () => {
-  describe.skip('validateIBAN', () => {
+describe('IBAN Validator', () => {
+  describe('validateIBAN', () => {
     it('should validate a correct German IBAN', () => {
       const result = validateIBAN('DE89 3704 0044 0532 0130 00');
       expect(result.isValid).toBe(true);
@@ -88,7 +87,7 @@ describe.skip('IBAN Validator', () => {
   describe('maskIBAN', () => {
     it('should mask IBAN showing only first 4 and last 4 characters', () => {
       const masked = maskIBAN('DE89 3704 0044 0532 0130 00');
-      expect(masked).toBe('DE89 ******* 0130 00');
+      expect(masked).toBe('DE89**************3000');
     });
 
     it('should handle short IBANs', () => {
@@ -99,7 +98,7 @@ describe.skip('IBAN Validator', () => {
     it('should remove spaces before masking', () => {
       const masked = maskIBAN('DE89 3704 0044 0532 0130 00');
       expect(masked).toContain('DE89');
-      expect(masked).toContain('0130');
+      expect(masked).toContain('3000');
     });
   });
 

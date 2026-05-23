@@ -1,201 +1,237 @@
-import { ScrollView, Text, View, TouchableOpacity, RefreshControl, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
-import { useState } from "react";
-import { ScreenContainer } from "@/components/screen-container";
-import { useWallet } from "@/lib/web3/wallet-context";
-import { useColors } from "@/hooks/use-colors";
-import { useI18n } from "@/hooks/use-i18n";
-import { useBlockchain } from "@/lib/blockchain/blockchain-context";
-import { BLOCKCHAINS } from "@/lib/blockchain/blockchain-config";
+import { ScrollView, Text, View, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useState, useEffect } from 'react';
+import { ScreenContainer } from '@/components/screen-container';
+import { useColors } from '@/hooks/use-colors';
+import { useI18n } from '@/hooks/use-i18n';
+import { useEthereumWallet } from '@/hooks/use-ethereum-wallet';
+import { useBankAccounts } from '@/hooks/use-bank-accounts';
+import { maskEthereumAddress } from '@/lib/ethereum-validator';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { address, balance, network, isConnected } = useWallet();
   const colors = useColors();
   const { t } = useI18n();
-  const { selectedBlockchain } = useBlockchain();
+  const { wallet, loading: walletLoading, refreshWallet, disconnectWallet } = useEthereumWallet();
+  const { accounts, loading: bankLoading } = useBankAccounts();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    if (wallet) {
+      await refreshWallet();
+    }
     setRefreshing(false);
   };
 
-  if (!isConnected) {
-    return (
-      <ScreenContainer className="p-0">
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-          {/* Hero Section */}
-          <View className="bg-primary px-6 py-12 gap-4">
-            <View className="items-center gap-4">
-              <Text className="text-5xl">💰</Text>
-              <Text className="text-4xl font-bold text-white text-center">{t('home.title')}</Text>
-              <Text className="text-base text-white/80 text-center">{t('home.subtitle')}</Text>
-            </View>
-          </View>
+  const handleConnectWallet = () => {
+    router.push('/wallet-connect');
+  };
 
-          {/* Features Section */}
-          <View className="px-6 py-8 gap-4">
-            <View className="bg-surface rounded-2xl p-4 border border-border flex-row gap-4 items-center">
-              <Text className="text-3xl">🔒</Text>
-              <View className="flex-1">
-                <Text className="font-bold text-foreground">Secure & Private</Text>
-                <Text className="text-xs text-muted">Your keys, your funds</Text>
-              </View>
-            </View>
+  const handleConnectBank = () => {
+    router.push('/bank-account-connect');
+  };
 
-            <View className="bg-surface rounded-2xl p-4 border border-border flex-row gap-4 items-center">
-              <Text className="text-3xl">⚡</Text>
-              <View className="flex-1">
-                <Text className="font-bold text-foreground">Fast Transactions</Text>
-                <Text className="text-xs text-muted">Multi-chain support</Text>
-              </View>
-            </View>
+  const handleViewPortfolio = () => {
+    router.push('/(tabs)/portfolio');
+  };
 
-            <View className="bg-surface rounded-2xl p-4 border border-border flex-row gap-4 items-center">
-              <Text className="text-3xl">📊</Text>
-              <View className="flex-1">
-                <Text className="font-bold text-foreground">Portfolio Tracking</Text>
-                <Text className="text-xs text-muted">Real-time analytics</Text>
-              </View>
-            </View>
-          </View>
+  const handleTransferCredit = () => {
+    router.push('/credit-transfer');
+  };
 
-          {/* CTA Button */}
-          <View className="px-6 py-4">
-            <TouchableOpacity
-              onPress={() => router.push('/connect-wallet')}
-              className="bg-primary rounded-2xl py-4 items-center"
-            >
-              <Text className="text-white font-bold text-lg">{t('home.connectWallet')}</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </ScreenContainer>
-    );
-  }
+  const handleManageBank = () => {
+    router.push('/bank-accounts-manage');
+  };
+
+  const handleTransferHistory = () => {
+    router.push('/transfer-history');
+  };
 
   return (
-    <ScreenContainer className="p-0">
+    <ScreenContainer className="flex-1 bg-background">
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Header with Primary Background */}
-        <View className="bg-primary px-6 py-6 gap-4">
-          <View className="flex-row justify-between items-center">
-            <View>
-              <Text className="text-white/80 text-sm">{t('home.balance')}</Text>
-              <Text className="text-4xl font-bold text-white mt-1">${balance || '0.00'}</Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => router.push('/settings')}
-              className="bg-white/20 rounded-full p-3"
-            >
-              <Text className="text-xl">⚙️</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Header */}
+        <View className="bg-gradient-to-b from-primary to-primary/80 px-6 py-8 gap-4">
+          <Text className="text-4xl font-bold text-white">{t('home.title')}</Text>
+          <Text className="text-base text-white/80">{t('home.subtitle')}</Text>
+        </View>
 
-          {/* Network Badge */}
-          <View className="bg-white/10 rounded-full px-3 py-2 flex-row items-center gap-2 w-fit">
-            <Text className="text-lg">{BLOCKCHAINS[selectedBlockchain].icon}</Text>
-            <Text className="text-white text-xs font-semibold">{BLOCKCHAINS[selectedBlockchain].name}</Text>
+        {/* Wallet Status Card */}
+        <View className="px-6 py-6 gap-4">
+          {wallet ? (
+            <View className="bg-surface rounded-2xl p-6 border border-border gap-4">
+              <View className="flex-row justify-between items-center">
+                <Text className="text-lg font-semibold text-foreground">Connected Wallet</Text>
+                <TouchableOpacity onPress={disconnectWallet}>
+                  <Text className="text-sm text-error font-semibold">Disconnect</Text>
+                </TouchableOpacity>
+              </View>
+              <Text className="text-sm text-muted">{maskEthereumAddress(wallet.address)}</Text>
+              <View className="bg-background rounded-lg p-4 gap-2">
+                <Text className="text-xs text-muted">Total Value</Text>
+                <Text className="text-2xl font-bold text-foreground">
+                  ${wallet.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </Text>
+                <Text className={`text-sm font-semibold ${wallet.totalChange >= 0 ? 'text-success' : 'text-error'}`}>
+                  {wallet.totalChange >= 0 ? '↑' : '↓'} ${Math.abs(wallet.totalChange).toLocaleString('en-US', { minimumFractionDigits: 2 })} ({wallet.totalChangePercent.toFixed(2)}%)
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={handleViewPortfolio}
+                className="bg-primary rounded-lg py-3 items-center"
+              >
+                <Text className="text-white font-semibold">View Portfolio</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View className="bg-surface rounded-2xl p-6 border border-border gap-4">
+              <Text className="text-lg font-semibold text-foreground">Connect Your Wallet</Text>
+              <Text className="text-sm text-muted">
+                Connect your Ethereum wallet to view your assets and manage your portfolio across multiple chains.
+              </Text>
+              <TouchableOpacity
+                onPress={handleConnectWallet}
+                className="bg-primary rounded-lg py-3 items-center"
+              >
+                {walletLoading ? (
+                  <ActivityIndicator color={colors.background} size="small" />
+                ) : (
+                  <Text className="text-white font-semibold">{t('wallet.connect')}</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* Bank Account Status Card */}
+        <View className="px-6 pb-6 gap-4">
+          {accounts && accounts.length > 0 ? (
+            <View className="bg-surface rounded-2xl p-6 border border-border gap-4">
+              <View className="flex-row justify-between items-center">
+                <Text className="text-lg font-semibold text-foreground">Bank Accounts</Text>
+                <Text className="text-sm text-primary font-semibold">{accounts.length}</Text>
+              </View>
+              {accounts.slice(0, 2).map((account) => (
+                <View key={account.id} className="bg-background rounded-lg p-3 gap-1">
+                  <Text className="text-sm font-semibold text-foreground">{account.bankName}</Text>
+                  <Text className="text-xs text-muted">{account.ibanMasked}</Text>
+                  {account.isDefault && (
+                    <Text className="text-xs text-success font-semibold">Default Account</Text>
+                  )}
+                </View>
+              ))}
+              <View className="flex-row gap-2">
+                <TouchableOpacity
+                  onPress={handleTransferCredit}
+                  className="flex-1 bg-primary rounded-lg py-2 items-center"
+                >
+                  <Text className="text-white font-semibold text-sm">Transfer Credit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleManageBank}
+                  className="flex-1 bg-border rounded-lg py-2 items-center"
+                >
+                  <Text className="text-foreground font-semibold text-sm">Manage</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View className="bg-surface rounded-2xl p-6 border border-border gap-4">
+              <Text className="text-lg font-semibold text-foreground">Connect Bank Account</Text>
+              <Text className="text-sm text-muted">
+                Add your bank account to transfer credit directly to your IBAN.
+              </Text>
+              <TouchableOpacity
+                onPress={handleConnectBank}
+                className="bg-primary rounded-lg py-3 items-center"
+              >
+                <Text className="text-white font-semibold">{t('bank.connect')}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* Quick Actions */}
+        <View className="px-6 pb-6 gap-4">
+          <Text className="text-lg font-semibold text-foreground">Quick Actions</Text>
+          <View className="gap-3">
+            {wallet && (
+              <TouchableOpacity
+                onPress={handleViewPortfolio}
+                className="bg-surface rounded-lg p-4 border border-border flex-row items-center justify-between"
+              >
+                <View className="flex-row items-center gap-3">
+                  <Text className="text-2xl">📊</Text>
+                  <View>
+                    <Text className="font-semibold text-foreground">Portfolio</Text>
+                    <Text className="text-xs text-muted">View your assets</Text>
+                  </View>
+                </View>
+                <Text className="text-lg">→</Text>
+              </TouchableOpacity>
+            )}
+
+            {accounts && accounts.length > 0 && (
+              <TouchableOpacity
+                onPress={handleTransferHistory}
+                className="bg-surface rounded-lg p-4 border border-border flex-row items-center justify-between"
+              >
+                <View className="flex-row items-center gap-3">
+                  <Text className="text-2xl">📋</Text>
+                  <View>
+                    <Text className="font-semibold text-foreground">Transfer History</Text>
+                    <Text className="text-xs text-muted">View your transfers</Text>
+                  </View>
+                </View>
+                <Text className="text-lg">→</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/settings')}
+              className="bg-surface rounded-lg p-4 border border-border flex-row items-center justify-between"
+            >
+              <View className="flex-row items-center gap-3">
+                <Text className="text-2xl">⚙️</Text>
+                <View>
+                  <Text className="font-semibold text-foreground">Settings</Text>
+                  <Text className="text-xs text-muted">Manage your account</Text>
+                </View>
+              </View>
+              <Text className="text-lg">→</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* Main Content */}
-        <View className="px-6 py-6 gap-6">
-          {/* Quick Actions */}
+        {/* Features Section */}
+        <View className="px-6 pb-6 gap-4">
+          <Text className="text-lg font-semibold text-foreground">Features</Text>
           <View className="gap-3">
-            <Text className="text-lg font-bold text-foreground">Quick Actions</Text>
-            <View className="flex-row gap-3">
-              <TouchableOpacity
-                onPress={() => router.push('/dashboard')}
-                className="flex-1 bg-primary/10 rounded-2xl p-4 items-center border border-primary/20"
-              >
-                <Text className="text-3xl mb-2">📤</Text>
-                <Text className="font-semibold text-foreground text-xs">{t('payment.send')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => router.push('/dashboard')}
-                className="flex-1 bg-primary/10 rounded-2xl p-4 items-center border border-primary/20"
-              >
-                <Text className="text-3xl mb-2">📥</Text>
-                <Text className="font-semibold text-foreground text-xs">{t('payment.receive')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => router.push('/trading')}
-                className="flex-1 bg-primary/10 rounded-2xl p-4 items-center border border-primary/20"
-              >
-                <Text className="text-3xl mb-2">💱</Text>
-                <Text className="font-semibold text-foreground text-xs">{t('trading.swap')}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Portfolio Stats */}
-          <View className="gap-3">
-            <Text className="text-lg font-bold text-foreground">Portfolio Stats</Text>
-            <View className="flex-row gap-3">
-              <View className="flex-1 bg-surface rounded-2xl p-4 border border-border">
-                <Text className="text-xs text-muted mb-2">24h Change</Text>
-                <Text className="text-lg font-bold text-success">+12.5%</Text>
-              </View>
-              <View className="flex-1 bg-surface rounded-2xl p-4 border border-border">
-                <Text className="text-xs text-muted mb-2">Total Assets</Text>
-                <Text className="text-lg font-bold text-foreground">5 Assets</Text>
+            <View className="bg-surface rounded-lg p-4 border border-border flex-row gap-3">
+              <Text className="text-2xl">🔒</Text>
+              <View className="flex-1">
+                <Text className="font-semibold text-foreground">Secure & Private</Text>
+                <Text className="text-xs text-muted">Your keys, your funds</Text>
               </View>
             </View>
-          </View>
-
-          {/* Recent Transactions */}
-          <View className="gap-3">
-            <View className="flex-row justify-between items-center">
-              <Text className="text-lg font-bold text-foreground">{t('dashboard.recentTransactions')}</Text>
-              <TouchableOpacity onPress={() => router.push('/dashboard')}>
-                <Text className="text-primary text-xs font-semibold">View All</Text>
-              </TouchableOpacity>
+            <View className="bg-surface rounded-lg p-4 border border-border flex-row gap-3">
+              <Text className="text-2xl">⚡</Text>
+              <View className="flex-1">
+                <Text className="font-semibold text-foreground">Multi-Chain Support</Text>
+                <Text className="text-xs text-muted">Ethereum, Polygon, Arbitrum, Optimism</Text>
+              </View>
             </View>
-
-            {[
-              { type: 'sent', amount: '0.5', to: '0x1234...5678', status: 'Confirmed', icon: '📤' },
-              { type: 'received', amount: '1.2', from: '0x8765...4321', status: 'Confirmed', icon: '📥' },
-              { type: 'sent', amount: '0.3', to: '0x9999...0000', status: 'Pending', icon: '⏳' },
-            ].map((tx, idx) => (
-              <TouchableOpacity
-                key={idx}
-                onPress={() => console.log('Transaction detail')}
-                className="bg-surface rounded-2xl p-4 border border-border flex-row justify-between items-center"
-              >
-                <View className="flex-row items-center gap-3 flex-1">
-                  <View className="bg-primary/10 rounded-full p-2">
-                    <Text className="text-lg">{tx.icon}</Text>
-                  </View>
-                  <View className="flex-1">
-                    <Text className="font-semibold text-foreground text-sm">
-                      {tx.type === 'sent' ? t('payment.send') : t('payment.receive')}
-                    </Text>
-                    <Text className="text-xs text-muted">{tx.type === 'sent' ? tx.to : tx.from}</Text>
-                  </View>
-                </View>
-                <View className="items-end">
-                  <Text className="font-bold text-foreground">{tx.amount} ETH</Text>
-                  <Text className={`text-xs font-medium ${tx.status === 'Confirmed' ? 'text-success' : 'text-warning'}`}>
-                    {tx.status}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Wallet Address Card */}
-          <View className="bg-surface rounded-2xl p-4 border border-border gap-2">
-            <Text className="text-xs text-muted font-semibold">{t('wallet.address')}</Text>
-            <TouchableOpacity className="flex-row justify-between items-center">
-              <Text className="font-mono text-sm font-bold text-foreground">{address?.slice(0, 10)}...{address?.slice(-8)}</Text>
-              <Text className="text-lg">📋</Text>
-            </TouchableOpacity>
+            <View className="bg-surface rounded-lg p-4 border border-border flex-row gap-3">
+              <Text className="text-2xl">💳</Text>
+              <View className="flex-1">
+                <Text className="font-semibold text-foreground">Bank Integration</Text>
+                <Text className="text-xs text-muted">Transfer to your IBAN</Text>
+              </View>
+            </View>
           </View>
         </View>
       </ScrollView>
