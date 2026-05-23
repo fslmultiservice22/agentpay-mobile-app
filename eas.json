@@ -31,5 +31,12 @@
         "track": "internal"
       }
     }
+  },
+  "publish": {
+    "production": {
+      "android": {
+        "track": "internal"
+      }
+    }
   }
 }

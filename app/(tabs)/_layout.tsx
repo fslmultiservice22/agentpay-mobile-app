@@ -169,6 +169,19 @@ export default function TabLayout() {
         }}
       />
 
+      {/* Telegram */}
+      <Tabs.Screen
+        name="telegram"
+        options={{
+          title: "Telegram",
+          tabBarIcon: ({ color, focused }) => (
+            <View className={focused ? "scale-110" : ""}>
+              <Text style={{ fontSize: 28 }}>📱</Text>
+            </View>
+          ),
+        }}
+      />
+
       {/* Alerts */}
       <Tabs.Screen
         name="price-alerts"
