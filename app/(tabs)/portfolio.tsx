@@ -1,15 +1,19 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-
+import { ScrollView, StyleSheet, Text, View, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import { useI18n } from '@/hooks/use-i18n';
+import { useEthereumWallet } from '@/hooks/use-ethereum-wallet';
+import { maskEthereumAddress } from '@/lib/ethereum-validator';
 
 export default function PortfolioScreen() {
   const colors = useColors();
   const { t } = useI18n();
+  const router = useRouter();
+  const { wallet, loading, refreshWallet, disconnectWallet } = useEthereumWallet();
 
-  // Mock portfolio data
-  const portfolio = {
+  // Use wallet data if connected, otherwise use mock data
+  const portfolio = wallet || {
     totalValue: 125000,
     totalChange: 5000,
     totalChangePercent: 4.17,
@@ -38,7 +42,17 @@ export default function PortfolioScreen() {
     statRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
     statLabel: { fontSize: 12, color: colors.muted },
     statValue: { fontSize: 14, fontWeight: '600', color: colors.foreground },
+    buttonRow: { flexDirection: 'row', gap: 8 },
+    button: { flex: 1, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   });
+
+  const handleConnectWallet = () => {
+    router.push('/wallet-connect');
+  };
+
+  const handleDisconnect = async () => {
+    await disconnectWallet();
+  };
 
   return (
     <ScreenContainer className="flex-1">
@@ -47,6 +61,35 @@ export default function PortfolioScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>{t('portfolio.title')}</Text>
         </View>
+
+        {/* Wallet Connection Status */}
+        {wallet && (
+          <View style={styles.section}>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Connected Wallet</Text>
+              <Text style={styles.assetValue}>{maskEthereumAddress(wallet.address)}</Text>
+              <View style={[styles.buttonRow, { marginTop: 12 }]}>
+                <TouchableOpacity
+                  onPress={refreshWallet}
+                  disabled={loading}
+                  style={[styles.button, { backgroundColor: colors.primary }]}
+                >
+                  {loading ? (
+                    <ActivityIndicator color={colors.background} size="small" />
+                  ) : (
+                    <Text style={{ color: colors.background, fontWeight: '600' }}>Refresh</Text>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleDisconnect}
+                  style={[styles.button, { backgroundColor: colors.error }]}
+                >
+                  <Text style={{ color: colors.background, fontWeight: '600' }}>Disconnect</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Total Value Card */}
         <View style={styles.section}>
@@ -59,24 +102,46 @@ export default function PortfolioScreen() {
           </View>
         </View>
 
+        {/* Connect Wallet Button (if not connected) */}
+        {!wallet && (
+          <View style={styles.section}>
+            <TouchableOpacity
+              onPress={handleConnectWallet}
+              style={{ backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}
+            >
+              <Text style={{ color: colors.background, fontWeight: '600', fontSize: 16 }}>
+                {t('wallet.connect')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Assets */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('portfolio.assets')}</Text>
           <View style={styles.card}>
-            {portfolio.assets.map((asset, index) => (
-              <View key={asset.symbol} style={[styles.assetRow, { borderBottomWidth: index === portfolio.assets.length - 1 ? 0 : 1 }]}>
-                <View>
-                  <Text style={styles.assetName}>{asset.symbol}</Text>
-                  <Text style={styles.assetAmount}>{asset.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {asset.symbol}</Text>
+            {portfolio.assets && portfolio.assets.length > 0 ? (
+              portfolio.assets.map((asset, index) => (
+                <View key={asset.symbol} style={[styles.assetRow, { borderBottomWidth: index === portfolio.assets.length - 1 ? 0 : 1 }]}>
+                  <View>
+                    <Text style={styles.assetName}>{asset.symbol}</Text>
+                    <Text style={styles.assetAmount}>
+                      {asset.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {asset.symbol}
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={styles.assetValue}>
+                      ${asset.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </Text>
+                    <Text style={[styles.assetAmount, { color: asset.changePercent24h >= 0 ? colors.success : colors.error }]}>
+                      {asset.changePercent24h >= 0 ? '↑' : '↓'} {Math.abs(asset.changePercent24h).toFixed(1)}%
+                    </Text>
+                  </View>
                 </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={styles.assetValue}>${asset.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
-                  <Text style={[styles.assetAmount, { color: asset.changePercent24h >= 0 ? colors.success : colors.error }]}>
-                    {asset.changePercent24h >= 0 ? '↑' : '↓'} {Math.abs(asset.changePercent24h).toFixed(1)}%
-                  </Text>
-                </View>
-              </View>
-            ))}
+              ))
+            ) : (
+              <Text style={styles.assetAmount}>{t('portfolio.noAssets')}</Text>
+            )}
           </View>
         </View>
 

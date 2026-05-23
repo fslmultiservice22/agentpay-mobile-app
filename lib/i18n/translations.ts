@@ -30,6 +30,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'wallet.address': 'Address',
     'wallet.copy': 'Copy',
     'wallet.copied': 'Copied!',
+    'wallet.connectDescription': 'Enter your Ethereum address to connect your wallet and view your assets across multiple chains.',
+    'wallet.ethereumAddress': 'Ethereum Address',
+    'wallet.supportedNetworks': 'Supported Networks',
+    'wallet.useExample': 'Use Example Address',
+    'wallet.info': 'How It Works',
+    'wallet.infoSecure': 'Your wallet is secured locally. We never store your private keys.',
+    'wallet.infoMultiChain': 'View assets across Ethereum, Polygon, Arbitrum, and Optimism.',
+    'wallet.infoReadOnly': 'Read-only access. You control your wallet completely.',
     
     // Trading
     'trading.title': 'Trading',
@@ -242,6 +250,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'wallet.address': 'Indirizzo',
     'wallet.copy': 'Copia',
     'wallet.copied': 'Copiato!',
+    'wallet.connectDescription': 'Inserisci il tuo indirizzo Ethereum per collegare il tuo portafoglio e visualizzare i tuoi asset su più catene.',
+    'wallet.ethereumAddress': 'Indirizzo Ethereum',
+    'wallet.supportedNetworks': 'Reti Supportate',
+    'wallet.useExample': 'Usa Indirizzo di Esempio',
+    'wallet.info': 'Come Funziona',
+    'wallet.infoSecure': 'Il tuo portafoglio è protetto localmente. Non memorizziamo mai le tue chiavi private.',
+    'wallet.infoMultiChain': 'Visualizza asset su Ethereum, Polygon, Arbitrum e Optimism.',
+    'wallet.infoReadOnly': 'Accesso in sola lettura. Tu controlli completamente il tuo portafoglio.',
     
     // Trading
     'trading.title': 'Trading',
@@ -454,6 +470,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'wallet.address': 'Dirección',
     'wallet.copy': 'Copiar',
     'wallet.copied': '¡Copiado!',
+    'wallet.connectDescription': 'Ingresa tu dirección de Ethereum para conectar tu billetera y ver tus activos en múltiples cadenas.',
+    'wallet.ethereumAddress': 'Dirección de Ethereum',
+    'wallet.supportedNetworks': 'Redes Soportadas',
+    'wallet.useExample': 'Usar Dirección de Ejemplo',
+    'wallet.info': 'Cómo Funciona',
+    'wallet.infoSecure': 'Tu billetera está protegida localmente. Nunca almacenamos tus claves privadas.',
+    'wallet.infoMultiChain': 'Ve activos en Ethereum, Polygon, Arbitrum y Optimism.',
+    'wallet.infoReadOnly': 'Acceso de solo lectura. Controlas completamente tu billetera.',
     
     // Trading
     'trading.title': 'Trading',
@@ -681,6 +705,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'wallet.address': 'Adresse',
     'wallet.copy': 'Copier',
     'wallet.copied': 'Copié!',
+    'wallet.connectDescription': 'Entrez votre adresse Ethereum pour connecter votre portefeuille et voir vos actifs sur plusieurs chaînes.',
+    'wallet.ethereumAddress': 'Adresse Ethereum',
+    'wallet.supportedNetworks': 'Réseaux Supportés',
+    'wallet.useExample': 'Utiliser l\'Adresse d\'Exemple',
+    'wallet.info': 'Comment ça Marche',
+    'wallet.infoSecure': 'Votre portefeuille est sécurisé localement. Nous ne stockons jamais vos clés privées.',
+    'wallet.infoMultiChain': 'Voir les actifs sur Ethereum, Polygon, Arbitrum et Optimism.',
+    'wallet.infoReadOnly': 'Accès en lecture seule. Vous contrôlez complètement votre portefeuille.',
     
     // Trading
     'trading.title': 'Trading',
@@ -891,6 +923,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'wallet.address': 'Adresse',
     'wallet.copy': 'Kopieren',
     'wallet.copied': 'Kopiert!',
+    'wallet.connectDescription': 'Geben Sie Ihre Ethereum-Adresse ein, um Ihre Brieftasche zu verbinden und Ihre Vermögenswerte über mehrere Ketten hinweg anzuzeigen.',
+    'wallet.ethereumAddress': 'Ethereum-Adresse',
+    'wallet.supportedNetworks': 'Unterstützte Netzwerke',
+    'wallet.useExample': 'Beispieladresse verwenden',
+    'wallet.info': 'So funktioniert es',
+    'wallet.infoSecure': 'Ihre Brieftasche ist lokal geschützt. Wir speichern niemals Ihre privaten Schlüssel.',
+    'wallet.infoMultiChain': 'Vermögenswerte auf Ethereum, Polygon, Arbitrum und Optimism anzeigen.',
+    'wallet.infoReadOnly': 'Nur-Lese-Zugriff. Sie kontrollieren Ihre Brieftasche vollständig.',
     
     // Trading
     'trading.title': 'Handel',
@@ -1101,6 +1141,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'wallet.address': 'Endereço',
     'wallet.copy': 'Copiar',
     'wallet.copied': 'Copiado!',
+    'wallet.connectDescription': 'Digite seu endereço Ethereum para conectar sua carteira e visualizar seus ativos em várias cadeias.',
+    'wallet.ethereumAddress': 'Endereço Ethereum',
+    'wallet.supportedNetworks': 'Redes Suportadas',
+    'wallet.useExample': 'Usar Endereço de Exemplo',
+    'wallet.info': 'Como Funciona',
+    'wallet.infoSecure': 'Sua carteira está protegida localmente. Nunca armazenamos suas chaves privadas.',
+    'wallet.infoMultiChain': 'Visualize ativos em Ethereum, Polygon, Arbitrum e Optimism.',
+    'wallet.infoReadOnly': 'Acesso somente leitura. Você controla completamente sua carteira.',
     
     // Trading
     'trading.title': 'Negociação',
@@ -1311,6 +1359,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'wallet.address': '地址',
     'wallet.copy': '复制',
     'wallet.copied': '已复制!',
+    'wallet.connectDescription': '输入您的以太坊地址以连接您的钱包并查看您在多个链上的资产。',
+    'wallet.ethereumAddress': '以太坊地址',
+    'wallet.supportedNetworks': '支持的网络',
+    'wallet.useExample': '使用示例地址',
+    'wallet.info': '工作原理',
+    'wallet.infoSecure': '您的钱包在本地受保护。我们从不存储您的私钥。',
+    'wallet.infoMultiChain': '查看以太坊、Polygon、Arbitrum 和 Optimism 上的资产。',
+    'wallet.infoReadOnly': '只读访问。您完全控制您的钱包。',
     
     // Trading
     'trading.title': '交易',
@@ -1504,6 +1560,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'wallet.address': 'アドレス',
     'wallet.copy': 'コピー',
     'wallet.copied': 'コピーしました!',
+    'wallet.connectDescription': 'イーサリアムアドレスを入力して、ウォレットを接続し、複数のチェーンのアセットを表示します。',
+    'wallet.ethereumAddress': 'イーサリアムアドレス',
+    'wallet.supportedNetworks': 'サポートされているネットワーク',
+    'wallet.useExample': 'サンプルアドレスを使用',
+    'wallet.info': '仕組み',
+    'wallet.infoSecure': 'ウォレットはローカルで保護されています。秘密鍵は保存されません。',
+    'wallet.infoMultiChain': 'Ethereum、Polygon、Arbitrum、Optimism のアセットを表示します。',
+    'wallet.infoReadOnly': '読み取り専用アクセス。ウォレットを完全に制御できます。',
     
     // Trading
     'trading.title': 'トレーディング',
