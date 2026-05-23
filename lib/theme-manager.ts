@@ -143,7 +143,7 @@ class ThemeManager {
   /**
    * Get theme colors
    */
-  getColors(): ThemeConfig[Theme extends 'auto' ? 'light' : Theme] {
+  getColors(): ThemeConfig['light'] | ThemeConfig['dark'] {
     const effectiveTheme = this.getEffectiveTheme();
     return this.themeConfig[effectiveTheme];
   }
