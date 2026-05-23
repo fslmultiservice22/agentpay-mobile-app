@@ -1,9 +1,7 @@
 import { ScrollView, Text, View, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
-import { useWallet } from '@/lib/web3/wallet-context';
 import { useColors } from '@/hooks/use-colors';
 import { useState, useEffect } from 'react';
-import { use1inchSwap } from '@/hooks/use-1inch-swap';
 import { useSwapHistory } from '@/hooks/use-swap-history';
 import { usePortfolioSync } from '@/hooks/use-portfolio-sync';
 import { SlippageControl } from '@/components/slippage-control';
@@ -11,10 +9,8 @@ import { useI18n } from '@/hooks/use-i18n';
 
 export default function TradingScreen() {
   const colors = useColors();
-  const wallet = useWallet();
   const { t } = useI18n();
-  const { getQuote } = use1inchSwap();
-  const { addSwap, getRecentSwaps } = useSwapHistory();
+  const { addSwap, getRecentSwaps, history } = useSwapHistory();
   const { syncAfterSwap } = usePortfolioSync();
   
   const [fromToken, setFromToken] = useState('ETH');
@@ -24,13 +20,7 @@ export default function TradingScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [slippage, setSlippage] = useState(0.5);
-  const [recentSwaps, setRecentSwaps] = useState<any[]>([]);
   const [priceImpact, setPriceImpact] = useState(0);
-
-  useEffect(() => {
-    const swaps = getRecentSwaps(5);
-    setRecentSwaps(swaps);
-  }, []);
 
   useEffect(() => {
     if (fromAmount && parseFloat(fromAmount) > 0) {
@@ -203,6 +193,8 @@ export default function TradingScreen() {
       color: colors.foreground,
     },
   });
+
+  const recentSwaps = getRecentSwaps(5);
 
   return (
     <ScreenContainer className="flex-1">

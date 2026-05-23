@@ -286,3 +286,12 @@
 - [x] Tutti i 318 test passati (318 passati + 1 skipped)
 - [x] Zero TypeScript errors
 - [x] Home screen redesign con design moderno
+
+
+## Critical Bug Fixes - Fase 36 (IN PROGRESS)
+- [ ] Fix trading screen - swap operations not showing
+- [ ] Fix portfolio screen - connected wallets not displaying
+- [ ] Fix wallet export error - "wallet.noConfigToExport"
+- [ ] Add second wallet address (0x14ea40648fc8c1781d19363f5b9cc9a877ac2469)
+- [ ] Implement transaction history display for all wallets
+- [ ] Test all fixes end-to-end and verify functionality

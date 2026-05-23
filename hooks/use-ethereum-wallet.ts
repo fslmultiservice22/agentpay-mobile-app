@@ -21,45 +21,49 @@ export interface ConnectedWallet {
   lastUpdated: number;
 }
 
-const STORAGE_KEY = 'ethereum_wallet';
+const STORAGE_KEY = 'ethereum_wallets';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Hook for managing Ethereum wallet connection and data
+ * Hook for managing multiple Ethereum wallets
  */
 export function useEthereumWallet() {
-  const [wallet, setWallet] = useState<ConnectedWallet | null>(null);
+  const [wallets, setWallets] = useState<ConnectedWallet[]>([]);
+  const [activeWallet, setActiveWallet] = useState<ConnectedWallet | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load wallet from storage on mount
+  // Load wallets from storage on mount
   useEffect(() => {
-    loadWalletFromStorage();
+    loadWalletsFromStorage();
   }, []);
 
   /**
-   * Load wallet data from AsyncStorage
+   * Load wallets data from AsyncStorage
    */
-  const loadWalletFromStorage = useCallback(async () => {
+  const loadWalletsFromStorage = useCallback(async () => {
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       if (stored) {
-        const walletData = JSON.parse(stored);
-        setWallet(walletData);
+        const walletsData = JSON.parse(stored);
+        setWallets(walletsData);
+        if (walletsData.length > 0) {
+          setActiveWallet(walletsData[0]);
+        }
       }
     } catch (err) {
-      console.error('Error loading wallet from storage:', err);
+      console.error('Error loading wallets from storage:', err);
     }
   }, []);
 
   /**
-   * Save wallet data to AsyncStorage
+   * Save wallets data to AsyncStorage
    */
-  const saveWalletToStorage = useCallback(async (walletData: ConnectedWallet) => {
+  const saveWalletsToStorage = useCallback(async (walletsData: ConnectedWallet[]) => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(walletData));
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(walletsData));
     } catch (err) {
-      console.error('Error saving wallet to storage:', err);
+      console.error('Error saving wallets to storage:', err);
     }
   }, []);
 
@@ -97,119 +101,133 @@ export function useEthereumWallet() {
         value: 3700,
         changePercent24h: -1.2,
         network: 'polygon',
-        contractAddress: '0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0',
-      },
-      {
-        symbol: 'ARB',
-        name: 'Arbitrum',
-        balance: 1000,
-        value: 1600,
-        changePercent24h: 3.8,
-        network: 'arbitrum',
-        contractAddress: '0xb50721bcf8d731f670fb3793e2cbd60aa640d8de',
-      },
-      {
-        symbol: 'OP',
-        name: 'Optimism',
-        balance: 500,
-        value: 2500,
-        changePercent24h: 5.2,
-        network: 'optimism',
-        contractAddress: '0x4200000000000000000000000000000000000042',
       },
     ];
 
-    const totalValue = mockAssets.reduce((sum, asset) => sum + asset.value, 0);
-    const totalChange = totalValue * 0.04; // Mock 4% change
-
-    const walletData: ConnectedWallet = {
+    return {
       address: normalizeEthereumAddress(address),
-      totalValue,
-      totalChange,
-      totalChangePercent: 4.17,
+      totalValue: 27200,
+      totalChange: 850,
+      totalChangePercent: 3.2,
       assets: mockAssets,
       lastUpdated: Date.now(),
     };
-
-    return walletData;
   }, []);
 
   /**
-   * Connect a new wallet by address
+   * Connect a new wallet
    */
   const connectWallet = useCallback(async (address: string) => {
+    if (!isValidEthereumAddress(address)) {
+      setError('Invalid Ethereum address');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      if (!isValidEthereumAddress(address)) {
-        throw new Error('Invalid Ethereum address format');
-      }
-
       const walletData = await fetchWalletData(address);
-      setWallet(walletData);
-      await saveWalletToStorage(walletData);
+      
+      // Check if wallet already connected
+      const existingIndex = wallets.findIndex(w => w.address.toLowerCase() === walletData.address.toLowerCase());
+      
+      let updatedWallets: ConnectedWallet[];
+      if (existingIndex >= 0) {
+        // Update existing wallet
+        updatedWallets = [...wallets];
+        updatedWallets[existingIndex] = walletData;
+      } else {
+        // Add new wallet
+        updatedWallets = [...wallets, walletData];
+      }
+      
+      setWallets(updatedWallets);
+      setActiveWallet(walletData);
+      await saveWalletsToStorage(updatedWallets);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to connect wallet';
-      setError(errorMessage);
-      setWallet(null);
+      setError('Failed to connect wallet');
+      console.error('Error connecting wallet:', err);
     } finally {
       setLoading(false);
     }
-  }, [fetchWalletData, saveWalletToStorage]);
+  }, [wallets, fetchWalletData, saveWalletsToStorage]);
 
   /**
-   * Refresh wallet data if cache is expired
+   * Disconnect a wallet
    */
-  const refreshWallet = useCallback(async () => {
-    if (!wallet) return;
-
-    const now = Date.now();
-    const isCacheExpired = now - wallet.lastUpdated > CACHE_DURATION;
-
-    if (isCacheExpired) {
-      setLoading(true);
-      try {
-        const updatedWallet = await fetchWalletData(wallet.address);
-        setWallet(updatedWallet);
-        await saveWalletToStorage(updatedWallet);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to refresh wallet';
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    }
-  }, [wallet, fetchWalletData, saveWalletToStorage]);
-
-  /**
-   * Disconnect the current wallet
-   */
-  const disconnectWallet = useCallback(async () => {
+  const disconnectWallet = useCallback(async (address: string) => {
     try {
-      setWallet(null);
-      setError(null);
-      await AsyncStorage.removeItem(STORAGE_KEY);
+      const updatedWallets = wallets.filter(w => w.address.toLowerCase() !== address.toLowerCase());
+      setWallets(updatedWallets);
+      
+      // If disconnected wallet was active, switch to first available
+      if (activeWallet?.address.toLowerCase() === address.toLowerCase()) {
+        setActiveWallet(updatedWallets.length > 0 ? updatedWallets[0] : null);
+      }
+      
+      await saveWalletsToStorage(updatedWallets);
     } catch (err) {
+      setError('Failed to disconnect wallet');
       console.error('Error disconnecting wallet:', err);
     }
-  }, []);
+  }, [wallets, activeWallet, saveWalletsToStorage]);
 
   /**
-   * Get assets for a specific network
+   * Switch active wallet
    */
-  const getNetworkAssets = useCallback((network: BlockchainNetwork) => {
-    if (!wallet) return [];
-    return wallet.assets.filter(asset => asset.network === network);
-  }, [wallet]);
+  const switchActiveWallet = useCallback((address: string) => {
+    const wallet = wallets.find(w => w.address.toLowerCase() === address.toLowerCase());
+    if (wallet) {
+      setActiveWallet(wallet);
+    }
+  }, [wallets]);
+
+  /**
+   * Refresh wallet data
+   */
+  const refreshWallet = useCallback(async (address?: string) => {
+    const walletToRefresh = address ? wallets.find(w => w.address.toLowerCase() === address.toLowerCase()) : activeWallet;
+    
+    if (!walletToRefresh) return;
+
+    const now = Date.now();
+    if (now - walletToRefresh.lastUpdated < CACHE_DURATION) {
+      return; // Skip refresh if cache is still valid
+    }
+
+    setLoading(true);
+    try {
+      const updatedData = await fetchWalletData(walletToRefresh.address);
+      
+      const updatedWallets = wallets.map(w =>
+        w.address.toLowerCase() === updatedData.address.toLowerCase() ? updatedData : w
+      );
+      
+      setWallets(updatedWallets);
+      if (activeWallet?.address.toLowerCase() === updatedData.address.toLowerCase()) {
+        setActiveWallet(updatedData);
+      }
+      
+      await saveWalletsToStorage(updatedWallets);
+    } catch (err) {
+      setError('Failed to refresh wallet');
+      console.error('Error refreshing wallet:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [wallets, activeWallet, fetchWalletData, saveWalletsToStorage]);
 
   return {
-    wallet,
+    wallets,
+    activeWallet,
+    wallet: activeWallet, // For backward compatibility
     loading,
     error,
     connectWallet,
     disconnectWallet,
+    switchActiveWallet,
     refreshWallet,
-    getNetworkAssets,
+    fetchWalletData,
   };
 }

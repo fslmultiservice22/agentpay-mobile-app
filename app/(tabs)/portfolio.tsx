@@ -51,7 +51,9 @@ export default function PortfolioScreen() {
   };
 
   const handleDisconnect = async () => {
-    await disconnectWallet();
+    if (wallet?.address) {
+      await disconnectWallet(wallet.address);
+    }
   };
 
   return (
@@ -70,7 +72,7 @@ export default function PortfolioScreen() {
               <Text style={styles.assetValue}>{maskEthereumAddress(wallet.address)}</Text>
               <View style={[styles.buttonRow, { marginTop: 12 }]}>
                 <TouchableOpacity
-                  onPress={refreshWallet}
+                  onPress={() => refreshWallet()}
                   disabled={loading}
                   style={[styles.button, { backgroundColor: colors.primary }]}
                 >

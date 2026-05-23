@@ -74,7 +74,7 @@ export default function HomeScreen() {
             <View className="bg-surface rounded-2xl p-6 border border-border gap-4">
               <View className="flex-row justify-between items-center">
                 <Text className="text-lg font-semibold text-foreground">Connected Wallet</Text>
-                <TouchableOpacity onPress={disconnectWallet}>
+                <TouchableOpacity onPress={() => wallet?.address && disconnectWallet(wallet.address)}>
                   <Text className="text-sm text-error font-semibold">Disconnect</Text>
                 </TouchableOpacity>
               </View>
