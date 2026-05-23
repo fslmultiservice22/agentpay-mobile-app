@@ -48,6 +48,14 @@ export default function HomeScreen() {
     router.push('/transfer-history');
   };
 
+  const handleImportWallet = () => {
+    router.push('/wallet-import');
+  };
+
+  const handleExportWallet = () => {
+    router.push('/wallet-export');
+  };
+
   return (
     <ScreenContainer className="flex-1 bg-background">
       <ScrollView
@@ -153,6 +161,25 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
           )}
+        </View>
+
+        {/* Import/Export Section */}
+        <View className="px-6 pb-6 gap-4">
+          <Text className="text-lg font-semibold text-foreground mb-2">Wallet Configuration</Text>
+          <View className="flex-row gap-3">
+            <TouchableOpacity
+              onPress={handleImportWallet}
+              className="flex-1 bg-surface rounded-lg p-4 border border-border items-center"
+            >
+              <Text className="text-sm text-primary font-semibold">📥 Import JSON</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleExportWallet}
+              className="flex-1 bg-surface rounded-lg p-4 border border-border items-center"
+            >
+              <Text className="text-sm text-primary font-semibold">📤 Export JSON</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Quick Actions */}
