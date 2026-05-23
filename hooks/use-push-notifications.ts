@@ -108,3 +108,46 @@ export function usePushNotifications() {
     sendTransactionFailedNotification,
   };
 }
+
+// Hook per notifiche di transazione
+export function useTransactionNotifications() {
+  const { sendTransactionNotification } = usePushNotifications();
+
+  const notifyTransactionSent = async (amount: number, recipient: string) => {
+    await sendTransactionNotification({
+      title: 'Transaction Sent',
+      body: `You sent €${amount.toFixed(2)} to ${recipient}`,
+      type: 'transaction',
+    });
+  };
+
+  const notifyTransactionReceived = async (amount: number, sender: string) => {
+    await sendTransactionNotification({
+      title: 'Transaction Received',
+      body: `You received €${amount.toFixed(2)} from ${sender}`,
+      type: 'transaction',
+    });
+  };
+
+  return {
+    notifyTransactionSent,
+    notifyTransactionReceived,
+  };
+}
+
+// Hook per notifiche di price alert
+export function usePriceAlertNotifications() {
+  const { sendTransactionNotification } = usePushNotifications();
+
+  const notifyPriceAlert = async (symbol: string, price: number, targetPrice: number) => {
+    await sendTransactionNotification({
+      title: `${symbol} Price Alert`,
+      body: `${symbol} has reached €${price.toFixed(2)} (target: €${targetPrice.toFixed(2)})`,
+      type: 'alert',
+    });
+  };
+
+  return {
+    notifyPriceAlert,
+  };
+}

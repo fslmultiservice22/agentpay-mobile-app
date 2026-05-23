@@ -235,3 +235,26 @@ export function useBiometricAuth() {
     logout,
   };
 }
+
+// Hook per autenticazione biometrica per trasferimenti
+export function useBiometricAuthForTransfer(minAmount: number = 500) {
+  const biometric = useBiometricAuth();
+
+  const authenticateTransfer = useCallback(async (amount: number): Promise<boolean> => {
+    if (amount < minAmount) {
+      return true; // No authentication required for small amounts
+    }
+
+    if (!biometric.isAvailable || !biometric.isEnabled) {
+      return true; // Fallback to password if biometric not available
+    }
+
+    return await biometric.authenticate();
+  }, [biometric, minAmount]);
+
+  return {
+    ...biometric,
+    authenticateTransfer,
+    minAmount,
+  };
+}
