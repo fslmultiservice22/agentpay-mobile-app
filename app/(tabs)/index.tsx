@@ -117,8 +117,8 @@ export default function HomeScreen() {
               </View>
               {accounts.slice(0, 2).map((account) => (
                 <View key={account.id} className="bg-background rounded-lg p-3 gap-1">
-                  <Text className="text-sm font-semibold text-foreground">{account.bankName}</Text>
-                  <Text className="text-xs text-muted">{account.ibanMasked}</Text>
+                <Text className="text-sm font-semibold text-foreground">{account.accountHolder}</Text>
+                <Text className="text-xs text-muted">{account.maskedIBAN}</Text>
                   {account.isDefault && (
                     <Text className="text-xs text-success font-semibold">Default Account</Text>
                   )}

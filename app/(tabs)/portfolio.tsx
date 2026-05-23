@@ -126,7 +126,7 @@ export default function PortfolioScreen() {
                   <View>
                     <Text style={styles.assetName}>{asset.symbol}</Text>
                     <Text style={styles.assetAmount}>
-                      {asset.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {asset.symbol}
+                      {('balance' in asset ? asset.balance : asset.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {asset.symbol}
                     </Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
