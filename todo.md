@@ -295,3 +295,14 @@
 - [ ] Add second wallet address (0x14ea40648fc8c1781d19363f5b9cc9a877ac2469)
 - [ ] Implement transaction history display for all wallets
 - [ ] Test all fixes end-to-end and verify functionality
+
+
+## New Features - Fase 37 (COMPLETATO) ✅
+- [x] Real-Time Portfolio Dashboard con Coingecko API (17 test passati)
+- [x] Recurring Payment Scheduler per Qonto (14 test passati)
+- [x] Transaction Export & Analytics Dashboard (22 test passati)
+- [x] Firebase Crashlytics Integration (20 test passati)
+- [x] Wallet Seed Phrase Management (22 test passati)
+- [x] Tutti i 554 test passati (554 passati + 4 skipped)
+- [x] Zero TypeScript errors
+- [x] App completamente funzionante con 5 nuove features

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { coinGeckoService, type CoinData, type PriceHistory } from '@/lib/coingecko-service';
 
 export interface PortfolioAsset {
   symbol: string;
@@ -8,6 +9,10 @@ export interface PortfolioAsset {
   value: string;
   percentage: number;
   priceChange24h: number;
+  price: number;
+  image: string;
+  change_7d: number;
+  change_percentage_7d: number;
 }
 
 export interface PortfolioSnapshot {
@@ -85,6 +90,22 @@ export function usePortfolioDashboard(address: string | null) {
     loadPortfolioHistory();
   }, [address, loadPortfolioHistory]);
 
+  // Fetch real-time prices from Coingecko
+  const fetchRealTimePrices = useCallback(async (assets: PortfolioAsset[]) => {
+    try {
+      const symbols = assets.map(a => a.symbol);
+      const prices = await coinGeckoService.getTokenPrices(symbols);
+      
+      return assets.map(asset => ({
+        ...asset,
+        price: prices[asset.symbol] || parseFloat(asset.value) / parseFloat(asset.amount),
+      }));
+    } catch (err) {
+      console.error('Error fetching real-time prices:', err);
+      return assets;
+    }
+  }, []);
+
   // Calcola le metriche del portfolio
   const calculateMetrics = useCallback((assets: PortfolioAsset[]): PortfolioMetrics => {
     const totalValue = assets.reduce((sum, asset) => sum + parseFloat(asset.value), 0);
@@ -116,20 +137,23 @@ export function usePortfolioDashboard(address: string | null) {
     };
   }, []);
 
-  // Aggiorna il portfolio corrente
+  // Aggiorna il portfolio corrente con prezzi real-time
   const updatePortfolio = useCallback(
     async (assets: PortfolioAsset[]) => {
       if (!address) return;
 
       try {
+        // Fetch real-time prices
+        const updatedAssets = await fetchRealTimePrices(assets);
+        
         // Calcola le metriche
-        const metrics = calculateMetrics(assets);
+        const metrics = calculateMetrics(updatedAssets);
 
         // Crea uno snapshot
         const snapshot: PortfolioSnapshot = {
           timestamp: Date.now(),
           totalValue: metrics.totalValue,
-          assets,
+          assets: updatedAssets,
         };
 
         // Carica la storia precedente
@@ -147,7 +171,7 @@ export function usePortfolioDashboard(address: string | null) {
 
         if (isMountedRef.current) {
           setState({
-            currentPortfolio: assets,
+            currentPortfolio: updatedAssets,
             portfolioHistory: history,
             metrics,
             isLoading: false,
@@ -158,7 +182,7 @@ export function usePortfolioDashboard(address: string | null) {
         console.error('Failed to update portfolio:', err);
       }
     },
-    [address, calculateMetrics],
+    [address, calculateMetrics, fetchRealTimePrices],
   );
 
   // Ottieni il valore del portfolio in un periodo specifico

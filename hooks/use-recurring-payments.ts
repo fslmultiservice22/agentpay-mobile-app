@@ -1,241 +1,269 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { recurringPaymentScheduler, type RecurringPayment, type PaymentExecution } from '@/lib/recurring-payment-scheduler';
 
-export type RecurrenceType = 'daily' | 'weekly' | 'monthly' | 'yearly';
+const STORAGE_KEY = 'agentpay_recurring_payments';
 
-export interface RecurringPayment {
-  id: string;
-  toAddress: string;
-  amount: string;
-  token: string;
-  frequency: RecurrenceType;
-  nextPaymentDate: number;
-  lastPaymentDate?: number;
-  endDate?: number;
-  status: 'active' | 'paused' | 'completed';
-  totalPayments: number;
-  completedPayments: number;
-  memo?: string;
-  createdAt: number;
-}
-
-export interface UseRecurringPaymentsReturn {
+interface UseRecurringPaymentsState {
   payments: RecurringPayment[];
   loading: boolean;
   error: string | null;
-  createRecurringPayment: (
-    toAddress: string,
-    amount: string,
-    token: string,
-    frequency: RecurrenceType,
-    endDate?: number,
-    memo?: string
-  ) => Promise<RecurringPayment>;
-  pausePayment: (paymentId: string) => Promise<void>;
-  resumePayment: (paymentId: string) => Promise<void>;
-  cancelPayment: (paymentId: string) => Promise<void>;
-  executePayment: (paymentId: string) => Promise<void>;
-  getUpcomingPayments: () => RecurringPayment[];
-  getActivePayments: () => RecurringPayment[];
 }
 
-/**
- * Hook per gestire pagamenti ricorrenti
- * Supporta pagamenti automatici periodici
- */
-export function useRecurringPayments(): UseRecurringPaymentsReturn {
-  const [payments, setPayments] = useState<RecurringPayment[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export function useRecurringPayments() {
+  const [state, setState] = useState<UseRecurringPaymentsState>({
+    payments: [],
+    loading: true,
+    error: null,
+  });
 
-  const getNextPaymentDate = (frequency: RecurrenceType, baseDate: number = Date.now()): number => {
-    const date = new Date(baseDate);
+  const isMountedRef = useRef(true);
 
-    switch (frequency) {
-      case 'daily':
-        date.setDate(date.getDate() + 1);
-        break;
-      case 'weekly':
-        date.setDate(date.getDate() + 7);
-        break;
-      case 'monthly':
-        date.setMonth(date.getMonth() + 1);
-        break;
-      case 'yearly':
-        date.setFullYear(date.getFullYear() + 1);
-        break;
+  // Load payments from storage
+  const loadPayments = useCallback(async () => {
+    try {
+      setState(prev => ({ ...prev, loading: true, error: null }));
+
+      const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      const payments: RecurringPayment[] = stored ? JSON.parse(stored) : [];
+
+      if (isMountedRef.current) {
+        setState(prev => ({
+          ...prev,
+          payments,
+          loading: false,
+        }));
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load payments';
+      if (isMountedRef.current) {
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          error: errorMessage,
+        }));
+      }
     }
+  }, []);
 
-    return date.getTime();
-  };
+  // Load payments on mount
+  useEffect(() => {
+    loadPayments();
+  }, [loadPayments]);
 
-  const createRecurringPayment = useCallback(
-    async (
-      toAddress: string,
-      amount: string,
-      token: string,
-      frequency: RecurrenceType,
-      endDate?: number,
-      memo?: string
-    ): Promise<RecurringPayment> => {
-      setLoading(true);
-      setError(null);
+  // Save payments to storage
+  const savePayments = useCallback(async (payments: RecurringPayment[]) => {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payments));
+    } catch (err) {
+      console.error('Failed to save payments:', err);
+    }
+  }, []);
 
+  // Create a new recurring payment
+  const createPayment = useCallback(
+    async (payment: Omit<RecurringPayment, 'id' | 'executionCount' | 'failureCount' | 'createdAt' | 'updatedAt'>) => {
       try {
-        // Validazione
-        if (!toAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
-          throw new Error('Invalid address');
+        const newPayment = recurringPaymentScheduler.createRecurringPayment(payment);
+
+        const updatedPayments = [...state.payments, newPayment];
+        await savePayments(updatedPayments);
+
+        if (isMountedRef.current) {
+          setState(prev => ({
+            ...prev,
+            payments: updatedPayments,
+          }));
         }
 
-        if (parseFloat(amount) <= 0) {
-          throw new Error('Amount must be greater than 0');
-        }
-
-        const paymentId = `recurring_${Date.now()}`;
-        const newPayment: RecurringPayment = {
-          id: paymentId,
-          toAddress,
-          amount,
-          token,
-          frequency,
-          nextPaymentDate: getNextPaymentDate(frequency),
-          endDate,
-          status: 'active',
-          totalPayments: endDate ? Math.ceil((endDate - Date.now()) / (24 * 60 * 60 * 1000)) : 0,
-          completedPayments: 0,
-          memo,
-          createdAt: Date.now(),
-        };
-
-        setPayments((prev) => [newPayment, ...prev]);
         return newPayment;
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to create recurring payment';
-        setError(errorMessage);
+        const errorMessage = err instanceof Error ? err.message : 'Failed to create payment';
+        if (isMountedRef.current) {
+          setState(prev => ({
+            ...prev,
+            error: errorMessage,
+          }));
+        }
         throw err;
-      } finally {
-        setLoading(false);
       }
     },
-    []
+    [state.payments, savePayments]
   );
 
-  const pausePayment = useCallback(async (paymentId: string) => {
-    try {
-      setPayments((prev) =>
-        prev.map((p) =>
-          p.id === paymentId
-            ? {
-                ...p,
-                status: 'paused',
-              }
-            : p
-        )
-      );
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to pause payment';
-      setError(errorMessage);
-    }
-  }, []);
+  // Update a recurring payment
+  const updatePayment = useCallback(
+    async (id: string, updates: Partial<RecurringPayment>) => {
+      try {
+        const updated = recurringPaymentScheduler.updateRecurringPayment(id, updates);
+        if (!updated) throw new Error('Payment not found');
 
-  const resumePayment = useCallback(async (paymentId: string) => {
-    try {
-      setPayments((prev) =>
-        prev.map((p) =>
-          p.id === paymentId
-            ? {
-                ...p,
-                status: 'active',
-              }
-            : p
-        )
-      );
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to resume payment';
-      setError(errorMessage);
-    }
-  }, []);
+        const updatedPayments = state.payments.map(p => (p.id === id ? updated : p));
+        await savePayments(updatedPayments);
 
-  const cancelPayment = useCallback(async (paymentId: string) => {
-    try {
-      setPayments((prev) =>
-        prev.map((p) =>
-          p.id === paymentId
-            ? {
-                ...p,
-                status: 'completed',
-                endDate: Date.now(),
-              }
-            : p
-        )
-      );
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to cancel payment';
-      setError(errorMessage);
-    }
-  }, []);
+        if (isMountedRef.current) {
+          setState(prev => ({
+            ...prev,
+            payments: updatedPayments,
+          }));
+        }
 
-  const executePayment = useCallback(async (paymentId: string) => {
+        return updated;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to update payment';
+        if (isMountedRef.current) {
+          setState(prev => ({
+            ...prev,
+            error: errorMessage,
+          }));
+        }
+        throw err;
+      }
+    },
+    [state.payments, savePayments]
+  );
+
+  // Delete a recurring payment
+  const deletePayment = useCallback(
+    async (id: string) => {
+      try {
+        recurringPaymentScheduler.deleteRecurringPayment(id);
+
+        const updatedPayments = state.payments.filter(p => p.id !== id);
+        await savePayments(updatedPayments);
+
+        if (isMountedRef.current) {
+          setState(prev => ({
+            ...prev,
+            payments: updatedPayments,
+          }));
+        }
+
+        return true;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to delete payment';
+        if (isMountedRef.current) {
+          setState(prev => ({
+            ...prev,
+            error: errorMessage,
+          }));
+        }
+        throw err;
+      }
+    },
+    [state.payments, savePayments]
+  );
+
+  // Pause a recurring payment
+  const pausePayment = useCallback(
+    async (id: string) => {
+      try {
+        const paused = recurringPaymentScheduler.pauseRecurringPayment(id);
+        if (!paused) throw new Error('Payment not found');
+
+        const updatedPayments = state.payments.map(p => (p.id === id ? paused : p));
+        await savePayments(updatedPayments);
+
+        if (isMountedRef.current) {
+          setState(prev => ({
+            ...prev,
+            payments: updatedPayments,
+          }));
+        }
+
+        return paused;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to pause payment';
+        if (isMountedRef.current) {
+          setState(prev => ({
+            ...prev,
+            error: errorMessage,
+          }));
+        }
+        throw err;
+      }
+    },
+    [state.payments, savePayments]
+  );
+
+  // Resume a recurring payment
+  const resumePayment = useCallback(
+    async (id: string) => {
+      try {
+        const resumed = recurringPaymentScheduler.resumeRecurringPayment(id);
+        if (!resumed) throw new Error('Payment not found');
+
+        const updatedPayments = state.payments.map(p => (p.id === id ? resumed : p));
+        await savePayments(updatedPayments);
+
+        if (isMountedRef.current) {
+          setState(prev => ({
+            ...prev,
+            payments: updatedPayments,
+          }));
+        }
+
+        return resumed;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to resume payment';
+        if (isMountedRef.current) {
+          setState(prev => ({
+            ...prev,
+            error: errorMessage,
+          }));
+        }
+        throw err;
+      }
+    },
+    [state.payments, savePayments]
+  );
+
+  // Execute a payment immediately
+  const executePaymentNow = useCallback(async (id: string) => {
     try {
-      setPayments((prev) =>
-        prev.map((p) =>
-          p.id === paymentId
-            ? {
-                ...p,
-                lastPaymentDate: Date.now(),
-                nextPaymentDate: getNextPaymentDate(p.frequency),
-                completedPayments: p.completedPayments + 1,
-              }
-            : p
-        )
-      );
+      const execution = await recurringPaymentScheduler.executePayment(id);
+      return execution;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to execute payment';
-      setError(errorMessage);
+      if (isMountedRef.current) {
+        setState(prev => ({
+          ...prev,
+          error: errorMessage,
+        }));
+      }
+      throw err;
     }
   }, []);
 
-  const getUpcomingPayments = useCallback(() => {
-    const now = Date.now();
-    return payments
-      .filter((p) => p.status === 'active' && p.nextPaymentDate <= now + 7 * 24 * 60 * 60 * 1000)
-      .sort((a, b) => a.nextPaymentDate - b.nextPaymentDate);
-  }, [payments]);
+  // Get execution history
+  const getExecutionHistory = useCallback((paymentId: string): PaymentExecution[] => {
+    return recurringPaymentScheduler.getExecutionHistory(paymentId);
+  }, []);
 
-  const getActivePayments = useCallback(() => {
-    return payments.filter((p) => p.status === 'active');
-  }, [payments]);
+  // Get payment statistics
+  const getStatistics = useCallback((paymentId: string) => {
+    return recurringPaymentScheduler.getPaymentStatistics(paymentId);
+  }, []);
 
-  // Simulazione esecuzione pagamenti automatici
+  // Cleanup on unmount
   useEffect(() => {
-    const interval = setInterval(() => {
-      setPayments((prev) =>
-        prev.map((p) => {
-          if (p.status === 'active' && p.nextPaymentDate <= Date.now()) {
-            return {
-              ...p,
-              lastPaymentDate: Date.now(),
-              nextPaymentDate: getNextPaymentDate(p.frequency),
-              completedPayments: p.completedPayments + 1,
-            };
-          }
-          return p;
-        })
-      );
-    }, 60000); // Controlla ogni minuto
-
-    return () => clearInterval(interval);
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   return {
-    payments,
-    loading,
-    error,
-    createRecurringPayment,
+    payments: state.payments,
+    loading: state.loading,
+    error: state.error,
+    createPayment,
+    updatePayment,
+    deletePayment,
     pausePayment,
     resumePayment,
-    cancelPayment,
-    executePayment,
-    getUpcomingPayments,
-    getActivePayments,
+    executePaymentNow,
+    getExecutionHistory,
+    getStatistics,
+    loadPayments,
   };
 }
