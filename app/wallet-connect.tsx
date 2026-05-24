@@ -1,33 +1,89 @@
 import { ScrollView, Text, View, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import { useI18n } from '@/hooks/use-i18n';
-import { useEthereumWallet } from '@/hooks/use-ethereum-wallet';
-import { isValidEthereumAddress, maskEthereumAddress } from '@/lib/ethereum-validator';
-import { useState } from 'react';
+import { useWallet } from '@/lib/web3/wallet-context';
+import { validateAddressAuto, detectBlockchain, maskAddress, type BlockchainType } from '@/lib/multi-chain-validator';
+import { useState, useEffect } from 'react';
+import { useMultiChainWallet } from '@/hooks/use-multi-chain-wallet';
 
 export default function WalletConnectScreen() {
   const colors = useColors();
   const { t } = useI18n();
   const router = useRouter();
-  const { connectWallet, loading, error } = useEthereumWallet();
+  const { connectManualWallet, loading, error: walletError } = useWallet();
+  const { addWallet, error: multiChainError } = useMultiChainWallet();
+  const params = useLocalSearchParams();
   const [address, setAddress] = useState('');
+  const [blockchain, setBlockchain] = useState<BlockchainType>('ethereum');
   const [isValid, setIsValid] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (params?.address) {
+      const addr = params.address as string;
+      setAddress(addr);
+      
+      const detectedBlockchain = detectBlockchain(addr);
+      if (detectedBlockchain) {
+        setBlockchain(detectedBlockchain);
+        setIsValid(true);
+        
+        setTimeout(() => {
+          handleConnect(addr, detectedBlockchain);
+        }, 500);
+      } else {
+        setIsValid(false);
+        setError('Invalid address format');
+      }
+    }
+  }, [params?.address]);
 
   const handleAddressChange = (text: string) => {
     setAddress(text);
-    setIsValid(isValidEthereumAddress(text));
+    
+    const validated = validateAddressAuto(text);
+    setIsValid(validated !== null);
+    
+    if (validated && validated.blockchain !== blockchain) {
+      setBlockchain(validated.blockchain);
+    }
   };
 
-  const handleConnect = async () => {
-    if (!isValid) return;
-    await connectWallet(address);
-    router.back();
+  const handleConnect = async (addr?: string, chain?: BlockchainType) => {
+    const finalAddress = addr || address;
+    const finalBlockchain = chain || blockchain;
+    
+    if (!finalAddress || !isValid) {
+      setError('Please enter a valid address');
+      return;
+    }
+    
+    try {
+      setError(null);
+      
+      if (finalBlockchain === 'ethereum') {
+        await connectManualWallet(finalAddress);
+      } else {
+        const success = await addWallet(finalAddress, finalBlockchain);
+        if (!success) {
+          setError(multiChainError || 'Failed to connect wallet');
+          return;
+        }
+      }
+      
+      router.back();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Connection failed';
+      setError(errorMessage);
+    }
   };
 
   const handlePasteExample = () => {
-    setAddress('0xeae7380dd4cef6fbd1144f49e4d1e6964258a4f4');
+    const exampleAddress = '0xeae7380dd4cef6fbd1144f49e4d1e6964258a4f4';
+    setAddress(exampleAddress);
+    setBlockchain('ethereum');
     setIsValid(true);
   };
 
@@ -52,14 +108,19 @@ export default function WalletConnectScreen() {
               {t('wallet.supportedNetworks')}
             </Text>
             <Text className="text-xs text-muted">
-              Ethereum, Polygon, Arbitrum, Optimism
+              Ethereum, Polygon, Arbitrum, Optimism, NEAR, Orderly Network
             </Text>
+            {blockchain && (
+              <Text className="text-xs text-primary mt-2 font-medium">
+                Detected: {blockchain.toUpperCase()}
+              </Text>
+            )}
           </View>
 
           {/* Address Input */}
           <View className="gap-2">
             <Text className="text-sm font-semibold text-foreground">
-              {t('wallet.ethereumAddress')}
+              Wallet Address
             </Text>
             <TextInput
               placeholder="0x..."
@@ -74,12 +135,12 @@ export default function WalletConnectScreen() {
             />
             {isValid && (
               <Text className="text-xs text-success font-medium">
-                ✓ {maskEthereumAddress(address)}
+                ✓ {maskAddress(address, blockchain)}
               </Text>
             )}
-            {error && (
+            {(error || walletError) && (
               <Text className="text-xs text-error font-medium">
-                ✗ {error}
+                ✗ {error || walletError}
               </Text>
             )}
           </View>

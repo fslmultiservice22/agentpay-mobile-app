@@ -59,6 +59,7 @@ export interface WalletContextType {
   provider: ethers.Provider | null;
   signer: ethers.Signer | null;
   connect: (type: 'metamask' | 'walletconnect' | 'okx' | 'local') => Promise<void>;
+  connectManualWallet: (address: string) => Promise<void>;
   disconnect: () => void;
   getBalance: () => Promise<string>;
   sendTransaction: (to: string, amount: string) => Promise<string>;
@@ -507,6 +508,33 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setNetwork(newNetwork);
   }, []);
 
+  const connectManualWallet = useCallback(async (walletAddress: string) => {
+    try {
+      setError(null);
+      
+      if (!walletAddress || !walletAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+        setError('Invalid Ethereum address');
+        return;
+      }
+      
+      setAddress(walletAddress);
+      setIsConnected(true);
+      
+      if (provider) {
+        try {
+          const bal = await provider.getBalance(walletAddress);
+          setBalance(ethers.formatEther(bal));
+        } catch (err) {
+          console.error('Error fetching balance:', err);
+          setBalance('0');
+        }
+      }
+    } catch (err) {
+      console.error('Manual wallet connection error:', err);
+      setError(err instanceof Error ? err.message : 'Connection failed');
+    }
+  }, [provider]);
+
   const disconnect = useCallback(() => {
     setAddress(null);
     setIsConnected(false);
@@ -610,6 +638,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     provider,
     signer,
     connect,
+    connectManualWallet,
     disconnect,
     getBalance,
     sendTransaction,

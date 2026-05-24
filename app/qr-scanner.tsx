@@ -12,17 +12,31 @@ export default function QRScannerScreen() {
   const [manualInput, setManualInput] = useState('');
 
   const handleManualInput = () => {
-    if (!manualInput.trim()) {
+    const input = manualInput.trim();
+    
+    if (!input) {
       Alert.alert('Error', 'Please enter a valid address or QR code data');
       return;
     }
 
-    const parsed = parseQRCode(manualInput);
+    const parsed = parseQRCode(input);
+    
     if (parsed) {
       Alert.alert('Success', `Scanned: ${parsed.address}\nAmount: ${parsed.amount || 'Not specified'}`);
-      router.back();
+      router.push({
+        pathname: '/wallet-connect',
+        params: {
+          address: parsed.address,
+          amount: parsed.amount,
+          token: parsed.token,
+        },
+      });
     } else {
-      Alert.alert('Error', 'Invalid QR code format');
+      Alert.alert(
+        'Invalid Format',
+        'Please enter:\n• A valid Ethereum address (0x...)\n• Or AgentPay payment link',
+        [{ text: 'OK' }]
+      );
     }
   };
 
@@ -119,11 +133,14 @@ export default function QRScannerScreen() {
         <Text style={{ fontSize: 14, color: colors.muted, marginBottom: 8 }}>Or enter manually:</Text>
         <TextInput
           style={styles.input}
-          placeholder="0x... or agentpay://pay?..."
+          placeholder="0x14ea40648fc8c1781d19363f5b9cc9a877ac2469"
           placeholderTextColor={colors.muted}
           value={manualInput}
           onChangeText={setManualInput}
         />
+        <Text style={{ fontSize: 12, color: colors.muted, marginBottom: 12 }}>
+          Example: 0x14ea40648fc8c1781d19363f5b9cc9a877ac2469
+        </Text>
 
         <TouchableOpacity style={styles.button} onPress={handleManualInput}>
           <Text style={styles.buttonText}>Parse QR Data</Text>
