@@ -161,9 +161,9 @@ export function validateAddressAuto(address: string): ValidatedAddress | null {
 export function createMultiChainWallet(addresses: Partial<Record<BlockchainType, string>>): MultiChainWallet {
   const map = new Map<BlockchainType, string>();
   
-  for (const [blockchain, address] of Object.entries(addresses)) {
-    if (address && validateAddress(address, blockchain as BlockchainType).isValid) {
-      map.set(blockchain as BlockchainType, address);
+  for (const [blockchain, address] of Object.entries(addresses) as Array<[BlockchainType, string]>) {
+    if (address && validateAddress(address, blockchain).isValid) {
+      map.set(blockchain, address);
     }
   }
 
@@ -201,7 +201,7 @@ export function convertAddress(address: string, fromBlockchain: BlockchainType, 
  * Ottiene informazioni sulla blockchain
  */
 export function getBlockchainInfo(blockchain: BlockchainType) {
-  const info: Record<BlockchainType, {
+  const info: Record<string, {
     name: string;
     symbol: string;
     rpcUrl?: string;

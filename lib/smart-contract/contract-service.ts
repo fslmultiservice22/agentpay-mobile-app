@@ -5,6 +5,8 @@
 
 import { validateAddress, type BlockchainType } from '@/lib/multi-chain-validator';
 
+export type { BlockchainType };
+
 export interface ContractABI {
   type: 'function' | 'event' | 'constructor' | 'fallback' | 'receive';
   name?: string;

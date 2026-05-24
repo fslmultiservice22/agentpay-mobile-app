@@ -6,6 +6,8 @@
 
 import { validateAddress, type BlockchainType } from '@/lib/multi-chain-validator';
 
+export type { BlockchainType };
+
 export interface OrderlyToken {
   symbol: string;
   address: string;
