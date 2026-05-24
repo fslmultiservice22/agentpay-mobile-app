@@ -1,6 +1,6 @@
 import { ScrollView, Text, View, TouchableOpacity, Modal, FlatList, StyleSheet, Platform, Switch } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
-import { useWallet } from '@/lib/web3/wallet-context';
+import { useEthereumWallet as useWallet } from '@/hooks/use-ethereum-wallet';
 import { useColors } from '@/hooks/use-colors';
 import { useState } from 'react';
 import { useI18n, type Language } from '@/hooks/use-i18n';

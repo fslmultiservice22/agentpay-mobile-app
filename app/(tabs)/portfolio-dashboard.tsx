@@ -4,7 +4,7 @@ import { ScreenContainer } from '@/components/screen-container';
 import { usePortfolioDashboard } from '@/hooks/use-portfolio-dashboard';
 import { useI18n } from '@/hooks/use-i18n';
 import { useColors } from '@/hooks/use-colors';
-import { useEthereumWallet } from '@/lib/web3/wallet-context';
+import { useEthereumWallet } from '@/hooks/use-ethereum-wallet';
 
 // Mock chart components for testing
 const LineChart = ({ data, width, height, chartConfig, style }: any) => (

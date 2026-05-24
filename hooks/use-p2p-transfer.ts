@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useWallet } from '@/lib/web3/wallet-context';
+import { useEthereumWallet as useWallet } from '@/hooks/use-ethereum-wallet';
 
 export interface P2PTransfer {
   id: string;

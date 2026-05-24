@@ -1,6 +1,6 @@
 import { ScrollView, Text, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
-import { useWallet } from '@/lib/web3/wallet-context';
+import { useEthereumWallet as useWallet } from '@/hooks/use-ethereum-wallet';
 import { useColors } from '@/hooks/use-colors';
 import { useP2PTransfer } from '@/hooks/use-p2p-transfer';
 import { useQRPayment } from '@/hooks/use-qr-payment';

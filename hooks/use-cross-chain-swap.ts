@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useBlockchain } from '@/lib/blockchain/blockchain-context';
-import { useWallet } from '@/lib/web3/wallet-context';
+import { useEthereumWallet as useWallet } from '@/hooks/use-ethereum-wallet';
 import { BLOCKCHAINS, type BlockchainId, AVAILABLE_BLOCKCHAINS } from '@/lib/blockchain/blockchain-config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 

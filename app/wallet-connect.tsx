@@ -3,7 +3,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import { useI18n } from '@/hooks/use-i18n';
-import { useWallet } from '@/lib/web3/wallet-context';
+import { useEthereumWallet as useWallet } from '@/hooks/use-ethereum-wallet';
 import { validateAddressAuto, detectBlockchain, maskAddress, type BlockchainType } from '@/lib/multi-chain-validator';
 import { useState, useEffect } from 'react';
 import { useMultiChainWallet } from '@/hooks/use-multi-chain-wallet';
