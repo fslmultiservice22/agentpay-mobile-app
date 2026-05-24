@@ -1,8 +1,45 @@
 import React from 'react';
-import { createConfig, http, WagmiProvider } from 'wagmi';
-import { mainnet, sepolia, polygon, arbitrum, optimism, base } from 'wagmi/chains';
-import { metaMask, walletConnect, ledger } from '@wagmi/connectors';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Platform } from 'react-native';
+
+// Only import wagmi on web platform
+let createConfig: any = null;
+let http: any = null;
+let WagmiProvider: any = null;
+let mainnet: any = null;
+let sepolia: any = null;
+let polygon: any = null;
+let arbitrum: any = null;
+let optimism: any = null;
+let base: any = null;
+let metaMask: any = null;
+let walletConnect: any = null;
+let ledger: any = null;
+let QueryClient: any = null;
+let QueryClientProvider: any = null;
+
+if (Platform.OS === 'web') {
+  const wagmi = require('wagmi');
+  createConfig = wagmi.createConfig;
+  http = wagmi.http;
+  WagmiProvider = wagmi.WagmiProvider;
+  
+  const chains = require('wagmi/chains');
+  mainnet = chains.mainnet;
+  sepolia = chains.sepolia;
+  polygon = chains.polygon;
+  arbitrum = chains.arbitrum;
+  optimism = chains.optimism;
+  base = chains.base;
+  
+  const connectors = require('@wagmi/connectors');
+  metaMask = connectors.metaMask;
+  walletConnect = connectors.walletConnect;
+  ledger = connectors.ledger;
+  
+  const reactQuery = require('@tanstack/react-query');
+  QueryClient = reactQuery.QueryClient;
+  QueryClientProvider = reactQuery.QueryClientProvider;
+}
 
 /**
  * Web3 Provider Service
@@ -23,8 +60,9 @@ export type SupportedChain = keyof typeof SUPPORTED_CHAINS;
 /**
  * Wagmi Configuration for Web3 connections
  */
-export const wagmiConfig = createConfig({
-  chains: [mainnet, sepolia, polygon, arbitrum, optimism, base],
+export const wagmiConfig = Platform.OS === 'web' && createConfig
+  ? createConfig({
+      chains: [mainnet, sepolia, polygon, arbitrum, optimism, base],
   connectors: [
     metaMask({
       dappMetadata: {
@@ -53,20 +91,24 @@ export const wagmiConfig = createConfig({
     [arbitrum.id]: http(),
     [optimism.id]: http(),
     [base.id]: http(),
-  },
-});
+    },
+    })
+  : null;
 
 /**
  * React Query Client for data fetching
+ * Only created on web platform
  */
-export const queryClient = new QueryClient({
+export const queryClient = Platform.OS === 'web' && QueryClient
+  ? new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
       gcTime: 1000 * 60 * 10, // 10 minutes
     },
-  },
-});
+    },
+  })
+  : null;
 
 /**
  * Wallet Provider Props
@@ -78,8 +120,14 @@ export interface WalletProviderProps {
 /**
  * Wallet Provider Component
  * Wraps app with Wagmi and React Query providers
+ * Only on web platform
  */
 export function WalletProvider({ children }: WalletProviderProps) {
+  if (Platform.OS !== 'web' || !WagmiProvider || !QueryClientProvider) {
+    // On mobile, just return children without providers
+    return children as any;
+  }
+
   return React.createElement(
     WagmiProvider,
     { config: wagmiConfig },

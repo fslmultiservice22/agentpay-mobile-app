@@ -1,10 +1,11 @@
-import { ethers, BrowserProvider, Contract, parseEther, formatEther } from 'ethers';
-import { CHAIN_CONFIG, type SupportedChain } from './web3-provider-service';
-
 /**
  * Real Transaction Service
  * Handles actual blockchain transactions using ethers.js
+ * React Native compatible - no window.ethereum access on mobile
  */
+
+import { Platform } from 'react-native';
+import { CHAIN_CONFIG, type SupportedChain } from './web3-provider-service';
 
 export interface TransactionRequest {
   to: string;
@@ -34,299 +35,201 @@ export interface GasEstimate {
 
 /**
  * Get provider for a specific chain
+ * On mobile (Android/iOS), use JsonRpcProvider with RPC URL
+ * On web, use BrowserProvider with window.ethereum
  */
-export function getProvider(chainId: number): BrowserProvider | null {
-  if (!window.ethereum) {
-    console.error('MetaMask not installed');
+export async function getProvider(chainId: number) {
+  try {
+    if (Platform.OS === 'web') {
+      // Web: Use window.ethereum if available
+      if (typeof window !== 'undefined' && (window as any).ethereum) {
+        const { BrowserProvider } = await import('ethers');
+        return new BrowserProvider((window as any).ethereum);
+      }
+    }
+
+    // Mobile or web without MetaMask: Use JsonRpcProvider with RPC URL
+    const { JsonRpcProvider } = await import('ethers');
+    const chain = Object.values(CHAIN_CONFIG).find(c => c.chainId === chainId);
+    
+    if (!chain) {
+      throw new Error(`Chain ${chainId} not supported`);
+    }
+
+    return new JsonRpcProvider(chain.rpcUrl);
+  } catch (error) {
+    console.error('Failed to get provider:', error);
     return null;
   }
-
-  return new BrowserProvider(window.ethereum);
 }
 
 /**
  * Get signer for transaction signing
+ * On mobile, requires WalletConnect or similar
+ * On web, uses MetaMask
  */
-export async function getSigner(provider: BrowserProvider) {
+export async function getSigner(provider: any) {
   try {
-    return await provider.getSigner();
-  } catch (error) {
-    console.error('Failed to get signer:', error);
-    throw error;
-  }
-}
-
-/**
- * Send ETH transfer transaction
- */
-export async function sendEthTransfer(
-  to: string,
-  amountInEth: string,
-  chainId: number = 1
-): Promise<TransactionResponse> {
-  try {
-    const provider = getProvider(chainId);
-    if (!provider) throw new Error('Provider not available');
-
-    const signer = await getSigner(provider);
-    
-    // Validate recipient address
-    if (!ethers.isAddress(to)) {
-      throw new Error('Invalid recipient address');
+    if (Platform.OS === 'web') {
+      // Web: Get signer from MetaMask
+      if (typeof window !== 'undefined' && (window as any).ethereum) {
+        return await provider.getSigner();
+      }
     }
 
-    // Create transaction
-    const tx = await signer.sendTransaction({
-      to,
-      value: parseEther(amountInEth),
-    });
-
-    console.log('Transaction sent:', tx.hash);
-
-    // Wait for confirmation
-    const receipt = await tx.wait();
-
-    return {
-      hash: tx.hash,
-      from: await signer.getAddress(),
-      to,
-      value: amountInEth,
-      status: receipt?.status === 1 ? 'success' : 'failed',
-      blockNumber: receipt?.blockNumber,
-      gasUsed: receipt?.gasUsed?.toString(),
-      timestamp: Date.now(),
-    };
+    // Mobile: Would need WalletConnect integration
+    console.warn('Signer not available on mobile without WalletConnect');
+    return null;
   } catch (error) {
-    console.error('Transaction failed:', error);
-    throw error;
+    console.error('Failed to get signer:', error);
+    return null;
   }
 }
 
 /**
- * Send ERC20 token transfer
- */
-export async function sendTokenTransfer(
-  tokenAddress: string,
-  to: string,
-  amount: string,
-  decimals: number = 18,
-  chainId: number = 1
-): Promise<TransactionResponse> {
-  try {
-    const provider = getProvider(chainId);
-    if (!provider) throw new Error('Provider not available');
-
-    const signer = await getSigner(provider);
-
-    // ERC20 ABI (minimal)
-    const erc20Abi = [
-      'function transfer(address to, uint256 amount) returns (bool)',
-      'function balanceOf(address account) view returns (uint256)',
-      'function decimals() view returns (uint8)',
-    ];
-
-    const contract = new Contract(tokenAddress, erc20Abi, signer);
-    
-    // Convert amount to token decimals
-    const amountInTokens = ethers.parseUnits(amount, decimals);
-
-    // Send transaction
-    const tx = await contract.transfer(to, amountInTokens);
-    console.log('Token transfer sent:', tx.hash);
-
-    // Wait for confirmation
-    const receipt = await tx.wait();
-
-    return {
-      hash: tx.hash,
-      from: await signer.getAddress(),
-      to,
-      value: amount,
-      status: receipt?.status === 1 ? 'success' : 'failed',
-      blockNumber: receipt?.blockNumber,
-      gasUsed: receipt?.gasUsed?.toString(),
-      timestamp: Date.now(),
-    };
-  } catch (error) {
-    console.error('Token transfer failed:', error);
-    throw error;
-  }
-}
-
-/**
- * Estimate gas for transaction
+ * Estimate gas for a transaction
  */
 export async function estimateGas(
-  to: string,
-  value: string,
-  chainId: number = 1
+  provider: any,
+  transaction: TransactionRequest
 ): Promise<GasEstimate> {
   try {
-    const provider = getProvider(chainId);
-    if (!provider) throw new Error('Provider not available');
-
-    const signer = await getSigner(provider);
-    const from = await signer.getAddress();
-
-    // Get current gas price
-    const feeData = await provider.getFeeData();
-    const gasPrice = feeData.gasPrice || ethers.parseUnits('20', 'gwei');
-
-    // Estimate gas limit
-    const gasLimit = await provider.estimateGas({
-      from,
-      to,
-      value: parseEther(value),
+    const gasPrice = await provider.getGasPrice();
+    const gasEstimate = await provider.estimateGas({
+      to: transaction.to,
+      value: transaction.value,
+      data: transaction.data,
     });
 
-    // Calculate estimated cost
-    const estimatedCost = formatEther(gasLimit * gasPrice);
+    const estimatedCost = (
+      Number(gasEstimate) * Number(gasPrice) / 1e18
+    ).toFixed(6);
 
     return {
-      gasPrice: formatEther(gasPrice),
-      gasLimit: gasLimit.toString(),
-      maxFeePerGas: feeData.maxFeePerGas ? formatEther(feeData.maxFeePerGas) : undefined,
-      maxPriorityFeePerGas: feeData.maxPriorityFeePerGas ? formatEther(feeData.maxPriorityFeePerGas) : undefined,
+      gasPrice: (Number(gasPrice) / 1e9).toFixed(2),
+      gasLimit: gasEstimate.toString(),
       estimatedCost,
     };
   } catch (error) {
-    console.error('Gas estimation failed:', error);
+    console.error('Failed to estimate gas:', error);
     throw error;
   }
 }
 
 /**
- * Get wallet balance
+ * Send transaction
+ * On mobile, this would be called after signing via WalletConnect
  */
-export async function getWalletBalance(
-  address: string,
-  chainId: number = 1
-): Promise<string> {
+export async function sendTransaction(
+  signer: any,
+  transaction: TransactionRequest
+): Promise<TransactionResponse> {
   try {
-    const provider = getProvider(chainId);
-    if (!provider) throw new Error('Provider not available');
-
-    if (!ethers.isAddress(address)) {
-      throw new Error('Invalid address');
+    if (!signer) {
+      throw new Error('Signer not available');
     }
 
-    const balance = await provider.getBalance(address);
-    return formatEther(balance);
-  } catch (error) {
-    console.error('Failed to get balance:', error);
-    throw error;
-  }
-}
+    const tx = await signer.sendTransaction({
+      to: transaction.to,
+      value: transaction.value,
+      data: transaction.data,
+      gasLimit: transaction.gasLimit,
+    });
 
-/**
- * Get transaction status
- */
-export async function getTransactionStatus(
-  txHash: string,
-  chainId: number = 1
-): Promise<TransactionResponse | null> {
-  try {
-    const provider = getProvider(chainId);
-    if (!provider) throw new Error('Provider not available');
-
-    const receipt = await provider.getTransactionReceipt(txHash);
-    if (!receipt) return null;
-
-    const tx = await provider.getTransaction(txHash);
-    if (!tx) return null;
+    const receipt = await tx.wait();
 
     return {
       hash: tx.hash,
       from: tx.from,
-      to: tx.to || '',
-      value: formatEther(tx.value),
+      to: tx.to,
+      value: transaction.value,
+      status: receipt?.status === 1 ? 'success' : 'failed',
+      blockNumber: receipt?.blockNumber,
+      gasUsed: receipt?.gasUsed?.toString(),
+      timestamp: Date.now(),
+    };
+  } catch (error) {
+    console.error('Failed to send transaction:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get transaction receipt
+ */
+export async function getTransactionReceipt(
+  provider: any,
+  hash: string
+): Promise<TransactionResponse | null> {
+  try {
+    const receipt = await provider.getTransactionReceipt(hash);
+
+    if (!receipt) {
+      return null;
+    }
+
+    const tx = await provider.getTransaction(hash);
+
+    return {
+      hash,
+      from: receipt.from,
+      to: receipt.to || '',
+      value: tx?.value?.toString() || '0',
       status: receipt.status === 1 ? 'success' : 'failed',
       blockNumber: receipt.blockNumber,
       gasUsed: receipt.gasUsed?.toString(),
       timestamp: Date.now(),
     };
   } catch (error) {
-    console.error('Failed to get transaction status:', error);
-    throw error;
+    console.error('Failed to get transaction receipt:', error);
+    return null;
   }
 }
 
 /**
- * Get transaction history for address
+ * Get account balance
  */
-export async function getTransactionHistory(
-  address: string,
-  chainId: number = 1,
-  limit: number = 10
-): Promise<TransactionResponse[]> {
+export async function getBalance(provider: any, address: string): Promise<string> {
   try {
-    const provider = getProvider(chainId);
-    if (!provider) throw new Error('Provider not available');
-
-    if (!ethers.isAddress(address)) {
-      throw new Error('Invalid address');
-    }
-
-    // Note: This is a simplified version. For production, use Etherscan API or similar
-    const blockNumber = await provider.getBlockNumber();
-    const transactions: TransactionResponse[] = [];
-
-    // Scan recent blocks for transactions involving this address
-    for (let i = 0; i < Math.min(limit, 100); i++) {
-      const block = await provider.getBlock(blockNumber - i);
-      if (!block) continue;
-
-      for (const txHash of block.transactions) {
-        const tx = await provider.getTransaction(txHash);
-        if (!tx) continue;
-
-        if (tx.from?.toLowerCase() === address.toLowerCase() || 
-            tx.to?.toLowerCase() === address.toLowerCase()) {
-          const receipt = await provider.getTransactionReceipt(txHash);
-          
-          transactions.push({
-            hash: tx.hash,
-            from: tx.from,
-            to: tx.to || '',
-            value: formatEther(tx.value),
-            status: receipt?.status === 1 ? 'success' : 'failed',
-            blockNumber: receipt?.blockNumber,
-            gasUsed: receipt?.gasUsed?.toString(),
-            timestamp: Date.now(),
-          });
-
-          if (transactions.length >= limit) break;
-        }
-      }
-
-      if (transactions.length >= limit) break;
-    }
-
-    return transactions;
+    const balance = await provider.getBalance(address);
+    return (Number(balance) / 1e18).toFixed(6);
   } catch (error) {
-    console.error('Failed to get transaction history:', error);
-    throw error;
+    console.error('Failed to get balance:', error);
+    return '0';
   }
 }
 
 /**
- * Validate Ethereum address
+ * Get account nonce
  */
-export function isValidAddress(address: string): boolean {
-  return ethers.isAddress(address);
+export async function getNonce(provider: any, address: string): Promise<number> {
+  try {
+    return await provider.getTransactionCount(address);
+  } catch (error) {
+    console.error('Failed to get nonce:', error);
+    return 0;
+  }
 }
 
 /**
- * Format address (checksum)
+ * Validate address
+ */
+export function validateAddress(address: string): boolean {
+  try {
+    const { getAddress } = require('ethers');
+    getAddress(address);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Format address for display
  */
 export function formatAddress(address: string): string {
-  return ethers.getAddress(address);
-}
-
-/**
- * Shorten address for display
- */
-export function shortenAddress(address: string, chars: number = 4): string {
-  const formatted = formatAddress(address);
-  return `${formatted.slice(0, chars + 2)}...${formatted.slice(-chars)}`;
+  if (!address || address.length < 10) {
+    return address;
+  }
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
