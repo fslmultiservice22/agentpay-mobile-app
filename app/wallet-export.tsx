@@ -69,8 +69,14 @@ export default function WalletExportScreen() {
 
   if (!config) {
     return (
-      <ScreenContainer className="flex-1 items-center justify-center">
-        <Text className="text-lg text-muted">{t('wallet.noConfigToExport')}</Text>
+      <ScreenContainer className="flex-1 items-center justify-center gap-4">
+        <Text className="text-lg text-muted text-center px-4">{t('wallet.noConfigToExport')}</Text>
+        <TouchableOpacity
+          className="bg-primary px-6 py-3 rounded-lg"
+          onPress={() => router.back()}
+        >
+          <Text className="text-background font-semibold">{t('wallet.goBack')}</Text>
+        </TouchableOpacity>
       </ScreenContainer>
     );
   }
