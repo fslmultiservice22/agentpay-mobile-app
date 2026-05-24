@@ -1,244 +1,186 @@
 import { useState, useCallback } from 'react';
-import { ethers } from 'ethers';
+import {
+  getSwapQuote,
+  getSwapTransaction,
+  getTokens,
+  validateSwapParams,
+  type SwapQuote,
+  type SwapTransaction,
+  type Token,
+} from '@/lib/1inch-swap-service';
 
-export interface Token {
-  address: string;
-  symbol: string;
-  name: string;
-  decimals: number;
-  balance: string;
-}
-
-export interface SwapQuote {
-  inputToken: Token;
-  outputToken: Token;
-  inputAmount: string;
-  outputAmount: string;
-  priceImpact: string;
-  route: string[];
-  fee: string;
-}
-
-export interface SwapResult {
-  success: boolean;
-  transactionHash?: string;
-  error?: string;
-}
-
-interface TokenSwapState {
+export interface UseTokenSwapReturn {
+  // State
   quote: SwapQuote | null;
+  transaction: SwapTransaction | null;
+  tokens: Token[];
   isLoading: boolean;
+  isQuoting: boolean;
   error: string | null;
-  supportedTokens: Token[];
+  
+  // Methods
+  loadTokens: (chainId: number) => Promise<void>;
+  getQuote: (
+    chainId: number,
+    fromToken: string,
+    toToken: string,
+    amount: string,
+    slippage?: number
+  ) => Promise<void>;
+  getTransaction: (
+    chainId: number,
+    fromToken: string,
+    toToken: string,
+    amount: string,
+    fromAddress: string,
+    slippage?: number
+  ) => Promise<void>;
+  clearQuote: () => void;
+  clearError: () => void;
 }
 
-// Token di test supportati
-const SUPPORTED_TOKENS: Token[] = [
-  {
-    address: '0x0000000000000000000000000000000000000000',
-    symbol: 'ETH',
-    name: 'Ethereum',
-    decimals: 18,
-    balance: '0',
-  },
-  {
-    address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-    symbol: 'USDC',
-    name: 'USD Coin',
-    decimals: 6,
-    balance: '0',
-  },
-  {
-    address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
-    symbol: 'USDT',
-    name: 'Tether USD',
-    decimals: 6,
-    balance: '0',
-  },
-  {
-    address: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-    symbol: 'DAI',
-    name: 'Dai Stablecoin',
-    decimals: 18,
-    balance: '0',
-  },
-];
+/**
+ * Hook for token swapping with 1inch API integration
+ */
+export function useTokenSwap(): UseTokenSwapReturn {
+  const [quote, setQuote] = useState<SwapQuote | null>(null);
+  const [transaction, setTransaction] = useState<SwapTransaction | null>(null);
+  const [tokens, setTokens] = useState<Token[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isQuoting, setIsQuoting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-export function useTokenSwap(provider: ethers.Provider | null, signer: ethers.Signer | null) {
-  const [state, setState] = useState<TokenSwapState>({
-    quote: null,
-    isLoading: false,
-    error: null,
-    supportedTokens: SUPPORTED_TOKENS,
-  });
+  /**
+   * Load tokens for chain
+   */
+  const loadTokens = useCallback(async (chainId: number) => {
+    setIsLoading(true);
+    setError(null);
 
-  const getSwapQuote = useCallback(
+    try {
+      const chainTokens = await getTokens(chainId);
+      setTokens(chainTokens);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load tokens';
+      setError(errorMessage);
+      console.error('Load tokens error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  /**
+   * Get swap quote
+   */
+  const handleGetQuote = useCallback(
     async (
-      inputToken: Token,
-      outputToken: Token,
-      inputAmount: string,
-    ): Promise<SwapQuote | null> => {
-      if (!provider) {
-        setState(prev => ({
-          ...prev,
-          error: 'Provider not available',
-        }));
-        return null;
-      }
+      chainId: number,
+      fromToken: string,
+      toToken: string,
+      amount: string,
+      slippage: number = 1
+    ) => {
+      setIsQuoting(true);
+      setError(null);
 
       try {
-        setState(prev => ({
-          ...prev,
-          isLoading: true,
-          error: null,
-        }));
-
-        // Simula il calcolo del prezzo di swap
-        // In produzione, useremmo Uniswap V3 SDK o 1inch API
-        const inputAmountNum = parseFloat(inputAmount);
-        
-        // Simula un tasso di cambio (1 ETH = 2000 USDC)
-        let outputAmountNum = inputAmountNum;
-        if (inputToken.symbol === 'ETH' && outputToken.symbol === 'USDC') {
-          outputAmountNum = inputAmountNum * 2000;
-        } else if (inputToken.symbol === 'USDC' && outputToken.symbol === 'ETH') {
-          outputAmountNum = inputAmountNum / 2000;
+        // Validate parameters
+        const validation = validateSwapParams(fromToken, toToken, amount);
+        if (!validation.valid) {
+          throw new Error(validation.error);
         }
 
-        const quote: SwapQuote = {
-          inputToken,
-          outputToken,
-          inputAmount,
-          outputAmount: outputAmountNum.toFixed(6),
-          priceImpact: '0.5%',
-          route: [inputToken.address, outputToken.address],
-          fee: '0.3%',
-        };
-
-        setState(prev => ({
-          ...prev,
-          quote,
-          isLoading: false,
-        }));
-
-        return quote;
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to get swap quote';
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-          error: errorMessage,
-        }));
-        return null;
-      }
-    },
-    [provider],
-  );
-
-  const executeSwap = useCallback(
-    async (quote: SwapQuote): Promise<SwapResult> => {
-      if (!signer) {
-        return {
-          success: false,
-          error: 'Signer not available',
-        };
-      }
-
-      try {
-        setState(prev => ({
-          ...prev,
-          isLoading: true,
-          error: null,
-        }));
-
-        // Simula l'esecuzione dello swap
-        // In produzione, useremmo Uniswap Router o altro DEX
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // Genera un hash di transazione simulato
-        const txHash = '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-        }));
-
-        return {
-          success: true,
-          transactionHash: txHash,
-        };
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Swap execution failed';
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-          error: errorMessage,
-        }));
-        return {
-          success: false,
-          error: errorMessage,
-        };
-      }
-    },
-    [signer],
-  );
-
-  const getTokenBalance = useCallback(
-    async (token: Token, address: string): Promise<string | null> => {
-      if (!provider) {
-        return null;
-      }
-
-      try {
-        if (token.symbol === 'ETH') {
-          // Ottieni il balance di ETH
-          const balance = await provider.getBalance(address);
-          return ethers.formatEther(balance);
-        } else {
-          // Simula il balance di token ERC20
-          // In produzione, chiameremmo il contratto ERC20
-          return '0';
-        }
-      } catch (err) {
-        console.error('Failed to get token balance:', err);
-        return null;
-      }
-    },
-    [provider],
-  );
-
-  const updateTokenBalances = useCallback(
-    async (address: string) => {
-      try {
-        const updatedTokens = await Promise.all(
-          state.supportedTokens.map(async token => {
-            const balance = await getTokenBalance(token, address);
-            return {
-              ...token,
-              balance: balance || '0',
-            };
-          }),
+        const swapQuote = await getSwapQuote(
+          chainId,
+          fromToken,
+          toToken,
+          amount,
+          slippage
         );
 
-        setState(prev => ({
-          ...prev,
-          supportedTokens: updatedTokens,
-        }));
+        setQuote(swapQuote);
       } catch (err) {
-        console.error('Failed to update token balances:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Failed to get quote';
+        setError(errorMessage);
+        console.error('Get quote error:', err);
+        setQuote(null);
+      } finally {
+        setIsQuoting(false);
       }
     },
-    [state.supportedTokens, getTokenBalance],
+    []
   );
 
+  /**
+   * Get swap transaction
+   */
+  const handleGetTransaction = useCallback(
+    async (
+      chainId: number,
+      fromToken: string,
+      toToken: string,
+      amount: string,
+      fromAddress: string,
+      slippage: number = 1
+    ) => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // Validate parameters
+        const validation = validateSwapParams(fromToken, toToken, amount);
+        if (!validation.valid) {
+          throw new Error(validation.error);
+        }
+
+        const swapTx = await getSwapTransaction(
+          chainId,
+          fromToken,
+          toToken,
+          amount,
+          fromAddress,
+          slippage
+        );
+
+        setTransaction(swapTx);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to get transaction';
+        setError(errorMessage);
+        console.error('Get transaction error:', err);
+        setTransaction(null);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
+  /**
+   * Clear quote
+   */
+  const clearQuote = useCallback(() => {
+    setQuote(null);
+    setTransaction(null);
+  }, []);
+
+  /**
+   * Clear error
+   */
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
   return {
-    quote: state.quote,
-    isLoading: state.isLoading,
-    error: state.error,
-    supportedTokens: state.supportedTokens,
-    getSwapQuote,
-    executeSwap,
-    getTokenBalance,
-    updateTokenBalances,
+    quote,
+    transaction,
+    tokens,
+    isLoading,
+    isQuoting,
+    error,
+    loadTokens,
+    getQuote: handleGetQuote,
+    getTransaction: handleGetTransaction,
+    clearQuote,
+    clearError,
   };
 }

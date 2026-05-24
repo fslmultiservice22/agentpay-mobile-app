@@ -1,260 +1,256 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import * as LocalAuthentication from 'expo-local-authentication';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useState, useCallback, useEffect } from 'react';
+import {
+  checkBiometricAvailability,
+  authenticateWithBiometric,
+  enableBiometricAuth,
+  disableBiometricAuth,
+  isBiometricAuthEnabled,
+  getEnabledBiometricType,
+  setTransactionThreshold,
+  getTransactionThreshold,
+  requiresBiometricAuth,
+  authenticateTransaction,
+  getBiometricStatus,
+  type BiometricAvailability,
+  type BiometricAuthResult,
+  type BiometricType,
+} from '@/lib/biometric-service';
 
-export interface BiometricAuthState {
-  isAvailable: boolean;
-  isFaceIDAvailable: boolean;
-  isTouchIDAvailable: boolean;
+export interface UseBiometricAuthReturn {
+  // State
+  availability: BiometricAvailability;
   isEnabled: boolean;
-  isAuthenticated: boolean;
+  biometricType: BiometricType | null;
+  transactionThreshold: string;
   isLoading: boolean;
   error: string | null;
+  
+  // Methods
+  checkAvailability: () => Promise<void>;
+  authenticate: (reason?: string) => Promise<BiometricAuthResult>;
+  enable: () => Promise<boolean>;
+  disable: () => Promise<void>;
+  setThreshold: (amount: string) => Promise<void>;
+  checkTransactionRequirement: (amount: string) => Promise<boolean>;
+  authenticateTransaction: (amount: string, recipient: string) => Promise<BiometricAuthResult>;
+  getStatus: () => Promise<void>;
 }
 
-const BIOMETRIC_ENABLED_KEY = 'agentpay_biometric_enabled';
-const BIOMETRIC_VERIFIED_KEY = 'agentpay_biometric_verified';
-
-export function useBiometricAuth() {
-  const [state, setState] = useState<BiometricAuthState>({
-    isAvailable: false,
-    isFaceIDAvailable: false,
-    isTouchIDAvailable: false,
-    isEnabled: false,
-    isAuthenticated: false,
-    isLoading: false,
-    error: null,
+/**
+ * Hook for biometric authentication with advanced features
+ */
+export function useBiometricAuth(): UseBiometricAuthReturn {
+  const [availability, setAvailability] = useState<BiometricAvailability>({
+    available: false,
+    types: [],
+    enrolled: false,
   });
+  const [isEnabled, setIsEnabled] = useState(false);
+  const [biometricType, setBiometricType] = useState<BiometricType | null>(null);
+  const [transactionThreshold, setTransactionThreshold] = useState<string>('0.1');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const isMountedRef = useRef(true);
-  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Check availability on mount
+  useEffect(() => {
+    checkAvailability();
+  }, []);
 
-  // Controlla la disponibilità di biometria
-  const checkBiometricAvailability = useCallback(async () => {
+  /**
+   * Check biometric availability
+   */
+  const checkAvailability = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
     try {
-      setState(prev => ({
-        ...prev,
-        isLoading: true,
-        error: null,
-      }));
+      const avail = await checkBiometricAvailability();
+      setAvailability(avail);
 
-      // Controlla se il dispositivo supporta l'autenticazione biometrica
-      const compatible = await LocalAuthentication.hasHardwareAsync();
-      if (!compatible) {
-        if (isMountedRef.current) {
-          setState(prev => ({
-            ...prev,
-            isAvailable: false,
-            isLoading: false,
-            error: 'Device does not support biometric authentication',
-          }));
-        }
-        return;
-      }
+      const enabled = await isBiometricAuthEnabled();
+      setIsEnabled(enabled);
 
-      // Ottieni i tipi di biometria disponibili
-      const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
-      const isFaceIDAvailable = supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION);
-      const isTouchIDAvailable = supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT);
+      const type = await getEnabledBiometricType();
+      setBiometricType(type);
 
-      // Controlla se la biometria è abilitata
-      const isEnabled = await AsyncStorage.getItem(BIOMETRIC_ENABLED_KEY);
-
-      if (isMountedRef.current) {
-        setState(prev => ({
-          ...prev,
-          isAvailable: true,
-          isFaceIDAvailable,
-          isTouchIDAvailable,
-          isEnabled: isEnabled === 'true',
-          isLoading: false,
-        }));
-      }
+      const threshold = await getTransactionThreshold();
+      setTransactionThreshold(threshold);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to check biometric availability';
-      if (isMountedRef.current) {
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-          error: errorMessage,
-        }));
-      }
+      const errorMessage = err instanceof Error ? err.message : 'Failed to check availability';
+      setError(errorMessage);
+      console.error('Check availability error:', err);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-  // Autentica con biometria
-  const authenticate = useCallback(async (): Promise<boolean> => {
-    if (!state.isAvailable) {
-      return false;
-    }
+  /**
+   * Authenticate with biometric
+   */
+  const authenticate = useCallback(async (reason?: string): Promise<BiometricAuthResult> => {
+    setError(null);
 
     try {
-      setState(prev => ({
-        ...prev,
-        isLoading: true,
-        error: null,
-      }));
+      const result = await authenticateWithBiometric(reason);
+      
+      if (!result.success) {
+        setError(result.error);
+      }
 
-      // Esegui l'autenticazione biometrica
-      const result = await LocalAuthentication.authenticateAsync({
-        disableDeviceFallback: false,
-        fallbackLabel: 'Authenticate to access your wallet',
-      } as any);
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Authentication failed';
+      setError(errorMessage);
+      console.error('Authenticate error:', err);
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }, []);
 
-      if (result.success) {
-        // Salva il timestamp di autenticazione
-        await AsyncStorage.setItem(BIOMETRIC_VERIFIED_KEY, Date.now().toString());
+  /**
+   * Enable biometric auth
+   */
+  const enable = useCallback(async (): Promise<boolean> => {
+    setError(null);
 
-        // Imposta il timeout di 5 minuti per la ri-autenticazione
-        if (authTimeoutRef.current) {
-          clearTimeout(authTimeoutRef.current);
-        }
-
-        authTimeoutRef.current = setTimeout(() => {
-          if (isMountedRef.current) {
-            setState(prev => ({
-              ...prev,
-              isAuthenticated: false,
-            }));
-          }
-        }, 5 * 60 * 1000) as unknown as NodeJS.Timeout; // 5 minuti
-
-        if (isMountedRef.current) {
-          setState(prev => ({
-            ...prev,
-            isAuthenticated: true,
-            isLoading: false,
-          }));
-        }
-
-        return true;
+    try {
+      const result = await enableBiometricAuth();
+      
+      if (result) {
+        setIsEnabled(true);
+        const type = await getEnabledBiometricType();
+        setBiometricType(type);
       } else {
-        if (isMountedRef.current) {
-          setState(prev => ({
-            ...prev,
-            isLoading: false,
-            error: 'Biometric authentication failed',
-          }));
+        setError('Failed to enable biometric authentication');
+      }
+
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to enable';
+      setError(errorMessage);
+      console.error('Enable error:', err);
+      return false;
+    }
+  }, []);
+
+  /**
+   * Disable biometric auth
+   */
+  const disable = useCallback(async () => {
+    setError(null);
+
+    try {
+      await disableBiometricAuth();
+      setIsEnabled(false);
+      setBiometricType(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to disable';
+      setError(errorMessage);
+      console.error('Disable error:', err);
+    }
+  }, []);
+
+  /**
+   * Set transaction threshold
+   */
+  const setThreshold = useCallback(async (amount: string) => {
+    setError(null);
+
+    try {
+      await setTransactionThreshold(amount);
+      setTransactionThreshold(amount);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to set threshold';
+      setError(errorMessage);
+      console.error('Set threshold error:', err);
+    }
+  }, []);
+
+  /**
+   * Check if transaction requires biometric auth
+   */
+  const checkTransactionRequirement = useCallback(async (amount: string): Promise<boolean> => {
+    try {
+      setError(null);
+      return await requiresBiometricAuth(amount);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to check requirement';
+      setError(errorMessage);
+      console.error('Check requirement error:', err);
+      return false;
+    }
+  }, []);
+
+  /**
+   * Authenticate transaction
+   */
+  const handleAuthenticateTransaction = useCallback(
+    async (amount: string, recipient: string): Promise<BiometricAuthResult> => {
+      setError(null);
+
+      try {
+        const result = await authenticateTransaction(amount, recipient);
+        
+        if (!result.success) {
+          setError(result.error);
         }
-        return false;
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Biometric authentication error';
-      if (isMountedRef.current) {
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
+
+        return result;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Transaction authentication failed';
+        setError(errorMessage);
+        console.error('Authenticate transaction error:', err);
+        return {
+          success: false,
           error: errorMessage,
-        }));
+        };
       }
-      return false;
-    }
-  }, [state.isAvailable]);
+    },
+    []
+  );
 
-  // Abilita la biometria
-  const enableBiometric = useCallback(async (): Promise<boolean> => {
+  /**
+   * Get full status
+   */
+  const getStatus = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
     try {
-      // Verifica prima con biometria
-      const authenticated = await authenticate();
-      if (!authenticated) {
-        return false;
-      }
-
-      // Salva la preferenza
-      await AsyncStorage.setItem(BIOMETRIC_ENABLED_KEY, 'true');
-
-      if (isMountedRef.current) {
-        setState(prev => ({
-          ...prev,
-          isEnabled: true,
-        }));
-      }
-
-      return true;
+      const status = await getBiometricStatus();
+      setAvailability({
+        available: status.available,
+        enrolled: status.enrolled,
+        types: status.types,
+      });
+      setIsEnabled(status.enabled);
+      setBiometricType(status.biometricType);
+      setTransactionThreshold(status.threshold);
     } catch (err) {
-      console.error('Failed to enable biometric:', err);
-      return false;
+      const errorMessage = err instanceof Error ? err.message : 'Failed to get status';
+      setError(errorMessage);
+      console.error('Get status error:', err);
+    } finally {
+      setIsLoading(false);
     }
-  }, [authenticate]);
-
-  // Disabilita la biometria
-  const disableBiometric = useCallback(async (): Promise<boolean> => {
-    try {
-      await AsyncStorage.setItem(BIOMETRIC_ENABLED_KEY, 'false');
-
-      if (isMountedRef.current) {
-        setState(prev => ({
-          ...prev,
-          isEnabled: false,
-          isAuthenticated: false,
-        }));
-      }
-
-      return true;
-    } catch (err) {
-      console.error('Failed to disable biometric:', err);
-      return false;
-    }
-  }, []);
-
-  // Logout
-  const logout = useCallback(async () => {
-    if (authTimeoutRef.current) {
-      clearTimeout(authTimeoutRef.current);
-    }
-
-    if (isMountedRef.current) {
-      setState(prev => ({
-        ...prev,
-        isAuthenticated: false,
-      }));
-    }
-  }, []);
-
-  // Controlla l'autenticazione al mount
-  useEffect(() => {
-    checkBiometricAvailability();
-  }, [checkBiometricAvailability]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-      if (authTimeoutRef.current) {
-        clearTimeout(authTimeoutRef.current);
-      }
-    };
   }, []);
 
   return {
-    ...state,
-    checkBiometricAvailability,
+    availability,
+    isEnabled,
+    biometricType,
+    transactionThreshold,
+    isLoading,
+    error,
+    checkAvailability,
     authenticate,
-    enableBiometric,
-    disableBiometric,
-    logout,
-  };
-}
-
-// Hook per autenticazione biometrica per trasferimenti
-export function useBiometricAuthForTransfer(minAmount: number = 500) {
-  const biometric = useBiometricAuth();
-
-  const authenticateTransfer = useCallback(async (amount: number): Promise<boolean> => {
-    if (amount < minAmount) {
-      return true; // No authentication required for small amounts
-    }
-
-    if (!biometric.isAvailable || !biometric.isEnabled) {
-      return true; // Fallback to password if biometric not available
-    }
-
-    return await biometric.authenticate();
-  }, [biometric, minAmount]);
-
-  return {
-    ...biometric,
-    authenticateTransfer,
-    minAmount,
+    enable,
+    disable,
+    setThreshold,
+    checkTransactionRequirement,
+    authenticateTransaction: handleAuthenticateTransaction,
+    getStatus,
   };
 }

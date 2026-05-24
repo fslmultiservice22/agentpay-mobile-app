@@ -1,211 +1,299 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ethers } from 'ethers';
+import { useState, useCallback, useEffect } from 'react';
+import {
+  saveTransaction,
+  getTransactionHistory,
+  getTransactionByHash,
+  filterTransactions,
+  getTransactionsForAddress,
+  getTransactionStats,
+  deleteTransaction,
+  clearTransactionHistory,
+  exportTransactionHistory,
+  importTransactionHistory,
+  addTransactionNote,
+  getRecentTransactions,
+  type StoredTransaction,
+  type TransactionFilter,
+} from '@/lib/transaction-history-service';
 
-export interface Transaction {
-  id: string;
-  hash: string;
-  from: string;
-  to: string;
-  value: string;
-  gasUsed?: string;
-  gasPrice?: string;
-  status: 'pending' | 'confirmed' | 'failed';
-  timestamp: number;
-  blockNumber?: number;
-  type: 'sent' | 'received';
-}
-
-interface TransactionHistoryState {
-  transactions: Transaction[];
+export interface UseTransactionHistoryReturn {
+  // State
+  transactions: StoredTransaction[];
   isLoading: boolean;
   error: string | null;
+  stats: {
+    total: number;
+    successful: number;
+    failed: number;
+    pending: number;
+    totalVolume: string;
+    averageGasPrice: string;
+  };
+  
+  // Methods
+  saveTransaction: (transaction: StoredTransaction) => Promise<void>;
+  loadTransactions: () => Promise<void>;
+  loadRecentTransactions: (limit?: number) => Promise<void>;
+  loadTransactionsForAddress: (address: string) => Promise<void>;
+  filterTransactions: (filter: TransactionFilter) => Promise<void>;
+  getTransaction: (hash: string) => Promise<StoredTransaction | null>;
+  deleteTransaction: (hash: string) => Promise<void>;
+  clearHistory: () => Promise<void>;
+  exportHistory: () => Promise<string>;
+  importHistory: (jsonData: string) => Promise<void>;
+  addNote: (hash: string, note: string) => Promise<void>;
+  refreshStats: () => Promise<void>;
 }
 
-const STORAGE_KEY = 'agentpay_transaction_history';
-const MAX_TRANSACTIONS = 100;
-
-export function useTransactionHistory(address: string | null, provider: ethers.Provider | null) {
-  const [state, setState] = useState<TransactionHistoryState>({
-    transactions: [],
-    isLoading: false,
-    error: null,
+/**
+ * Hook for managing transaction history with persistence
+ */
+export function useTransactionHistory(): UseTransactionHistoryReturn {
+  const [transactions, setTransactions] = useState<StoredTransaction[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState({
+    total: 0,
+    successful: 0,
+    failed: 0,
+    pending: 0,
+    totalVolume: '0',
+    averageGasPrice: '0',
   });
 
-  const isMountedRef = useRef(true);
-
-  // Carica la storia delle transazioni dal storage
-  const loadTransactionHistory = useCallback(async () => {
-    if (!address) return;
-
-    try {
-      setState(prev => ({
-        ...prev,
-        isLoading: true,
-        error: null,
-      }));
-
-      const stored = await AsyncStorage.getItem(`${STORAGE_KEY}_${address}`);
-      const transactions: Transaction[] = stored ? JSON.parse(stored) : [];
-
-      if (isMountedRef.current) {
-        setState({
-          transactions,
-          isLoading: false,
-          error: null,
-        });
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load transaction history';
-      if (isMountedRef.current) {
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-          error: errorMessage,
-        }));
-      }
-    }
-  }, [address]);
-
-  // Carica la storia al mount o quando cambia l'indirizzo
+  // Load transactions on mount
   useEffect(() => {
-    loadTransactionHistory();
-  }, [address, loadTransactionHistory]);
+    loadTransactions();
+  }, []);
 
-  // Salva una transazione nella storia
-  const addTransaction = useCallback(
-    async (tx: Transaction) => {
-      if (!address) return;
-
-      try {
-        const stored = await AsyncStorage.getItem(`${STORAGE_KEY}_${address}`);
-        let transactions: Transaction[] = stored ? JSON.parse(stored) : [];
-
-        // Aggiungi la nuova transazione
-        transactions.unshift(tx);
-
-        // Mantieni solo le ultime MAX_TRANSACTIONS
-        transactions = transactions.slice(0, MAX_TRANSACTIONS);
-
-        // Salva nel storage
-        await AsyncStorage.setItem(`${STORAGE_KEY}_${address}`, JSON.stringify(transactions));
-
-        if (isMountedRef.current) {
-          setState(prev => ({
-            ...prev,
-            transactions,
-          }));
-        }
-      } catch (err) {
-        console.error('Failed to add transaction:', err);
-      }
-    },
-    [address],
-  );
-
-  // Aggiorna lo stato di una transazione
-  const updateTransactionStatus = useCallback(
-    async (txHash: string, status: 'pending' | 'confirmed' | 'failed', blockNumber?: number) => {
-      if (!address) return;
-
-      try {
-        const stored = await AsyncStorage.getItem(`${STORAGE_KEY}_${address}`);
-        let transactions: Transaction[] = stored ? JSON.parse(stored) : [];
-
-        // Trova e aggiorna la transazione
-        const txIndex = transactions.findIndex(tx => tx.hash === txHash);
-        if (txIndex !== -1) {
-          transactions[txIndex].status = status;
-          if (blockNumber) {
-            transactions[txIndex].blockNumber = blockNumber;
-          }
-
-          // Salva nel storage
-          await AsyncStorage.setItem(`${STORAGE_KEY}_${address}`, JSON.stringify(transactions));
-
-          if (isMountedRef.current) {
-            setState(prev => ({
-              ...prev,
-              transactions,
-            }));
-          }
-        }
-      } catch (err) {
-        console.error('Failed to update transaction status:', err);
-      }
-    },
-    [address],
-  );
-
-  // Sincronizza le transazioni dal blockchain
-  const syncFromBlockchain = useCallback(async () => {
-    if (!address || !provider) return;
+  /**
+   * Load all transactions
+   */
+  const loadTransactions = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
 
     try {
-      setState(prev => ({
-        ...prev,
-        isLoading: true,
-      }));
-
-      // Ottieni le transazioni dal blockchain (simulato)
-      // In produzione, useremmo un servizio come Etherscan API o The Graph
-      const blockNumber = await provider.getBlockNumber();
-
-      // Simula il caricamento di transazioni dal blockchain
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      if (isMountedRef.current) {
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-        }));
-      }
+      const history = await getTransactionHistory();
+      setTransactions(history);
+      await refreshStats();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to sync from blockchain';
-      if (isMountedRef.current) {
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-          error: errorMessage,
-        }));
-      }
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load transactions';
+      setError(errorMessage);
+      console.error('Load transactions error:', err);
+    } finally {
+      setIsLoading(false);
     }
-  }, [address, provider]);
+  }, []);
 
-  // Cancella la storia delle transazioni
-  const clearHistory = useCallback(async () => {
-    if (!address) return;
+  /**
+   * Load recent transactions
+   */
+  const loadRecentTransactions = useCallback(async (limit: number = 10) => {
+    setIsLoading(true);
+    setError(null);
 
     try {
-      await AsyncStorage.removeItem(`${STORAGE_KEY}_${address}`);
-
-      if (isMountedRef.current) {
-        setState({
-          transactions: [],
-          isLoading: false,
-          error: null,
-        });
-      }
+      const recent = await getRecentTransactions(limit);
+      setTransactions(recent);
     } catch (err) {
-      console.error('Failed to clear transaction history:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load recent transactions';
+      setError(errorMessage);
+      console.error('Load recent transactions error:', err);
+    } finally {
+      setIsLoading(false);
     }
-  }, [address]);
+  }, []);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
+  /**
+   * Load transactions for address
+   */
+  const loadTransactionsForAddress = useCallback(async (address: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const addressTransactions = await getTransactionsForAddress(address);
+      setTransactions(addressTransactions);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load address transactions';
+      setError(errorMessage);
+      console.error('Load address transactions error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  /**
+   * Filter transactions
+   */
+  const handleFilterTransactions = useCallback(async (filter: TransactionFilter) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const filtered = await filterTransactions(filter);
+      setTransactions(filtered);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to filter transactions';
+      setError(errorMessage);
+      console.error('Filter transactions error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  /**
+   * Save transaction
+   */
+  const handleSaveTransaction = useCallback(async (transaction: StoredTransaction) => {
+    setError(null);
+
+    try {
+      await saveTransaction(transaction);
+      await loadTransactions();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save transaction';
+      setError(errorMessage);
+      console.error('Save transaction error:', err);
+      throw err;
+    }
+  }, [loadTransactions]);
+
+  /**
+   * Get single transaction
+   */
+  const getTransaction = useCallback(async (hash: string): Promise<StoredTransaction | null> => {
+    try {
+      setError(null);
+      return await getTransactionByHash(hash);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to get transaction';
+      setError(errorMessage);
+      console.error('Get transaction error:', err);
+      return null;
+    }
+  }, []);
+
+  /**
+   * Delete transaction
+   */
+  const handleDeleteTransaction = useCallback(async (hash: string) => {
+    setError(null);
+
+    try {
+      await deleteTransaction(hash);
+      await loadTransactions();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete transaction';
+      setError(errorMessage);
+      console.error('Delete transaction error:', err);
+      throw err;
+    }
+  }, [loadTransactions]);
+
+  /**
+   * Clear history
+   */
+  const handleClearHistory = useCallback(async () => {
+    setError(null);
+
+    try {
+      await clearTransactionHistory();
+      setTransactions([]);
+      setStats({
+        total: 0,
+        successful: 0,
+        failed: 0,
+        pending: 0,
+        totalVolume: '0',
+        averageGasPrice: '0',
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to clear history';
+      setError(errorMessage);
+      console.error('Clear history error:', err);
+      throw err;
+    }
+  }, []);
+
+  /**
+   * Export history
+   */
+  const handleExportHistory = useCallback(async (): Promise<string> => {
+    try {
+      setError(null);
+      return await exportTransactionHistory();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to export history';
+      setError(errorMessage);
+      console.error('Export history error:', err);
+      throw err;
+    }
+  }, []);
+
+  /**
+   * Import history
+   */
+  const handleImportHistory = useCallback(async (jsonData: string) => {
+    setError(null);
+
+    try {
+      await importTransactionHistory(jsonData);
+      await loadTransactions();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to import history';
+      setError(errorMessage);
+      console.error('Import history error:', err);
+      throw err;
+    }
+  }, [loadTransactions]);
+
+  /**
+   * Add note to transaction
+   */
+  const handleAddNote = useCallback(async (hash: string, note: string) => {
+    setError(null);
+
+    try {
+      await addTransactionNote(hash, note);
+      await loadTransactions();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add note';
+      setError(errorMessage);
+      console.error('Add note error:', err);
+      throw err;
+    }
+  }, [loadTransactions]);
+
+  /**
+   * Refresh statistics
+   */
+  const refreshStats = useCallback(async () => {
+    try {
+      const newStats = await getTransactionStats();
+      setStats(newStats);
+    } catch (err) {
+      console.error('Refresh stats error:', err);
+    }
   }, []);
 
   return {
-    transactions: state.transactions,
-    isLoading: state.isLoading,
-    error: state.error,
-    addTransaction,
-    updateTransactionStatus,
-    syncFromBlockchain,
-    clearHistory,
-    loadTransactionHistory,
+    transactions,
+    isLoading,
+    error,
+    stats,
+    saveTransaction: handleSaveTransaction,
+    loadTransactions,
+    loadRecentTransactions,
+    loadTransactionsForAddress,
+    filterTransactions: handleFilterTransactions,
+    getTransaction,
+    deleteTransaction: handleDeleteTransaction,
+    clearHistory: handleClearHistory,
+    exportHistory: handleExportHistory,
+    importHistory: handleImportHistory,
+    addNote: handleAddNote,
+    refreshStats,
   };
 }
