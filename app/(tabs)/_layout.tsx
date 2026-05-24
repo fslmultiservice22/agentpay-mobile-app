@@ -289,6 +289,19 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      {/* Transfer Funds */}
+      <Tabs.Screen
+        name="transfer-funds"
+        options={{
+          title: "Transfer",
+          tabBarIcon: ({ color, focused }) => (
+            <View className={focused ? "scale-110" : ""}>
+              <IconSymbol size={28} name="paperplane.fill" color={color} />
+            </View>
+          ),
+        }}
+      />
     </Tabs>
   );
 }
