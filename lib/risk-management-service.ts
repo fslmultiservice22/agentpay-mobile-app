@@ -9,7 +9,7 @@ export interface PortfolioRisk {
   expectedShortfall: number; // CVaR
   volatility: number;
   sharpeRatio: number;
-  sortino Ratio: number;
+  sortinoRatio: number;
   maxDrawdown: number;
   beta: number;
 }
