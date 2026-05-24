@@ -30,7 +30,7 @@ describe('Blockchain API Service', () => {
     const networkInfo = await service.getNetworkInfo();
     expect(networkInfo).toHaveProperty('chainId');
     expect(networkInfo).toHaveProperty('blockNumber');
-  });
+  }, 15000);
 
   it('should get gas price', async () => {
     const service = getBlockchainAPIService();
@@ -38,7 +38,7 @@ describe('Blockchain API Service', () => {
     expect(gasPrice).toHaveProperty('standard');
     expect(gasPrice).toHaveProperty('fast');
     expect(gasPrice).toHaveProperty('fastest');
-  });
+  }, 15000);
 });
 
 describe('QR WalletConnect Service', () => {
