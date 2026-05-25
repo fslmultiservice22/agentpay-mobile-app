@@ -239,7 +239,7 @@ class PushNotificationsFirebaseService {
     const bodies = {
       follow: `${fromUser} is now following your portfolio!`,
       like: `${fromUser} liked your post: "${content || 'Your trading strategy'}"`,
-      comment: `${fromUser} commented: "${content || 'Great strategy!'"}"`,
+      comment: `${fromUser} commented: "${content || 'Great strategy!'}"`,
       share: `${fromUser} shared your strategy with their followers!`,
     };
 
