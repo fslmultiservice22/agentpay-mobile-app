@@ -23,8 +23,10 @@ export default function QRScannerScreen() {
     
     if (parsed) {
       Alert.alert('Success', `Scanned: ${parsed.address}\nAmount: ${parsed.amount || 'Not specified'}`);
+      // TODO: Implement wallet connection flow with QR data
+      // For now, navigate to trading with the parsed data
       router.push({
-        pathname: '/wallet-connect',
+        pathname: '/(tabs)/trading',
         params: {
           address: parsed.address,
           amount: parsed.amount,

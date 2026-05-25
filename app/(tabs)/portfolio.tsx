@@ -47,7 +47,9 @@ export default function PortfolioScreen() {
   });
 
   const handleConnectWallet = () => {
-    router.push('/wallet-connect');
+    // TODO: Implement wallet connection flow
+    // For now, navigate to settings
+    router.push('/(tabs)/settings');
   };
 
   const handleDisconnect = async () => {
