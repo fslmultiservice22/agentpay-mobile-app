@@ -44,26 +44,74 @@ export default function RootLayout() {
     initManusRuntime();
   }, []);
 
-  // Handle deep links from MetaMask
+  // Handle deep links from MetaMask and app startup
   useEffect(() => {
     const handleDeepLink = ({ url }: { url: string }) => {
-      console.log('Deep link received:', url);
-      const route = url.replace(/.*?:\/\//g, '');
+      console.log('=== DEEP LINK DEBUG ===');
+      console.log('Raw URL:', url);
+      console.log('URL length:', url?.length);
+      console.log('URL is empty:', !url || url === '' || url === 'agentpay://' || url === 'agentpay:///');
       
-      // Handle MetaMask responses
-      if (route.includes('wallet-connect') || route.includes('wc') || url.includes('agentpay://')) {
-        // MetaMask ha risposto, naviga alla home
+      try {
+        // If URL is empty or just the scheme, navigate to home
+        if (!url || url === '' || url === 'agentpay://' || url === 'agentpay:///' || url.trim() === '') {
+          console.log('Empty URL detected, navigating to home');
+          router.push('/(tabs)');
+          return;
+        }
+        
+        const route = url.replace(/.*?:\/\//g, '');
+        console.log('Parsed route:', route);
+        
+        // Handle MetaMask and WalletConnect responses
+        if (route.includes('wallet-connect') || route.includes('wc')) {
+          console.log('WalletConnect detected, navigating to trading');
+          router.push('/(tabs)/trading');
+          return;
+        }
+        
+        // Handle agentpay scheme with specific routes
+        if (url.includes('agentpay://')) {
+          if (route.includes('trading')) {
+            router.push('/(tabs)/trading');
+            return;
+          }
+          if (route.includes('portfolio')) {
+            router.push('/(tabs)/portfolio');
+            return;
+          }
+          if (route.includes('settings')) {
+            router.push('/(tabs)/settings');
+            return;
+          }
+        }
+        
+        // Fallback: always go to home if route is not recognized
+        console.log('Route not recognized, falling back to home');
+        router.push('/(tabs)');
+      } catch (error) {
+        console.error('Error handling deep link:', error);
+        // Safety fallback
         router.push('/(tabs)');
       }
+      console.log('====================');
     };
 
     const subscription = Linking.addEventListener('url', handleDeepLink);
 
-    // Check for initial URL
+    // Check for initial URL when app starts
     Linking.getInitialURL().then((url) => {
+      console.log('Initial URL on app start:', url);
       if (url != null) {
         handleDeepLink({ url });
+      } else {
+        // No initial URL, navigate to home
+        console.log('No initial URL, navigating to home');
+        router.push('/(tabs)');
       }
+    }).catch((error) => {
+      console.error('Error getting initial URL:', error);
+      router.push('/(tabs)');
     });
 
     return () => {

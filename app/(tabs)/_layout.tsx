@@ -130,32 +130,6 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Copy Trade */}
-      <Tabs.Screen
-        name="copy-trade-tracking"
-        options={{
-          title: "Copy Trade",
-          tabBarIcon: ({ color, focused }) => (
-            <View className={focused ? "scale-110" : ""}>
-              <IconSymbol size={28} name="doc.text.fill" color={color} />
-            </View>
-          ),
-        }}
-      />
-
-      {/* Leaderboard */}
-      <Tabs.Screen
-        name="leaderboard"
-        options={{
-          title: "Leaderboard",
-          tabBarIcon: ({ color, focused }) => (
-            <View className={focused ? "scale-110" : ""}>
-              <IconSymbol size={28} name="star.fill" color={color} />
-            </View>
-          ),
-        }}
-      />
-
       {/* Settings */}
       <Tabs.Screen
         name="settings"
@@ -169,11 +143,41 @@ export default function TabLayout() {
         }}
       />
 
+      {/* Hidden screens - accessible via navigation but not shown in tab bar */}
+      {/* Copy Trade */}
+      <Tabs.Screen
+        name="copy-trade-tracking"
+        options={{
+          title: "Copy Trade",
+          href: null,
+          tabBarIcon: ({ color, focused }) => (
+            <View className={focused ? "scale-110" : ""}>
+              <IconSymbol size={28} name="doc.text.fill" color={color} />
+            </View>
+          ),
+        }}
+      />
+
+      {/* Leaderboard */}
+      <Tabs.Screen
+        name="leaderboard"
+        options={{
+          title: "Leaderboard",
+          href: null,
+          tabBarIcon: ({ color, focused }) => (
+            <View className={focused ? "scale-110" : ""}>
+              <IconSymbol size={28} name="star.fill" color={color} />
+            </View>
+          ),
+        }}
+      />
+
       {/* Telegram */}
       <Tabs.Screen
         name="telegram"
         options={{
           title: "Telegram",
+          href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
               <Text style={{ fontSize: 28 }}>📱</Text>
@@ -187,6 +191,7 @@ export default function TabLayout() {
         name="price-alerts"
         options={{
           title: "Alerts",
+          href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
               <IconSymbol size={28} name="bell.fill" color={color} />
@@ -200,6 +205,7 @@ export default function TabLayout() {
         name="cross-chain-swap"
         options={{
           title: "Swap",
+          href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
               <IconSymbol
@@ -217,6 +223,7 @@ export default function TabLayout() {
         name="gas-comparator"
         options={{
           title: "Gas",
+          href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
               <IconSymbol size={28} name="bolt.fill" color={color} />
@@ -230,6 +237,7 @@ export default function TabLayout() {
         name="rebalancing-dashboard"
         options={{
           title: "Rebalance",
+          href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
               <IconSymbol size={28} name="arrow.2.squarepath" color={color} />
@@ -243,6 +251,7 @@ export default function TabLayout() {
         name="portfolio-multi"
         options={{
           title: "Multi Portfolio",
+          href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
               <IconSymbol size={28} name="folder.fill" color={color} />
@@ -256,6 +265,7 @@ export default function TabLayout() {
         name="swap-analytics"
         options={{
           title: "Swap Analytics",
+          href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
               <IconSymbol size={28} name="chart.bar.fill" color={color} />
@@ -269,6 +279,7 @@ export default function TabLayout() {
         name="credit-line"
         options={{
           title: "Credit",
+          href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
               <IconSymbol size={28} name="creditcard.fill" color={color} />
@@ -282,6 +293,7 @@ export default function TabLayout() {
         name="social-trading"
         options={{
           title: "Social Trading",
+          href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
               <IconSymbol size={28} name="network" color={color} />
@@ -295,6 +307,7 @@ export default function TabLayout() {
         name="transfer-funds"
         options={{
           title: "Transfer",
+          href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
               <IconSymbol size={28} name="paperplane.fill" color={color} />
