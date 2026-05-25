@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from './ui/icon-symbol';
+import { analytics } from '@/lib/analytics';
 
 interface DrawerMenuItem {
   label: string;
@@ -100,12 +101,23 @@ interface DrawerMenuProps {
 }
 
 export function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
+  // Track drawer menu open
+  React.useEffect(() => {
+    if (visible) {
+      analytics.trackDrawerMenuOpen();
+    }
+  }, [visible]);
   const router = useRouter();
   const colors = useColors();
   const screenWidth = Dimensions.get('window').width;
   const drawerWidth = Math.min(screenWidth * 0.75, 300);
 
   const handleNavigate = (route: string) => {
+    // Track drawer menu item click
+    const item = DRAWER_ITEMS.find(i => i.route === route);
+    if (item) {
+      analytics.trackDrawerMenuItemClick(item.label, route);
+    }
     router.push(route as any);
     onClose();
   };
