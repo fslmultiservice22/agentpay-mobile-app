@@ -22,8 +22,7 @@ import {
   subscribeSafeAreaInsets,
 } from "@/lib/_core/manus-runtime";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// import { WalletProvider } from "@/lib/web3/wallet-context";
-// import { BlockchainProvider } from "@/lib/blockchain/blockchain-context";
+import { BlockchainProvider } from "@/lib/blockchain/blockchain-context";
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -185,8 +184,9 @@ export default function RootLayout() {
 
   const content = (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <QueryClientProvider client={queryClient}>
+      <BlockchainProvider>
+        <trpc.Provider client={trpcClient} queryClient={queryClient}>
+          <QueryClientProvider client={queryClient}>
             {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
             {/* If a screen needs the native header, explicitly enable it and set a human title via Stack.Screen options. */}
             {/* in order for ios apps tab switching to work properly, use presentation: "fullScreenModal" for login page, whenever you decide to use presentation: "modal*/}
@@ -195,8 +195,9 @@ export default function RootLayout() {
               <Stack.Screen name="oauth/callback" />
             </Stack>
             <StatusBar style="auto" />
-        </QueryClientProvider>
-      </trpc.Provider>
+          </QueryClientProvider>
+        </trpc.Provider>
+      </BlockchainProvider>
     </GestureHandlerRootView>
   );
 
