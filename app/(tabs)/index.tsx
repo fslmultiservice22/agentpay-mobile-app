@@ -2,11 +2,13 @@ import { ScrollView, Text, View, TouchableOpacity, ActivityIndicator, RefreshCon
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { ScreenContainer } from '@/components/screen-container';
+import { DrawerMenu } from '@/components/drawer-menu';
 import { useColors } from '@/hooks/use-colors';
 import { useI18n } from '@/hooks/use-i18n';
 import { useEthereumWallet } from '@/hooks/use-ethereum-wallet';
 import { useBankAccounts } from '@/hooks/use-bank-accounts';
 import { maskEthereumAddress } from '@/lib/ethereum-validator';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -15,6 +17,7 @@ export default function HomeScreen() {
   const { wallet, loading: walletLoading, refreshWallet, disconnectWallet } = useEthereumWallet();
   const { accounts, loading: bankLoading } = useBankAccounts();
   const [refreshing, setRefreshing] = useState(false);
+  const [drawerVisible, setDrawerVisible] = useState(false);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -60,14 +63,25 @@ export default function HomeScreen() {
 
   return (
     <ScreenContainer className="flex-1 bg-background">
+      {/* Drawer Menu */}
+      <DrawerMenu visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
+      
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Header */}
-        <View className="bg-gradient-to-b from-primary to-primary/80 px-6 py-8 gap-4">
-          <Text className="text-4xl font-bold text-white">{t('home.title')}</Text>
-          <Text className="text-base text-white/80">{t('home.subtitle')}</Text>
+        {/* Header with Drawer Button */}
+        <View className="bg-gradient-to-b from-primary to-primary/80 px-6 py-8 gap-4 flex-row justify-between items-start">
+          <View className="flex-1">
+            <Text className="text-4xl font-bold text-white">{t('home.title')}</Text>
+            <Text className="text-base text-white/80">{t('home.subtitle')}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => setDrawerVisible(true)}
+            className="bg-white/20 rounded-lg p-2"
+          >
+            <IconSymbol size={24} name="line.3.horizontal" color="white" />
+          </TouchableOpacity>
         </View>
 
         {/* Wallet Status Card */}
