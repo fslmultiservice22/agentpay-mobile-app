@@ -70,11 +70,26 @@ export function IconSymbol({
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
+  const mappedName = MAPPING[name];
+  
+  // Fallback to a default icon if the name is not in the mapping
+  if (!mappedName) {
+    console.warn(`IconSymbol: "${name}" not found in MAPPING, using fallback icon`);
+    return (
+      <MaterialIcons
+        color={color}
+        size={size}
+        name="help-outline"
+        style={style}
+      />
+    );
+  }
+  
   return (
     <MaterialIcons
       color={color}
       size={size}
-      name={MAPPING[name]}
+      name={mappedName}
       style={style}
     />
   );
