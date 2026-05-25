@@ -215,13 +215,7 @@ export async function getNonce(provider: any, address: string): Promise<number> 
  * Validate address
  */
 export function validateAddress(address: string): boolean {
-  try {
-    const { getAddress } = require('ethers');
-    getAddress(address);
-    return true;
-  } catch {
-    return false;
-  }
+  return /^0x[a-fA-F0-9]{40}$/.test(address);
 }
 
 /**
@@ -232,4 +226,14 @@ export function formatAddress(address: string): string {
     return address;
   }
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
+/**
+ * Shorten address for display (alias for formatAddress)
+ */
+export function shortenAddress(address: string, chars = 4): string {
+  if (!address || address.length < 10) {
+    return address;
+  }
+  return `${address.slice(0, chars + 2)}...${address.slice(-chars)}`;
 }
