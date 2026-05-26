@@ -30,7 +30,7 @@ class WidgetService {
     colorScheme: 'auto',
   };
 
-  private refreshTimer: NodeJS.Timeout | null = null;
+  private refreshTimer: NodeJS.Timeout | number | null = null;
   private listeners: ((data: WidgetData) => void)[] = [];
 
   /**

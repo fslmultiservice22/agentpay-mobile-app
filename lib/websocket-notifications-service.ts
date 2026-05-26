@@ -29,8 +29,8 @@ class WebSocketNotificationsService {
 
   private messageQueue: WebSocketMessage[] = [];
   private listeners: Map<string, Set<(data: any) => void>> = new Map();
-  private reconnectTimer?: NodeJS.Timeout;
-  private heartbeatTimer?: NodeJS.Timeout;
+  private reconnectTimer?: NodeJS.Timeout | number;
+  private heartbeatTimer?: NodeJS.Timeout | number;
   private readonly MAX_RECONNECT_ATTEMPTS = 5;
   private readonly RECONNECT_DELAY = 3000; // 3 seconds
   private readonly HEARTBEAT_INTERVAL = 30000; // 30 seconds

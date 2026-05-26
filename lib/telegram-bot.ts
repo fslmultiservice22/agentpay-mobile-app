@@ -1,1 +1,104 @@
-/**\n * Telegram Bot Integration Service\n * Handles bot commands and user interactions\n */\n\nexport interface TelegramUser {\n  id: string;\n  username: string;\n  firstName: string;\n  lastName?: string;\n  chatId: string;\n  connectedAt: number;\n}\n\nexport interface TelegramCommand {\n  command: string;\n  description: string;\n  handler: (args: string[]) => Promise<string>;\n}\n\nexport interface BotMessage {\n  id: string;\n  userId: string;\n  command: string;\n  args: string[];\n  response: string;\n  timestamp: number;\n}\n\nclass TelegramBotService {\n  private botToken?: string;\n  private users: Map<string, TelegramUser> = new Map();\n  private messageHistory: Map<string, BotMessage[]> = new Map();\n  private commands: Map<string, TelegramCommand> = new Map();\n\n  constructor() {\n    this.registerDefaultCommands();\n  }\n\n  /**\n   * Set bot token\n   */\n  setBotToken(token: string) {\n    this.botToken = token;\n  }\n\n  /**\n   * Register default commands\n   */\n  private registerDefaultCommands() {\n    this.registerCommand({\n      command: 'start',\n      description: 'Start the bot and connect your wallet',\n      handler: async () => {\n        return '👋 Welcome to AgentPay Wallet Bot!\\n\\nCommands:\\n/balance - Check your balance\\n/transfer - Send money\\n/portfolio - View portfolio\\n/prices - Get token prices\\n/help - Show all commands';\n      },\n    });\n\n    this.registerCommand({\n      command: 'balance',\n      description: 'Check your wallet balance',\n      handler: async () => {\n        return '💰 Your Balance:\\n\\nETH: 2.5\\nUSDC: 5000\\nDAI: 3000\\nUNI: 150\\n\\nTotal Value: ~$12,500';\n      },\n    });\n\n    this.registerCommand({\n      command: 'transfer',\n      description: 'Send money to another address',\n      handler: async (args: string[]) => {\n        if (args.length < 2) {\n          return '❌ Usage: /transfer <address> <amount> [token]\\nExample: /transfer 0x123... 100 USDC';\n        }\n        const address = args[0];\n        const amount = args[1];\n        const token = args[2] || 'ETH';\n        return `✅ Transfer initiated!\\n\\nTo: ${address}\\nAmount: ${amount} ${token}\\n\\nCheck your app for confirmation.`;\n      },\n    });\n\n    this.registerCommand({\n      command: 'portfolio',\n      description: 'View your portfolio',\n      handler: async () => {\n        return '📊 Your Portfolio:\\n\\n🔵 Ethereum (ETH): 2.5 (~$5,000)\\n💵 USDC: 5,000 (~$5,000)\\n🏦 DAI: 3,000 (~$3,000)\\n🦄 UNI: 150 (~$1,500)\\n\\n24h Change: +2.5%\\nTotal Value: ~$14,500';\n      },\n    });\n\n    this.registerCommand({\n      command: 'prices',\n      description: 'Get current token prices',\n      handler: async () => {\n        return '💹 Token Prices (Live):\\n\\nBTC: $42,500 (+2.3%)\\nETH: $2,000 (+1.8%)\\nSOL: $95 (+3.2%)\\nUSDC: $1.00 (0%)\\nDAI: $1.00 (0%)\\nUNI: $10.50 (-0.5%)';\n      },\n    });\n\n    this.registerCommand({\n      command: 'yield',\n      description: 'View yield farming opportunities',\n      handler: async () => {\n        return '🌾 Yield Farming Pools:\\n\\n1. Aave USDC: 5.2% APY\\n2. Compound DAI: 4.8% APY\\n3. Curve 3pool: 3.5% APY\\n4. Lido ETH: 3.2% APY\\n\\nTotal Earning: ~$650/month';\n      },\n    });\n\n    this.registerCommand({\n      command: 'copy',\n      description: 'View copy trading opportunities',\n      handler: async () => {\n        return '📋 Top Traders (Copy Trading):\\n\\n1. @CryptoGuru - Win Rate: 72% - Followers: 1.2K\\n2. @DeFiMaster - Win Rate: 68% - Followers: 890\\n3. @TradingPro - Win Rate: 65% - Followers: 2.1K\\n\\nUse /copy <trader_id> to start copying';\n      },\n    });\n\n    this.registerCommand({\n      command: 'alerts',\n      description: 'Set price alerts',\n      handler: async (args: string[]) => {\n        if (args.length < 2) {\n          return '❌ Usage: /alerts <token> <price>\\nExample: /alerts ETH 2500';\n        }\n        const token = args[0];\n        const price = args[1];\n        return `✅ Alert set!\\n\\nToken: ${token}\\nPrice: $${price}\\n\\nYou will be notified when the price reaches this level.`;\n      },\n    });\n\n    this.registerCommand({\n      command: 'help',\n      description: 'Show all available commands',\n      handler: async () => {\n        let help = '📚 Available Commands:\\n\\n';\n        for (const [, cmd] of this.commands) {\n          help += `/${cmd.command} - ${cmd.description}\\n`;\n        }\n        return help;\n      },\n    });\n  }\n\n  /**\n   * Register a custom command\n   */\n  registerCommand(command: TelegramCommand) {\n    this.commands.set(command.command, command);\n  }\n\n  /**\n   * Connect user to bot\n   */\n  async connectUser(\n    userId: string,\n    username: string,\n    firstName: string,\n    lastName: string | undefined,\n    chatId: string\n  ): Promise<TelegramUser> {\n    const user: TelegramUser = {\n      id: userId,\n      username,\n      firstName,\n      lastName,\n      chatId,\n      connectedAt: Date.now(),\n    };\n\n    this.users.set(userId, user);\n    this.messageHistory.set(userId, []);\n\n    return user;\n  }\n\n  /**\n   * Handle incoming message\n   */\n  async handleMessage(userId: string, text: string): Promise<string> {\n    const parts = text.trim().split(' ');\n    const commandName = parts[0].startsWith('/') ? parts[0].slice(1) : parts[0];\n    const args = parts.slice(1);\n\n    const command = this.commands.get(commandName);\n    if (!command) {\n      return `❌ Command not found: /${commandName}\\n\\nType /help to see available commands.`;\n    }\n\n    try {\n      const response = await command.handler(args);\n\n      // Store message in history\n      const message: BotMessage = {\n        id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,\n        userId,\n        command: commandName,\n        args,\n        response,\n        timestamp: Date.now(),\n      };\n\n      if (!this.messageHistory.has(userId)) {\n        this.messageHistory.set(userId, []);\n      }\n      this.messageHistory.get(userId)!.push(message);\n\n      return response;\n    } catch (error) {\n      return `❌ Error executing command: ${error instanceof Error ? error.message : 'Unknown error'}`;\n    }\n  }\n\n  /**\n   * Get user by ID\n   */\n  getUser(userId: string): TelegramUser | null {\n    return this.users.get(userId) || null;\n  }\n\n  /**\n   * Get all connected users\n   */\n  getAllUsers(): TelegramUser[] {\n    return Array.from(this.users.values());\n  }\n\n  /**\n   * Get message history for user\n   */\n  getMessageHistory(userId: string, limit: number = 20): BotMessage[] {\n    const history = this.messageHistory.get(userId) || [];\n    return history.slice(-limit);\n  }\n\n  /**\n   * Disconnect user\n   */\n  disconnectUser(userId: string): boolean {\n    return this.users.delete(userId);\n  }\n\n  /**\n   * Send notification to user\n   */\n  async sendNotification(userId: string, message: string): Promise<boolean> {\n    const user = this.users.get(userId);\n    if (!user) return false;\n\n    try {\n      // In production, send via Telegram API\n      console.log(`📱 Notification to ${user.username}: ${message}`);\n      return true;\n    } catch (error) {\n      console.error('Error sending notification:', error);\n      return false;\n    }\n  }\n\n  /**\n   * Broadcast message to all users\n   */\n  async broadcastMessage(message: string): Promise<number> {\n    let count = 0;\n    for (const user of this.users.values()) {\n      if (await this.sendNotification(user.id, message)) {\n        count++;\n      }\n    }\n    return count;\n  }\n\n  /**\n   * Get command list\n   */\n  getCommands(): TelegramCommand[] {\n    return Array.from(this.commands.values());\n  }\n\n  /**\n   * Get bot stats\n   */\n  getStats() {\n    let totalMessages = 0;\n    for (const messages of this.messageHistory.values()) {\n      totalMessages += messages.length;\n    }\n\n    return {\n      totalUsers: this.users.size,\n      totalMessages,\n      commands: this.commands.size,\n      uptime: Date.now(),\n    };\n  }\n}\n\n// Export singleton instance\nexport const telegramBot = new TelegramBotService();\n
+/**
+ * Telegram Bot Integration Service
+ * Handles bot commands and user interactions
+ */
+
+export interface TelegramUser {
+  id: string;
+  username: string;
+  firstName: string;
+  lastName?: string;
+  chatId: string;
+  connectedAt: number;
+}
+
+export interface TelegramCommand {
+  command: string;
+  description: string;
+  handler: (args: string[]) => Promise<string>;
+}
+
+export interface BotMessage {
+  id: string;
+  userId: string;
+  command: string;
+  args: string[];
+  response: string;
+  timestamp: number;
+}
+
+class TelegramBotService {
+  private botToken?: string;
+  private users: Map<string, TelegramUser> = new Map();
+  private messageHistory: Map<string, BotMessage[]> = new Map();
+  private commands: Map<string, TelegramCommand> = new Map();
+
+  constructor() {
+    this.registerDefaultCommands();
+  }
+
+  private registerDefaultCommands() {
+    this.registerCommand({
+      command: 'start',
+      description: 'Start the bot and connect your wallet',
+      handler: async () => {
+        return '👋 Welcome to AgentPay Wallet Bot!';
+      },
+    });
+
+    this.registerCommand({
+      command: 'balance',
+      description: 'Check your wallet balance',
+      handler: async () => {
+        return '💰 Your Balance: €8,000.00';
+      },
+    });
+
+    this.registerCommand({
+      command: 'help',
+      description: 'Show all available commands',
+      handler: async () => {
+        let help = '📚 Available Commands:\n\n';
+        for (const [, cmd] of this.commands) {
+          help += `/${cmd.command} - ${cmd.description}\n`;
+        }
+        return help;
+      },
+    });
+  }
+
+  registerCommand(command: TelegramCommand) {
+    this.commands.set(command.command, command);
+  }
+
+  async handleMessage(userId: string, text: string): Promise<string> {
+    const parts = text.trim().split(' ');
+    const commandName = parts[0].startsWith('/') ? parts[0].slice(1) : parts[0];
+    const args = parts.slice(1);
+
+    const command = this.commands.get(commandName);
+    if (!command) {
+      return `❌ Command not found: /${commandName}`;
+    }
+
+    try {
+      return await command.handler(args);
+    } catch (error) {
+      return `❌ Error executing command`;
+    }
+  }
+
+  getUser(userId: string): TelegramUser | null {
+    return this.users.get(userId) || null;
+  }
+
+  getAllUsers(): TelegramUser[] {
+    return Array.from(this.users.values());
+  }
+
+  getCommands(): TelegramCommand[] {
+    return Array.from(this.commands.values());
+  }
+}
+
+export const telegramBot = new TelegramBotService();

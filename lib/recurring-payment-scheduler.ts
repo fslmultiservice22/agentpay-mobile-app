@@ -70,12 +70,13 @@ class RecurringPaymentScheduler {
   /**
    * Create a new recurring payment
    */
-  createRecurringPayment(payment: Omit<RecurringPayment, 'id' | 'executionCount' | 'failureCount' | 'createdAt' | 'updatedAt'>): RecurringPayment {
+  createRecurringPayment(payment: Omit<RecurringPayment, 'id' | 'executionCount' | 'failureCount' | 'createdAt' | 'updatedAt' | 'nextExecutionDate'>): RecurringPayment {
     const id = `rp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     const newPayment: RecurringPayment = {
       ...payment,
       id,
+      nextExecutionDate: payment.startDate,
       executionCount: 0,
       failureCount: 0,
       createdAt: Date.now(),

@@ -1,1 +1,110 @@
-/**\n * OTA (Over-The-Air) Update System\n * Handles app updates without requiring app store submission\n */\n\nimport AsyncStorage from '@react-native-async-storage/async-storage';\n\nexport interface AppUpdate {\n  id: string;\n  version: string;\n  buildNumber: number;\n  releaseDate: number;\n  description: string;\n  changes: string[];\n  downloadUrl: string;\n  fileSize: number; // in bytes\n  checksum: string;\n  mandatory: boolean;\n  minVersionRequired?: string;\n  releaseNotes: string;\n}\n\nexport interface UpdateStatus {\n  isUpdateAvailable: boolean;\n  currentVersion: string;\n  latestVersion: string;\n  update?: AppUpdate;\n  downloadProgress: number; // 0-100\n  isDownloading: boolean;\n  lastChecked: number;\n}\n\nclass OTAUpdateService {\n  private currentVersion = '1.0.85';\n  private currentBuildNumber = 85;\n  private updateServer = 'https://api.agentpay.io/updates';\n  private updates: Map<string, AppUpdate> = new Map();\n  private updateStatus: UpdateStatus = {\n    isUpdateAvailable: false,\n    currentVersion: this.currentVersion,\n    latestVersion: this.currentVersion,\n    downloadProgress: 0,\n    isDownloading: false,\n    lastChecked: 0,\n  };\n  private listeners: Set<(status: UpdateStatus) => void> = new Set();\n\n  constructor() {\n    this.initializeMockUpdates();\n  }\n\n  /**\n   * Initialize with mock updates for demo\n   */\n  private initializeMockUpdates() {\n    const mockUpdate: AppUpdate = {\n      id: 'update_1',\n      version: '1.0.86',\n      buildNumber: 86,\n      releaseDate: Date.now() + 7 * 24 * 60 * 60 * 1000, // 1 week from now\n      description: 'Security and performance improvements',\n      changes: [\n        'Fixed critical security vulnerability in transaction signing',\n        'Improved app startup performance by 30%',\n        'Enhanced push notification reliability',\n        'Added support for new tokens (AAVE, CRV)',\n      ],\n      downloadUrl: 'https://cdn.agentpay.io/updates/agentpay-1.0.86.bundle',\n      fileSize: 15 * 1024 * 1024, // 15 MB\n      checksum: 'sha256:abc123def456',\n      mandatory: false,\n      releaseNotes: 'Version 1.0.86 - May 26, 2026',\n    };\n\n    this.updates.set(mockUpdate.version, mockUpdate);\n  }\n\n  /**\n   * Check for available updates\n   */\n  async checkForUpdates(): Promise<UpdateStatus> {\n    try {\n      // In production, fetch from update server\n      // const response = await fetch(`${this.updateServer}/check?version=${this.currentVersion}`);\n      // const data = await response.json();\n\n      // For demo, check mock updates\n      const latestUpdate = Array.from(this.updates.values())\n        .sort((a, b) => b.buildNumber - a.buildNumber)[0];\n\n      if (latestUpdate && latestUpdate.buildNumber > this.currentBuildNumber) {\n        this.updateStatus.isUpdateAvailable = true;\n        this.updateStatus.latestVersion = latestUpdate.version;\n        this.updateStatus.update = latestUpdate;\n      }\n\n      this.updateStatus.lastChecked = Date.now();\n      this.notifyListeners();\n\n      // Save to storage\n      await AsyncStorage.setItem(\n        'ota_update_status',\n        JSON.stringify(this.updateStatus)\n      );\n\n      return this.updateStatus;\n    } catch (error) {\n      console.error('Error checking for updates:', error);\n      return this.updateStatus;\n    }\n  }\n\n  /**\n   * Download update\n   */\n  async downloadUpdate(update: AppUpdate): Promise<boolean> {\n    try {\n      this.updateStatus.isDownloading = true;\n      this.notifyListeners();\n\n      // Simulate download with progress\n      for (let i = 0; i <= 100; i += 10) {\n        this.updateStatus.downloadProgress = i;\n        this.notifyListeners();\n        await new Promise(resolve => setTimeout(resolve, 500));\n      }\n\n      // Verify checksum\n      const verified = await this.verifyChecksum(update);\n      if (!verified) {\n        throw new Error('Checksum verification failed');\n      }\n\n      // Save update info\n      await AsyncStorage.setItem(\n        `ota_update_${update.version}`,\n        JSON.stringify(update)\n      );\n\n      this.updateStatus.isDownloading = false;\n      this.updateStatus.downloadProgress = 0;\n      this.notifyListeners();\n\n      return true;\n    } catch (error) {\n      console.error('Error downloading update:', error);\n      this.updateStatus.isDownloading = false;\n      this.notifyListeners();\n      return false;\n    }\n  }\n\n  /**\n   * Verify update checksum\n   */\n  private async verifyChecksum(update: AppUpdate): Promise<boolean> {\n    // In production, calculate SHA256 of downloaded file\n    // For demo, always return true\n    return true;\n  }\n\n  /**\n   * Install update\n   */\n  async installUpdate(update: AppUpdate): Promise<boolean> {\n    try {\n      // In production, extract and apply update bundle\n      // For demo, just update version\n      this.currentVersion = update.version;\n      this.currentBuildNumber = update.buildNumber;\n\n      // Save new version\n      await AsyncStorage.setItem('app_version', this.currentVersion);\n      await AsyncStorage.setItem('app_build_number', this.currentBuildNumber.toString());\n\n      // Clear update status\n      this.updateStatus.isUpdateAvailable = false;\n      this.updateStatus.latestVersion = this.currentVersion;\n      this.updateStatus.update = undefined;\n      this.notifyListeners();\n\n      return true;\n    } catch (error) {\n      console.error('Error installing update:', error);\n      return false;\n    }\n  }\n\n  /**\n   * Rollback to previous version\n   */\n  async rollbackUpdate(): Promise<boolean> {\n    try {\n      // In production, restore previous version from backup\n      // For demo, just log\n      console.log('Rolling back to previous version');\n      return true;\n    } catch (error) {\n      console.error('Error rolling back update:', error);\n      return false;\n    }\n  }\n\n  /**\n   * Subscribe to update status changes\n   */\n  subscribe(listener: (status: UpdateStatus) => void): () => void {\n    this.listeners.add(listener);\n    return () => this.listeners.delete(listener);\n  }\n\n  /**\n   * Notify all listeners\n   */\n  private notifyListeners() {\n    this.listeners.forEach(listener => {\n      try {\n        listener(this.updateStatus);\n      } catch (error) {\n        console.error('Error in update listener:', error);\n      }\n    });\n  }\n\n  /**\n   * Get current update status\n   */\n  getStatus(): UpdateStatus {\n    return { ...this.updateStatus };\n  }\n\n  /**\n   * Get current version\n   */\n  getCurrentVersion(): string {\n    return this.currentVersion;\n  }\n\n  /**\n   * Get available updates\n   */\n  getAvailableUpdates(): AppUpdate[] {\n    return Array.from(this.updates.values())\n      .filter(u => u.buildNumber > this.currentBuildNumber)\n      .sort((a, b) => b.buildNumber - a.buildNumber);\n  }\n\n  /**\n   * Get update by version\n   */\n  getUpdate(version: string): AppUpdate | null {\n    return this.updates.get(version) || null;\n  }\n\n  /**\n   * Set update server URL\n   */\n  setUpdateServer(url: string) {\n    this.updateServer = url;\n  }\n\n  /**\n   * Get update history\n   */\n  async getUpdateHistory(): Promise<AppUpdate[]> {\n    // In production, fetch from server\n    return Array.from(this.updates.values()).sort(\n      (a, b) => b.releaseDate - a.releaseDate\n    );\n  }\n\n  /**\n   * Skip update\n   */\n  async skipUpdate(version: string): Promise<void> {\n    await AsyncStorage.setItem(`skip_update_${version}`, 'true');\n  }\n\n  /**\n   * Check if update was skipped\n   */\n  async isUpdateSkipped(version: string): Promise<boolean> {\n    const skipped = await AsyncStorage.getItem(`skip_update_${version}`);\n    return skipped === 'true';\n  }\n\n  /**\n   * Force update check (bypass cache)\n   */\n  async forceCheckForUpdates(): Promise<UpdateStatus> {\n    await AsyncStorage.removeItem('ota_update_status');\n    return this.checkForUpdates();\n  }\n}\n\n// Export singleton instance\nexport const otaUpdate = new OTAUpdateService();\n
+/**
+ * OTA (Over-The-Air) Update Service
+ */
+
+export interface AppUpdate {
+  version: string;
+  buildNumber: number;
+  releaseDate: number;
+  changelog: string;
+  downloadUrl: string;
+  isRequired: boolean;
+}
+
+export interface UpdateStatus {
+  isUpdateAvailable: boolean;
+  currentVersion: string;
+  latestVersion: string;
+  downloadProgress: number;
+  isDownloading: boolean;
+  update?: AppUpdate;
+}
+
+class OTAUpdateService {
+  private currentVersion = '1.0.90';
+  private currentBuildNumber = 90;
+  private updates: Map<string, AppUpdate> = new Map();
+  private updateStatus: UpdateStatus = {
+    isUpdateAvailable: false,
+    currentVersion: this.currentVersion,
+    latestVersion: this.currentVersion,
+    downloadProgress: 0,
+    isDownloading: false,
+  };
+  private listeners: Set<(status: UpdateStatus) => void> = new Set();
+  private updateServer = 'https://api.agentpay.com/updates';
+
+  async checkForUpdates(): Promise<UpdateStatus> {
+    try {
+      console.log('Checking for updates...');
+      return this.updateStatus;
+    } catch (error) {
+      console.error('Error checking for updates:', error);
+      return this.updateStatus;
+    }
+  }
+
+  async downloadUpdate(update: AppUpdate): Promise<boolean> {
+    try {
+      this.updateStatus.isDownloading = true;
+      this.notifyListeners();
+
+      for (let i = 0; i <= 100; i += 10) {
+        this.updateStatus.downloadProgress = i;
+        this.notifyListeners();
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      this.updateStatus.isDownloading = false;
+      this.updateStatus.downloadProgress = 0;
+      this.notifyListeners();
+
+      return true;
+    } catch (error) {
+      console.error('Error downloading update:', error);
+      this.updateStatus.isDownloading = false;
+      this.notifyListeners();
+      return false;
+    }
+  }
+
+  async installUpdate(update: AppUpdate): Promise<boolean> {
+    try {
+      this.currentVersion = update.version;
+      this.currentBuildNumber = update.buildNumber;
+      this.updateStatus.isUpdateAvailable = false;
+      this.updateStatus.latestVersion = this.currentVersion;
+      this.updateStatus.update = undefined;
+      this.notifyListeners();
+      return true;
+    } catch (error) {
+      console.error('Error installing update:', error);
+      return false;
+    }
+  }
+
+  subscribe(listener: (status: UpdateStatus) => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  private notifyListeners() {
+    this.listeners.forEach(listener => {
+      try {
+        listener(this.updateStatus);
+      } catch (error) {
+        console.error('Error in update listener:', error);
+      }
+    });
+  }
+
+  getStatus(): UpdateStatus {
+    return { ...this.updateStatus };
+  }
+
+  getCurrentVersion(): string {
+    return this.currentVersion;
+  }
+}
+
+export const otaUpdate = new OTAUpdateService();

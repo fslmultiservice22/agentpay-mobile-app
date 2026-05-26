@@ -1,1 +1,134 @@
-import React, { useEffect, useState } from 'react';\nimport { View, Text, StyleSheet, ActivityIndicator } from 'react-native';\nimport { TransactionUpdate, transactionTracker } from '@/lib/transaction-tracker';\nimport { useColors } from '@/hooks/use-colors';\n\ninterface TransferStatusTrackerProps {\n  transactionId: string;\n  onComplete?: () => void;\n  onFailed?: (error: string) => void;\n}\n\nexport function TransferStatusTracker({\n  transactionId,\n  onComplete,\n  onFailed,\n}: TransferStatusTrackerProps) {\n  const colors = useColors();\n  const [update, setUpdate] = useState<TransactionUpdate | null>(\n    transactionTracker.getUpdate(transactionId)\n  );\n\n  useEffect(() => {\n    // Subscribe to updates\n    const unsubscribe = transactionTracker.subscribe(transactionId, (newUpdate) => {\n      setUpdate(newUpdate);\n\n      // Call callbacks\n      if (newUpdate.status === 'completed') {\n        onComplete?.();\n      } else if (newUpdate.status === 'failed') {\n        onFailed?.(newUpdate.currentStep);\n      }\n    });\n\n    return unsubscribe;\n  }, [transactionId, onComplete, onFailed]);\n\n  if (!update) {\n    return (\n      <View style={styles.container}>\n        <Text style={{ color: colors.muted }}>Loading...</Text>\n      </View>\n    );\n  }\n\n  const statusColor =\n    update.status === 'completed'\n      ? colors.success\n      : update.status === 'failed'\n        ? colors.error\n        : colors.primary;\n\n  const statusIcon =\n    update.status === 'completed'\n      ? '✓'\n      : update.status === 'failed'\n        ? '✗'\n        : '⏳';\n\n  return (\n    <View style={[styles.container, { backgroundColor: colors.surface }]}>\n      {/* Status Header */}\n      <View style={styles.header}>\n        <Text style={[styles.statusIcon, { color: statusColor }]}>{statusIcon}</Text>\n        <View style={styles.headerText}>\n          <Text style={[styles.statusTitle, { color: colors.foreground }]}>\n            {update.status.charAt(0).toUpperCase() + update.status.slice(1)}\n          </Text>\n          <Text style={[styles.statusSubtitle, { color: colors.muted }]}>\n            {update.currentStep}\n          </Text>\n        </View>\n      </View>\n\n      {/* Progress Bar */}\n      {update.status !== 'completed' && update.status !== 'failed' && (\n        <View style={styles.progressContainer}>\n          <View\n            style={[\n              styles.progressBar,\n              {\n                backgroundColor: colors.border,\n              },\n            ]}\n          >\n            <View\n              style={[\n                styles.progressFill,\n                {\n                  backgroundColor: statusColor,\n                  width: `${update.progress}%`,\n                },\n              ]}\n            />\n          </View>\n          <Text style={[styles.progressText, { color: colors.muted }]}>\n            {update.progress}% • {update.estimatedTimeRemaining}s remaining\n          </Text>\n        </View>\n      )}\n\n      {/* Events Timeline */}\n      {update.events.length > 0 && (\n        <View style={styles.timeline}>\n          <Text style={[styles.timelineTitle, { color: colors.foreground }]}>\n            Transaction History\n          </Text>\n          {update.events.map((event, index) => (\n            <View key={event.id} style={styles.timelineEvent}>\n              <View\n                style={[\n                  styles.timelineDot,\n                  {\n                    backgroundColor:\n                      event.status === 'completed'\n                        ? colors.success\n                        : event.status === 'failed'\n                          ? colors.error\n                          : colors.primary,\n                  },\n                ]}\n              />\n              {index < update.events.length - 1 && (\n                <View\n                  style={[\n                    styles.timelineLine,\n                    {\n                      backgroundColor: colors.border,\n                    },\n                  ]}\n                />\n              )}\n              <View style={styles.timelineContent}>\n                <Text style={[styles.eventMessage, { color: colors.foreground }]}>\n                  {event.message}\n                </Text>\n                <Text style={[styles.eventTime, { color: colors.muted }]}>\n                  {new Date(event.timestamp).toLocaleTimeString()}\n                </Text>\n              </View>\n            </View>\n          ))}\n        </View>\n      )}\n    </View>\n  );\n}\n\nconst styles = StyleSheet.create({\n  container: {\n    borderRadius: 12,\n    padding: 16,\n    marginVertical: 16,\n  },\n  header: {\n    flexDirection: 'row',\n    alignItems: 'center',\n    marginBottom: 16,\n  },\n  statusIcon: {\n    fontSize: 32,\n    fontWeight: 'bold',\n    marginRight: 12,\n  },\n  headerText: {\n    flex: 1,\n  },\n  statusTitle: {\n    fontSize: 18,\n    fontWeight: '600',\n    marginBottom: 4,\n  },\n  statusSubtitle: {\n    fontSize: 14,\n  },\n  progressContainer: {\n    marginBottom: 16,\n  },\n  progressBar: {\n    height: 8,\n    borderRadius: 4,\n    overflow: 'hidden',\n    marginBottom: 8,\n  },\n  progressFill: {\n    height: '100%',\n    borderRadius: 4,\n  },\n  progressText: {\n    fontSize: 12,\n    textAlign: 'center',\n  },\n  timeline: {\n    marginTop: 16,\n  },\n  timelineTitle: {\n    fontSize: 14,\n    fontWeight: '600',\n    marginBottom: 12,\n  },\n  timelineEvent: {\n    flexDirection: 'row',\n    marginBottom: 12,\n  },\n  timelineDot: {\n    width: 12,\n    height: 12,\n    borderRadius: 6,\n    marginTop: 4,\n    marginRight: 12,\n  },\n  timelineLine: {\n    position: 'absolute',\n    left: 5,\n    top: 16,\n    width: 2,\n    height: 28,\n  },\n  timelineContent: {\n    flex: 1,\n  },\n  eventMessage: {\n    fontSize: 14,\n    fontWeight: '500',\n    marginBottom: 2,\n  },\n  eventTime: {\n    fontSize: 12,\n  },\n});\n
+import React from 'react';
+import { View, Text, ScrollView } from 'react-native';
+import { ScreenContainer } from '@/components/screen-container';
+
+export interface TransactionEvent {
+  id: string;
+  timestamp: number;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  description: string;
+  amount?: string;
+}
+
+export interface TransferStatusProps {
+  transactionId: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  amount: string;
+  events: TransactionEvent[];
+  onCancel?: () => void;
+}
+
+export function TransferStatusTracker({
+  transactionId,
+  status,
+  amount,
+  events,
+  onCancel,
+}: TransferStatusProps) {
+  const getStatusColor = (s: string) => {
+    switch (s) {
+      case 'completed':
+        return '#22C55E';
+      case 'failed':
+        return '#EF4444';
+      case 'processing':
+        return '#F59E0B';
+      default:
+        return '#0a7ea4';
+    }
+  };
+
+  const getStatusLabel = (s: string) => {
+    switch (s) {
+      case 'completed':
+        return 'Completato';
+      case 'failed':
+        return 'Fallito';
+      case 'processing':
+        return 'In Elaborazione';
+      default:
+        return 'In Sospeso';
+    }
+  };
+
+  return (
+    <ScreenContainer className="flex-1 bg-background">
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}>
+        {/* Header */}
+        <View className="bg-gradient-to-b from-primary to-primary/80 px-6 py-8 gap-4">
+          <Text className="text-3xl font-bold text-white">Trasferimento</Text>
+          <Text className="text-base text-white/80">ID: {transactionId}</Text>
+        </View>
+
+        {/* Status Card */}
+        <View className="px-6 py-6 gap-4">
+          <View className="bg-surface rounded-2xl p-6 border border-border gap-4">
+            <View className="flex-row justify-between items-center">
+              <Text className="text-lg font-semibold text-foreground">Stato</Text>
+              <View
+                style={{ backgroundColor: getStatusColor(status) }}
+                className="px-4 py-2 rounded-full"
+              >
+                <Text className="text-white text-sm font-semibold">
+                  {getStatusLabel(status)}
+                </Text>
+              </View>
+            </View>
+
+            <View className="bg-background rounded-lg p-4 gap-2">
+              <Text className="text-xs text-muted">Importo</Text>
+              <Text className="text-3xl font-bold text-foreground">{amount}</Text>
+            </View>
+          </View>
+
+          {/* Timeline */}
+          <View className="gap-4">
+            <Text className="text-lg font-semibold text-foreground">Timeline</Text>
+
+            {events.map((event, index) => (
+              <View key={event.id} className="flex-row gap-4">
+                {/* Timeline Dot */}
+                <View className="items-center gap-2">
+                  <View
+                    style={{ backgroundColor: getStatusColor(event.status) }}
+                    className="w-4 h-4 rounded-full"
+                  />
+                  {index < events.length - 1 && (
+                    <View className="w-0.5 h-12 bg-border" />
+                  )}
+                </View>
+
+                {/* Event Content */}
+                <View className="flex-1 pb-4">
+                  <Text className="text-sm font-semibold text-foreground">
+                    {event.description}
+                  </Text>
+                  <Text className="text-xs text-muted mt-1">
+                    {new Date(event.timestamp).toLocaleTimeString('it-IT')}
+                  </Text>
+                  {event.amount && (
+                    <Text className="text-xs text-primary font-semibold mt-2">
+                      {event.amount}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            ))}
+          </View>
+
+          {/* Cancel Button */}
+          {status === 'pending' && onCancel && (
+            <View className="mt-4">
+              <Text
+                onPress={onCancel}
+                className="text-center text-error font-semibold py-3"
+              >
+                Annulla Trasferimento
+              </Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </ScreenContainer>
+  );
+}

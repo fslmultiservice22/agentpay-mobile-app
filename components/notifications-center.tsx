@@ -1,1 +1,190 @@
-import React, { useEffect, useState } from 'react';\nimport {\n  View,\n  Text,\n  FlatList,\n  TouchableOpacity,\n  StyleSheet,\n  SwipeListView,\n  Alert,\n} from 'react-native';\nimport { TransferNotification, transferNotifications } from '@/lib/transfer-notifications';\nimport { useColors } from '@/hooks/use-colors';\n\nexport function NotificationsCenter() {\n  const colors = useColors();\n  const [notifications, setNotifications] = useState<TransferNotification[]>([]);\n  const [unreadCount, setUnreadCount] = useState(0);\n\n  useEffect(() => {\n    // Load initial notifications\n    setNotifications(transferNotifications.getAllNotifications());\n    setUnreadCount(transferNotifications.getUnreadCount());\n\n    // Subscribe to new notifications\n    const unsubscribe = transferNotifications.subscribe((notification) => {\n      setNotifications(prev => [notification, ...prev]);\n      setUnreadCount(transferNotifications.getUnreadCount());\n    });\n\n    return unsubscribe;\n  }, []);\n\n  const handleMarkAsRead = (notificationId: string) => {\n    transferNotifications.markAsRead(notificationId);\n    setNotifications(prev =>\n      prev.map(n => (n.id === notificationId ? { ...n, isRead: true } : n))\n    );\n    setUnreadCount(transferNotifications.getUnreadCount());\n  };\n\n  const handleDelete = (notificationId: string) => {\n    transferNotifications.deleteNotification(notificationId);\n    setNotifications(prev => prev.filter(n => n.id !== notificationId));\n  };\n\n  const handleMarkAllAsRead = () => {\n    transferNotifications.markAllAsRead();\n    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));\n    setUnreadCount(0);\n  };\n\n  const handleClearAll = () => {\n    Alert.alert('Clear All Notifications', 'Are you sure?', [\n      { text: 'Cancel', onPress: () => {} },\n      {\n        text: 'Clear',\n        onPress: () => {\n          transferNotifications.clearAll();\n          setNotifications([]);\n          setUnreadCount(0);\n        },\n      },\n    ]);\n  };\n\n  const getNotificationColor = (type: TransferNotification['type']) => {\n    switch (type) {\n      case 'initiated':\n        return colors.primary;\n      case 'processing':\n        return colors.warning;\n      case 'completed':\n        return colors.success;\n      case 'failed':\n        return colors.error;\n      default:\n        return colors.muted;\n    }\n  };\n\n  const renderNotification = ({ item }: { item: TransferNotification }) => (\n    <TouchableOpacity\n      style={[\n        styles.notificationItem,\n        {\n          backgroundColor: item.isRead ? colors.background : colors.surface,\n          borderLeftColor: getNotificationColor(item.type),\n        },\n      ]}\n      onPress={() => handleMarkAsRead(item.id)}\n    >\n      <View style={styles.notificationContent}>\n        <Text\n          style={[\n            styles.notificationTitle,\n            {\n              color: colors.foreground,\n              fontWeight: item.isRead ? '400' : '600',\n            },\n          ]}\n        >\n          {item.title}\n        </Text>\n        <Text\n          style={[\n            styles.notificationBody,\n            {\n              color: colors.muted,\n            },\n          ]}\n        >\n          {item.body}\n        </Text>\n        <Text\n          style={[\n            styles.notificationTime,\n            {\n              color: colors.muted,\n            },\n          ]}\n        >\n          {new Date(item.timestamp).toLocaleString()}\n        </Text>\n      </View>\n      {!item.isRead && (\n        <View\n          style={[\n            styles.unreadBadge,\n            {\n              backgroundColor: getNotificationColor(item.type),\n            },\n          ]}\n        />\n      )}\n    </TouchableOpacity>\n  );\n\n  const renderHiddenItem = ({ item }: { item: TransferNotification }) => (\n    <View style={styles.hiddenItem}>\n      <TouchableOpacity\n        style={[styles.deleteButton, { backgroundColor: colors.error }]}\n        onPress={() => handleDelete(item.id)}\n      >\n        <Text style={styles.deleteButtonText}>Delete</Text>\n      </TouchableOpacity>\n    </View>\n  );\n\n  return (\n    <View style={[styles.container, { backgroundColor: colors.background }]}>\n      {/* Header */}\n      <View style={styles.header}>\n        <View>\n          <Text style={[styles.headerTitle, { color: colors.foreground }]}>\n            Notifications\n          </Text>\n          {unreadCount > 0 && (\n            <Text style={[styles.headerSubtitle, { color: colors.muted }]}>\n              {unreadCount} unread\n            </Text>\n          )}\n        </View>\n        {notifications.length > 0 && (\n          <View style={styles.headerActions}>\n            <TouchableOpacity onPress={handleMarkAllAsRead}>\n              <Text style={[styles.headerAction, { color: colors.primary }]}>\n                Mark all\n              </Text>\n            </TouchableOpacity>\n            <TouchableOpacity onPress={handleClearAll}>\n              <Text style={[styles.headerAction, { color: colors.error }]}>\n                Clear\n              </Text>\n            </TouchableOpacity>\n          </View>\n        )}\n      </View>\n\n      {/* Notifications List */}\n      {notifications.length > 0 ? (\n        <SwipeListView\n          data={notifications}\n          renderItem={renderNotification}\n          renderHiddenItem={renderHiddenItem}\n          rightOpenValue={-80}\n          keyExtractor={item => item.id}\n          scrollEnabled={true}\n        />\n      ) : (\n        <View style={styles.emptyState}>\n          <Text style={[styles.emptyStateText, { color: colors.muted }]}>\n            No notifications yet\n          </Text>\n        </View>\n      )}\n    </View>\n  );\n}\n\nconst styles = StyleSheet.create({\n  container: {\n    flex: 1,\n  },\n  header: {\n    flexDirection: 'row',\n    justifyContent: 'space-between',\n    alignItems: 'center',\n    paddingHorizontal: 16,\n    paddingVertical: 12,\n    borderBottomWidth: 1,\n    borderBottomColor: '#e5e7eb',\n  },\n  headerTitle: {\n    fontSize: 18,\n    fontWeight: '600',\n    marginBottom: 4,\n  },\n  headerSubtitle: {\n    fontSize: 12,\n  },\n  headerActions: {\n    flexDirection: 'row',\n    gap: 16,\n  },\n  headerAction: {\n    fontSize: 12,\n    fontWeight: '600',\n  },\n  notificationItem: {\n    flexDirection: 'row',\n    alignItems: 'center',\n    paddingHorizontal: 16,\n    paddingVertical: 12,\n    borderLeftWidth: 4,\n    borderBottomWidth: 1,\n    borderBottomColor: '#f0f0f0',\n  },\n  notificationContent: {\n    flex: 1,\n  },\n  notificationTitle: {\n    fontSize: 14,\n    marginBottom: 4,\n  },\n  notificationBody: {\n    fontSize: 13,\n    marginBottom: 4,\n    lineHeight: 18,\n  },\n  notificationTime: {\n    fontSize: 11,\n  },\n  unreadBadge: {\n    width: 8,\n    height: 8,\n    borderRadius: 4,\n    marginLeft: 12,\n  },\n  hiddenItem: {\n    flexDirection: 'row',\n    justifyContent: 'flex-end',\n    paddingRight: 16,\n    height: '100%',\n  },\n  deleteButton: {\n    justifyContent: 'center',\n    alignItems: 'center',\n    width: 80,\n    height: '100%',\n  },\n  deleteButtonText: {\n    color: 'white',\n    fontWeight: '600',\n    fontSize: 12,\n  },\n  emptyState: {\n    flex: 1,\n    justifyContent: 'center',\n    alignItems: 'center',\n  },\n  emptyStateText: {\n    fontSize: 16,\n  },\n});\n
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, FlatList } from 'react-native';
+import { ScreenContainer } from '@/components/screen-container';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+
+export interface Notification {
+  id: string;
+  type: 'transfer' | 'reward' | 'alert' | 'achievement';
+  title: string;
+  message: string;
+  timestamp: number;
+  read: boolean;
+  data?: Record<string, any>;
+}
+
+export interface NotificationsCenterProps {
+  notifications: Notification[];
+  onMarkAsRead?: (notificationId: string) => void;
+  onDelete?: (notificationId: string) => void;
+  onNotificationPress?: (notification: Notification) => void;
+}
+
+export function NotificationsCenter({
+  notifications,
+  onMarkAsRead,
+  onDelete,
+  onNotificationPress,
+}: NotificationsCenterProps) {
+  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+
+  const filteredNotifications = notifications.filter((n) => {
+    if (filter === 'unread') return !n.read;
+    return true;
+  });
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'transfer':
+        return 'arrow.left.arrow.right';
+      case 'reward':
+        return 'star.fill';
+      case 'alert':
+        return 'exclamationmark.circle';
+      case 'achievement':
+        return 'checkmark.circle.fill';
+      default:
+        return 'bell';
+    }
+  };
+
+  const getNotificationColor = (type: string) => {
+    switch (type) {
+      case 'transfer':
+        return '#0a7ea4';
+      case 'reward':
+        return '#F59E0B';
+      case 'alert':
+        return '#EF4444';
+      case 'achievement':
+        return '#22C55E';
+      default:
+        return '#687076';
+    }
+  };
+
+  const renderNotification = ({ item }: { item: Notification }) => (
+    <TouchableOpacity
+      onPress={() => {
+        onMarkAsRead?.(item.id);
+        onNotificationPress?.(item);
+      }}
+      className="flex-row gap-4 px-6 py-4 border-b border-border bg-surface"
+    >
+      {/* Icon */}
+      <View
+        style={{ backgroundColor: getNotificationColor(item.type) }}
+        className="w-12 h-12 rounded-full items-center justify-center"
+      >
+        <IconSymbol
+          size={20}
+          name={getNotificationIcon(item.type) as any}
+          color="white"
+        />
+      </View>
+
+      {/* Content */}
+      <View className="flex-1 gap-2">
+        <View className="flex-row justify-between items-start">
+          <Text
+            className={`text-sm font-semibold flex-1 ${
+              item.read ? 'text-muted' : 'text-foreground'
+            }`}
+          >
+            {item.title}
+          </Text>
+          {!item.read && (
+            <View className="w-2 h-2 bg-primary rounded-full ml-2" />
+          )}
+        </View>
+        <Text className="text-xs text-muted">{item.message}</Text>
+        <Text className="text-xs text-muted/60">
+          {new Date(item.timestamp).toLocaleTimeString('it-IT')}
+        </Text>
+      </View>
+
+      {/* Delete Button */}
+      <TouchableOpacity
+        onPress={() => onDelete?.(item.id)}
+        className="justify-center"
+      >
+        <IconSymbol size={20} name="xmark" color="#687076" />
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  return (
+    <ScreenContainer className="flex-1 bg-background">
+      {/* Header */}
+      <View className="bg-gradient-to-b from-primary to-primary/80 px-6 py-8 gap-4">
+        <View className="flex-row justify-between items-center">
+          <Text className="text-3xl font-bold text-white">Notifiche</Text>
+          {unreadCount > 0 && (
+            <View className="bg-error px-3 py-1 rounded-full">
+              <Text className="text-white text-sm font-semibold">
+                {unreadCount}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      {/* Filter Tabs */}
+      <View className="flex-row gap-4 px-6 py-4 border-b border-border">
+        <TouchableOpacity
+          onPress={() => setFilter('all')}
+          className={`px-4 py-2 rounded-full ${
+            filter === 'all' ? 'bg-primary' : 'bg-surface border border-border'
+          }`}
+        >
+          <Text
+            className={`text-sm font-semibold ${
+              filter === 'all' ? 'text-white' : 'text-foreground'
+            }`}
+          >
+            Tutte
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => setFilter('unread')}
+          className={`px-4 py-2 rounded-full ${
+            filter === 'unread' ? 'bg-primary' : 'bg-surface border border-border'
+          }`}
+        >
+          <Text
+            className={`text-sm font-semibold ${
+              filter === 'unread' ? 'text-white' : 'text-foreground'
+            }`}
+          >
+            Non Lette
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Notifications List */}
+      {filteredNotifications.length > 0 ? (
+        <FlatList
+          data={filteredNotifications}
+          renderItem={renderNotification}
+          keyExtractor={(item) => item.id}
+          scrollEnabled={false}
+        />
+      ) : (
+        <View className="flex-1 items-center justify-center px-6 gap-4">
+          <IconSymbol size={48} name="bell.slash" color="#687076" />
+          <Text className="text-lg font-semibold text-foreground">
+            Nessuna Notifica
+          </Text>
+          <Text className="text-sm text-muted text-center">
+            {filter === 'unread'
+              ? 'Tutte le notifiche sono state lette'
+              : 'Non hai notifiche al momento'}
+          </Text>
+        </View>
+      )}
+    </ScreenContainer>
+  );
+}

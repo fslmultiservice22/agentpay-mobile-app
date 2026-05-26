@@ -28,12 +28,12 @@ export default function DashboardScreen() {
   };
 
   const handleReceivePayment = async () => {
-    if (!wallet.address) {
+    if (!wallet?.activeWallet?.address) {
       Alert.alert('Error', 'Wallet not connected');
       return;
     }
     try {
-      const link = await createPaymentLink(wallet.address);
+      const link = await createPaymentLink(wallet.activeWallet!.address);
       await sharePaymentLink(link);
       Alert.alert('Success', 'Payment link copied to clipboard!');
     } catch (err) {
@@ -170,14 +170,14 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Dashboard</Text>
           <Text style={styles.subtitle}>
-            {wallet?.isConnected ? `Connected: ${wallet.address?.slice(0, 6)}...${wallet.address?.slice(-4)}` : 'Not connected'}
+            {wallet?.activeWallet ? `Connected: ${wallet.activeWallet.address.slice(0, 6)}...${wallet.activeWallet.address.slice(-4)}` : 'Not connected'}
           </Text>
         </View>
 
         {/* Balance Card */}
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>Total Portfolio Value</Text>
-          <Text style={styles.balanceValue}>${wallet?.balance || '0.00'}</Text>
+          <Text style={styles.balanceValue}>${(wallet?.activeWallet?.totalValue || 0).toFixed(2)}</Text>
           <Text style={styles.balanceChange}>↑ +12.5% (24h)</Text>
         </View>
 

@@ -43,7 +43,7 @@ class YieldFarmingService {
   };
 
   private listeners: ((position: YieldPosition) => void)[] = [];
-  private compoundInterval: NodeJS.Timeout | null = null;
+  private compoundInterval: NodeJS.Timeout | number | null = null;
 
   /**
    * Initialize yield farming service

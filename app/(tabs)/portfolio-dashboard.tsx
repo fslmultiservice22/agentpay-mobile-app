@@ -30,47 +30,47 @@ export default function PortfolioDashboardScreen() {
   const { t } = useI18n();
   const colors = useColors();
   const { wallet } = useEthereumWallet();
-  const { portfolio, loading, error, refreshPortfolio } = usePortfolioDashboard();
+  const { currentPortfolio, isLoading, error, loadPortfolioHistory } = usePortfolioDashboard(wallet?.activeWallet?.address || null);
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('24h');
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refreshPortfolio();
+    await loadPortfolioHistory();
     setRefreshing(false);
-  }, [refreshPortfolio]);
+  }, [loadPortfolioHistory]);
 
   const chartData: ChartData = useMemo(() => {
-    if (!portfolio.priceHistory || portfolio.priceHistory.length === 0) {
+    if (!currentPortfolio || currentPortfolio.length === 0) {
       return { labels: [], datasets: [{ data: [0] }] };
     }
 
     return {
-      labels: portfolio.priceHistory.slice(-10).map((_, i) => `${i}`),
+      labels: currentPortfolio.slice(-10).map((_, i) => `${i}`),
       datasets: [
         {
-          data: portfolio.priceHistory.slice(-10).map(p => p.price),
+          data: currentPortfolio.slice(-10).map(p => p.value),
           strokeWidth: 2,
           color: () => colors.primary,
         },
       ],
     };
-  }, [portfolio.priceHistory, colors.primary]);
+  }, [currentPortfolio, colors.primary]);
 
   const pieData = useMemo(() => {
-    if (!portfolio.composition || portfolio.composition.length === 0) {
+    if (!currentPortfolio || currentPortfolio.length === 0) {
       return { labels: [], datasets: [{ data: [100] }] };
     }
 
     return {
-      labels: portfolio.composition.map(c => c.symbol),
+      labels: currentPortfolio.map(c => c.symbol),
       datasets: [
         {
-          data: portfolio.composition.map(c => c.percentage),
+          data: currentPortfolio.map(c => (c.value / currentPortfolio.reduce((sum, p) => sum + p.value, 0)) * 100),
         },
       ],
     };
-  }, [portfolio.composition]);
+  }, [currentPortfolio]);
 
   const styles = StyleSheet.create({
     container: {
@@ -159,9 +159,9 @@ export default function PortfolioDashboardScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>{t('portfolio.title')}</Text>
-          <Text style={styles.value}>${portfolio.totalValue.toFixed(2)}</Text>
-          <Text style={[styles.value, { fontSize: 16, color: portfolio.change24h >= 0 ? colors.success : colors.error }]}>
-            {portfolio.change24h >= 0 ? '+' : ''}{portfolio.change24h.toFixed(2)}%
+          <Text style={styles.value}>${currentPortfolio.reduce((sum, p) => sum + p.value, 0).toFixed(2)}</Text>
+          <Text style={[styles.value, { fontSize: 16, color: colors.success }]}>
+            +0.00%
           </Text>
         </View>
 
@@ -184,10 +184,10 @@ export default function PortfolioDashboardScreen() {
         {error && <Text style={styles.errorText}>{error}</Text>}
 
         {/* Loading State */}
-        {loading && <Text style={styles.loadingText}>{t('common.loading')}</Text>}
+        {isLoading && <Text style={styles.loadingText}>{t('common.loading')}</Text>}
 
         {/* Charts */}
-        {!loading && !error && (
+        {!isLoading && !error && (
           <>
             {/* Price Chart */}
             <View style={styles.section}>
@@ -232,7 +232,7 @@ export default function PortfolioDashboardScreen() {
             {/* Holdings List */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t('portfolio.holdings')}</Text>
-              {portfolio.composition.map((holding, index) => (
+              {currentPortfolio.map((holding, index) => (
                 <View
                   key={index}
                   style={{

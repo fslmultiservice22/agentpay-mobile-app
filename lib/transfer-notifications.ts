@@ -1,1 +1,218 @@
-/**\n * Transfer Notifications Service\n * Handles push notifications for bank transfers\n */\n\nimport * as Notifications from 'expo-notifications';\n\nexport interface TransferNotification {\n  id: string;\n  transactionId: string;\n  type: 'initiated' | 'processing' | 'completed' | 'failed';\n  title: string;\n  body: string;\n  data?: Record<string, any>;\n  timestamp: number;\n  isRead: boolean;\n}\n\nclass TransferNotificationService {\n  private notifications: Map<string, TransferNotification> = new Map();\n  private listeners: Set<(notification: TransferNotification) => void> = new Set();\n  private notificationId = 0;\n\n  constructor() {\n    // Configure notification handler\n    Notifications.setNotificationHandler({\n      handleNotification: async () => ({\n        shouldShowAlert: true,\n        shouldPlaySound: true,\n        shouldSetBadge: true,\n      }),\n    });\n  }\n\n  /**\n   * Request notification permissions\n   */\n  async requestPermissions(): Promise<boolean> {\n    try {\n      const { status } = await Notifications.requestPermissionsAsync();\n      return status === 'granted';\n    } catch (error) {\n      console.error('Error requesting notification permissions:', error);\n      return false;\n    }\n  }\n\n  /**\n   * Send transfer initiated notification\n   */\n  async sendInitiatedNotification(\n    transactionId: string,\n    amount: number,\n    currency: string\n  ): Promise<TransferNotification> {\n    const notification: TransferNotification = {\n      id: `notif_${++this.notificationId}`,\n      transactionId,\n      type: 'initiated',\n      title: '💳 Transfer Initiated',\n      body: `Your transfer of ${amount} ${currency} has been initiated.`,\n      data: {\n        transactionId,\n        amount,\n        currency,\n      },\n      timestamp: Date.now(),\n      isRead: false,\n    };\n\n    this.notifications.set(notification.id, notification);\n    this.notifyListeners(notification);\n    await this.scheduleNotification(notification);\n\n    return notification;\n  }\n\n  /**\n   * Send transfer processing notification\n   */\n  async sendProcessingNotification(\n    transactionId: string,\n    currentStep: string\n  ): Promise<TransferNotification> {\n    const notification: TransferNotification = {\n      id: `notif_${++this.notificationId}`,\n      transactionId,\n      type: 'processing',\n      title: '⏳ Transfer Processing',\n      body: `Your transfer is being processed: ${currentStep}`,\n      data: {\n        transactionId,\n        currentStep,\n      },\n      timestamp: Date.now(),\n      isRead: false,\n    };\n\n    this.notifications.set(notification.id, notification);\n    this.notifyListeners(notification);\n    await this.scheduleNotification(notification);\n\n    return notification;\n  }\n\n  /**\n   * Send transfer completed notification\n   */\n  async sendCompletedNotification(\n    transactionId: string,\n    amount: number,\n    currency: string,\n    reference: string\n  ): Promise<TransferNotification> {\n    const notification: TransferNotification = {\n      id: `notif_${++this.notificationId}`,\n      transactionId,\n      type: 'completed',\n      title: '✅ Transfer Completed',\n      body: `Your transfer of ${amount} ${currency} has been completed successfully.`,\n      data: {\n        transactionId,\n        amount,\n        currency,\n        reference,\n      },\n      timestamp: Date.now(),\n      isRead: false,\n    };\n\n    this.notifications.set(notification.id, notification);\n    this.notifyListeners(notification);\n    await this.scheduleNotification(notification);\n\n    return notification;\n  }\n\n  /**\n   * Send transfer failed notification\n   */\n  async sendFailedNotification(\n    transactionId: string,\n    amount: number,\n    currency: string,\n    reason: string\n  ): Promise<TransferNotification> {\n    const notification: TransferNotification = {\n      id: `notif_${++this.notificationId}`,\n      transactionId,\n      type: 'failed',\n      title: '❌ Transfer Failed',\n      body: `Your transfer of ${amount} ${currency} failed: ${reason}`,\n      data: {\n        transactionId,\n        amount,\n        currency,\n        reason,\n      },\n      timestamp: Date.now(),\n      isRead: false,\n    };\n\n    this.notifications.set(notification.id, notification);\n    this.notifyListeners(notification);\n    await this.scheduleNotification(notification);\n\n    return notification;\n  }\n\n  /**\n   * Schedule a notification to be sent\n   */\n  private async scheduleNotification(notification: TransferNotification) {\n    try {\n      await Notifications.scheduleNotificationAsync({\n        content: {\n          title: notification.title,\n          body: notification.body,\n          data: notification.data,\n          badge: 1,\n          sound: 'default',\n          vibrate: [0, 250, 250, 250],\n        },\n        trigger: {\n          seconds: 1,\n        },\n      });\n    } catch (error) {\n      console.error('Error scheduling notification:', error);\n    }\n  }\n\n  /**\n   * Subscribe to notifications\n   */\n  subscribe(listener: (notification: TransferNotification) => void): () => void {\n    this.listeners.add(listener);\n    return () => this.listeners.delete(listener);\n  }\n\n  /**\n   * Notify all listeners\n   */\n  private notifyListeners(notification: TransferNotification) {\n    this.listeners.forEach(listener => {\n      try {\n        listener(notification);\n      } catch (error) {\n        console.error('Error in notification listener:', error);\n      }\n    });\n  }\n\n  /**\n   * Get all notifications\n   */\n  getAllNotifications(): TransferNotification[] {\n    return Array.from(this.notifications.values()).sort(\n      (a, b) => b.timestamp - a.timestamp\n    );\n  }\n\n  /**\n   * Get unread notifications count\n   */\n  getUnreadCount(): number {\n    return Array.from(this.notifications.values()).filter(n => !n.isRead).length;\n  }\n\n  /**\n   * Mark notification as read\n   */\n  markAsRead(notificationId: string) {\n    const notification = this.notifications.get(notificationId);\n    if (notification) {\n      notification.isRead = true;\n    }\n  }\n\n  /**\n   * Mark all notifications as read\n   */\n  markAllAsRead() {\n    this.notifications.forEach(notification => {\n      notification.isRead = true;\n    });\n  }\n\n  /**\n   * Delete notification\n   */\n  deleteNotification(notificationId: string) {\n    this.notifications.delete(notificationId);\n  }\n\n  /**\n   * Clear all notifications\n   */\n  clearAll() {\n    this.notifications.clear();\n  }\n\n  /**\n   * Get notifications for a specific transaction\n   */\n  getTransactionNotifications(transactionId: string): TransferNotification[] {\n    return Array.from(this.notifications.values())\n      .filter(n => n.transactionId === transactionId)\n      .sort((a, b) => b.timestamp - a.timestamp);\n  }\n}\n\n// Export singleton instance\nexport const transferNotifications = new TransferNotificationService();\n
+/**
+ * Transfer Notifications Service
+ * Handles push notifications for transfers
+ */
+
+import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+export interface NotificationPayload {
+  title: string;
+  body: string;
+  data?: Record<string, any>;
+  sound?: string;
+}
+
+export interface TransferNotification {
+  id: string;
+  transactionId: string;
+  type: 'pending' | 'processing' | 'completed' | 'failed';
+  title: string;
+  message: string;
+  timestamp: number;
+  read: boolean;
+}
+
+class TransferNotificationsService {
+  private notifications: Map<string, TransferNotification> = new Map();
+  private listeners: Set<(notification: TransferNotification) => void> =
+    new Set();
+
+  constructor() {
+    this.initializeNotifications();
+  }
+
+  private async initializeNotifications() {
+    try {
+      // Request notification permissions
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Notification permissions not granted');
+      }
+
+      // Set notification handler
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
+        }),
+      });
+    } catch (error) {
+      console.error('Error initializing notifications:', error);
+    }
+  }
+
+  async sendTransferNotification(
+    transactionId: string,
+    type: 'pending' | 'processing' | 'completed' | 'failed',
+    amount: string
+  ): Promise<TransferNotification> {
+    const notification: TransferNotification = {
+      id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      transactionId,
+      type,
+      title: this.getNotificationTitle(type),
+      message: this.getNotificationMessage(type, amount),
+      timestamp: Date.now(),
+      read: false,
+    };
+
+    this.notifications.set(notification.id, notification);
+
+    // Send push notification
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: notification.title,
+          body: notification.message,
+          data: {
+            transactionId,
+            notificationId: notification.id,
+          },
+          sound: 'default',
+        },
+        trigger: null,
+      });
+    } catch (error) {
+      console.error('Error sending notification:', error);
+    }
+
+    // Notify listeners
+    this.notifyListeners(notification);
+
+    // Save to storage
+    await this.saveNotification(notification);
+
+    return notification;
+  }
+
+  private getNotificationTitle(type: string): string {
+    switch (type) {
+      case 'pending':
+        return 'Trasferimento in Sospeso';
+      case 'processing':
+        return 'Trasferimento in Elaborazione';
+      case 'completed':
+        return 'Trasferimento Completato';
+      case 'failed':
+        return 'Trasferimento Fallito';
+      default:
+        return 'Notifica Trasferimento';
+    }
+  }
+
+  private getNotificationMessage(type: string, amount: string): string {
+    switch (type) {
+      case 'pending':
+        return `Trasferimento di ${amount} in sospeso`;
+      case 'processing':
+        return `Trasferimento di ${amount} in elaborazione`;
+      case 'completed':
+        return `Trasferimento di ${amount} completato con successo`;
+      case 'failed':
+        return `Trasferimento di ${amount} non riuscito`;
+      default:
+        return `Trasferimento di ${amount}`;
+    }
+  }
+
+  async markAsRead(notificationId: string): Promise<void> {
+    const notification = this.notifications.get(notificationId);
+    if (notification) {
+      notification.read = true;
+      await this.saveNotification(notification);
+    }
+  }
+
+  async deleteNotification(notificationId: string): Promise<void> {
+    this.notifications.delete(notificationId);
+    await AsyncStorage.removeItem(`notification_${notificationId}`);
+  }
+
+  async clearAllNotifications(): Promise<void> {
+    this.notifications.clear();
+    const keys = await AsyncStorage.getAllKeys();
+    const notificationKeys = keys.filter((key) =>
+      key.startsWith('notification_')
+    );
+    await AsyncStorage.multiRemove(notificationKeys);
+  }
+
+  getNotifications(): TransferNotification[] {
+    return Array.from(this.notifications.values()).sort(
+      (a, b) => b.timestamp - a.timestamp
+    );
+  }
+
+  getUnreadNotifications(): TransferNotification[] {
+    return this.getNotifications().filter((n) => !n.read);
+  }
+
+  getUnreadCount(): number {
+    return this.getUnreadNotifications().length;
+  }
+
+  subscribe(
+    listener: (notification: TransferNotification) => void
+  ): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  private notifyListeners(notification: TransferNotification) {
+    this.listeners.forEach((listener) => {
+      try {
+        listener(notification);
+      } catch (error) {
+        console.error('Error in notification listener:', error);
+      }
+    });
+  }
+
+  private async saveNotification(
+    notification: TransferNotification
+  ): Promise<void> {
+    try {
+      await AsyncStorage.setItem(
+        `notification_${notification.id}`,
+        JSON.stringify(notification)
+      );
+    } catch (error) {
+      console.error('Error saving notification:', error);
+    }
+  }
+
+  async loadNotifications(): Promise<void> {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const notificationKeys = keys.filter((key) =>
+        key.startsWith('notification_')
+      );
+
+      const values = await AsyncStorage.multiGet(notificationKeys);
+      values.forEach(([key, value]) => {
+        if (value) {
+          const notification = JSON.parse(value) as TransferNotification;
+          this.notifications.set(notification.id, notification);
+        }
+      });
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    }
+  }
+}
+
+export const transferNotificationsService = new TransferNotificationsService();

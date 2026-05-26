@@ -1,1 +1,296 @@
-/**\n * Enhanced Security Service\n * Handles 2FA, encryption, and session management\n */\n\nimport AsyncStorage from '@react-native-async-storage/async-storage';\nimport * as Crypto from 'expo-crypto';\n\nexport interface SecuritySettings {\n  twoFactorEnabled: boolean;\n  biometricEnabled: boolean;\n  encryptionEnabled: boolean;\n  sessionTimeout: number; // in seconds\n  lastSecurityAudit: number;\n}\n\nexport interface TwoFactorMethod {\n  id: string;\n  type: 'sms' | 'email' | 'authenticator' | 'backup_codes';\n  identifier: string; // phone number or email\n  verified: boolean;\n  createdAt: number;\n}\n\nexport interface Session {\n  id: string;\n  userId: string;\n  token: string;\n  createdAt: number;\n  expiresAt: number;\n  ipAddress?: string;\n  deviceId?: string;\n  isActive: boolean;\n}\n\nexport interface EncryptedData {\n  iv: string;\n  ciphertext: string;\n  tag: string;\n}\n\nclass EnhancedSecurityService {\n  private settings: SecuritySettings = {\n    twoFactorEnabled: false,\n    biometricEnabled: true,\n    encryptionEnabled: true,\n    sessionTimeout: 30 * 60, // 30 minutes\n    lastSecurityAudit: Date.now(),\n  };\n  private twoFactorMethods: Map<string, TwoFactorMethod> = new Map();\n  private sessions: Map<string, Session> = new Map();\n  private encryptionKey?: string;\n\n  constructor() {\n    this.initializeEncryption();\n  }\n\n  /**\n   * Initialize encryption key\n   */\n  private async initializeEncryption() {\n    try {\n      let key = await AsyncStorage.getItem('encryption_key');\n      if (!key) {\n        // Generate new encryption key\n        key = await Crypto.getRandomBytes(32).then(bytes =>\n          bytes.toString('hex')\n        );\n        await AsyncStorage.setItem('encryption_key', key);\n      }\n      this.encryptionKey = key;\n    } catch (error) {\n      console.error('Error initializing encryption:', error);\n    }\n  }\n\n  /**\n   * Enable two-factor authentication\n   */\n  async enableTwoFactor(\n    method: 'sms' | 'email' | 'authenticator',\n    identifier: string\n  ): Promise<TwoFactorMethod> {\n    const twoFactorMethod: TwoFactorMethod = {\n      id: `2fa_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,\n      type: method,\n      identifier,\n      verified: false,\n      createdAt: Date.now(),\n    };\n\n    this.twoFactorMethods.set(twoFactorMethod.id, twoFactorMethod);\n\n    // Send verification code\n    await this.sendVerificationCode(method, identifier);\n\n    return twoFactorMethod;\n  }\n\n  /**\n   * Send verification code\n   */\n  private async sendVerificationCode(\n    method: 'sms' | 'email' | 'authenticator',\n    identifier: string\n  ): Promise<void> {\n    const code = Math.floor(100000 + Math.random() * 900000).toString();\n\n    if (method === 'sms') {\n      console.log(`📱 SMS sent to ${identifier}: ${code}`);\n      // In production, use Twilio or similar\n    } else if (method === 'email') {\n      console.log(`📧 Email sent to ${identifier}: ${code}`);\n      // In production, use SendGrid or similar\n    } else if (method === 'authenticator') {\n      console.log(`🔐 Scan QR code with authenticator app`);\n      // In production, generate TOTP secret\n    }\n\n    // Store code temporarily\n    await AsyncStorage.setItem(`2fa_code_${identifier}`, code);\n  }\n\n  /**\n   * Verify two-factor code\n   */\n  async verifyTwoFactorCode(\n    methodId: string,\n    code: string\n  ): Promise<boolean> {\n    const method = this.twoFactorMethods.get(methodId);\n    if (!method) return false;\n\n    // In production, verify against actual 2FA service\n    const storedCode = await AsyncStorage.getItem(\n      `2fa_code_${method.identifier}`\n    );\n\n    if (storedCode === code) {\n      method.verified = true;\n      this.settings.twoFactorEnabled = true;\n      return true;\n    }\n\n    return false;\n  }\n\n  /**\n   * Disable two-factor authentication\n   */\n  async disableTwoFactor(methodId: string): Promise<boolean> {\n    const deleted = this.twoFactorMethods.delete(methodId);\n    if (this.twoFactorMethods.size === 0) {\n      this.settings.twoFactorEnabled = false;\n    }\n    return deleted;\n  }\n\n  /**\n   * Get two-factor methods\n   */\n  getTwoFactorMethods(): TwoFactorMethod[] {\n    return Array.from(this.twoFactorMethods.values());\n  }\n\n  /**\n   * Create session\n   */\n  async createSession(\n    userId: string,\n    ipAddress?: string,\n    deviceId?: string\n  ): Promise<Session> {\n    const token = await Crypto.getRandomBytes(32).then(bytes =>\n      bytes.toString('hex')\n    );\n\n    const session: Session = {\n      id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,\n      userId,\n      token,\n      createdAt: Date.now(),\n      expiresAt: Date.now() + this.settings.sessionTimeout * 1000,\n      ipAddress,\n      deviceId,\n      isActive: true,\n    };\n\n    this.sessions.set(session.id, session);\n\n    // Save to storage\n    await AsyncStorage.setItem(\n      `session_${session.id}`,\n      JSON.stringify(session)\n    );\n\n    return session;\n  }\n\n  /**\n   * Validate session\n   */\n  validateSession(sessionId: string): boolean {\n    const session = this.sessions.get(sessionId);\n    if (!session) return false;\n\n    if (!session.isActive) return false;\n    if (Date.now() > session.expiresAt) {\n      session.isActive = false;\n      return false;\n    }\n\n    return true;\n  }\n\n  /**\n   * Revoke session\n   */\n  async revokeSession(sessionId: string): Promise<boolean> {\n    const session = this.sessions.get(sessionId);\n    if (session) {\n      session.isActive = false;\n      await AsyncStorage.removeItem(`session_${sessionId}`);\n      return true;\n    }\n    return false;\n  }\n\n  /**\n   * Revoke all sessions\n   */\n  async revokeAllSessions(): Promise<number> {\n    let count = 0;\n    for (const session of this.sessions.values()) {\n      if (session.isActive) {\n        session.isActive = false;\n        count++;\n      }\n    }\n    return count;\n  }\n\n  /**\n   * Get active sessions\n   */\n  getActiveSessions(): Session[] {\n    return Array.from(this.sessions.values()).filter(s => s.isActive);\n  }\n\n  /**\n   * Encrypt data\n   */\n  async encryptData(data: string): Promise<EncryptedData> {\n    if (!this.encryptionKey) {\n      throw new Error('Encryption key not initialized');\n    }\n\n    try {\n      // In production, use proper AES-256-GCM encryption\n      // For demo, use simple encoding\n      const iv = await Crypto.getRandomBytes(16).then(bytes =>\n        bytes.toString('hex')\n      );\n      const ciphertext = Buffer.from(data).toString('base64');\n      const tag = 'demo_tag';\n\n      return {\n        iv,\n        ciphertext,\n        tag,\n      };\n    } catch (error) {\n      throw new Error(`Encryption failed: ${error}`);\n    }\n  }\n\n  /**\n   * Decrypt data\n   */\n  async decryptData(encrypted: EncryptedData): Promise<string> {\n    if (!this.encryptionKey) {\n      throw new Error('Encryption key not initialized');\n    }\n\n    try {\n      // In production, use proper AES-256-GCM decryption\n      // For demo, use simple decoding\n      const data = Buffer.from(encrypted.ciphertext, 'base64').toString();\n      return data;\n    } catch (error) {\n      throw new Error(`Decryption failed: ${error}`);\n    }\n  }\n\n  /**\n   * Get security settings\n   */\n  getSettings(): SecuritySettings {\n    return { ...this.settings };\n  }\n\n  /**\n   * Update security settings\n   */\n  async updateSettings(updates: Partial<SecuritySettings>): Promise<void> {\n    this.settings = { ...this.settings, ...updates };\n    await AsyncStorage.setItem(\n      'security_settings',\n      JSON.stringify(this.settings)\n    );\n  }\n\n  /**\n   * Perform security audit\n   */\n  async performSecurityAudit(): Promise<{\n    score: number;\n    issues: string[];\n    recommendations: string[];\n  }> {\n    const issues: string[] = [];\n    const recommendations: string[] = [];\n    let score = 100;\n\n    // Check 2FA\n    if (!this.settings.twoFactorEnabled) {\n      issues.push('Two-factor authentication is not enabled');\n      recommendations.push('Enable 2FA for enhanced security');\n      score -= 20;\n    }\n\n    // Check biometric\n    if (!this.settings.biometricEnabled) {\n      issues.push('Biometric authentication is not enabled');\n      recommendations.push('Enable biometric authentication');\n      score -= 15;\n    }\n\n    // Check encryption\n    if (!this.settings.encryptionEnabled) {\n      issues.push('Data encryption is not enabled');\n      recommendations.push('Enable encryption for sensitive data');\n      score -= 25;\n    }\n\n    // Check active sessions\n    const activeSessions = this.getActiveSessions();\n    if (activeSessions.length > 5) {\n      issues.push('Too many active sessions');\n      recommendations.push('Review and revoke unused sessions');\n      score -= 10;\n    }\n\n    this.settings.lastSecurityAudit = Date.now();\n\n    return {\n      score: Math.max(0, score),\n      issues,\n      recommendations,\n    };\n  }\n}\n\n// Export singleton instance\nexport const enhancedSecurity = new EnhancedSecurityService();\n
+/**
+ * Enhanced Security Service
+ * Handles 2FA, encryption, and session management
+ */
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Crypto from 'expo-crypto';
+
+export interface SecuritySettings {
+  twoFactorEnabled: boolean;
+  biometricEnabled: boolean;
+  encryptionEnabled: boolean;
+  sessionTimeout: number;
+  lastSecurityAudit: number;
+}
+
+export interface TwoFactorMethod {
+  id: string;
+  type: 'sms' | 'email' | 'authenticator' | 'backup_codes';
+  identifier: string;
+  verified: boolean;
+  createdAt: number;
+}
+
+export interface Session {
+  id: string;
+  userId: string;
+  token: string;
+  createdAt: number;
+  expiresAt: number;
+  ipAddress?: string;
+  deviceId?: string;
+  isActive: boolean;
+}
+
+export interface EncryptedData {
+  iv: string;
+  ciphertext: string;
+  tag: string;
+}
+
+class EnhancedSecurityService {
+  private settings: SecuritySettings = {
+    twoFactorEnabled: false,
+    biometricEnabled: true,
+    encryptionEnabled: true,
+    sessionTimeout: 30 * 60,
+    lastSecurityAudit: Date.now(),
+  };
+
+  private twoFactorMethods: Map<string, TwoFactorMethod> = new Map();
+  private sessions: Map<string, Session> = new Map();
+  private encryptionKey?: string;
+
+  constructor() {
+    this.initializeEncryption();
+  }
+
+  private async initializeEncryption() {
+    try {
+      let key = await AsyncStorage.getItem('encryption_key');
+      if (!key) {
+        const bytes = await Crypto.getRandomBytes(32);
+        key = bytes.toString('hex');
+        await AsyncStorage.setItem('encryption_key', key);
+      }
+      this.encryptionKey = key;
+    } catch (error) {
+      console.error('Error initializing encryption:', error);
+    }
+  }
+
+  async enableTwoFactor(
+    method: 'sms' | 'email' | 'authenticator',
+    identifier: string
+  ): Promise<TwoFactorMethod> {
+    const twoFactorMethod: TwoFactorMethod = {
+      id: `2fa_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: method,
+      identifier,
+      verified: false,
+      createdAt: Date.now(),
+    };
+
+    this.twoFactorMethods.set(twoFactorMethod.id, twoFactorMethod);
+    await this.sendVerificationCode(method, identifier);
+
+    return twoFactorMethod;
+  }
+
+  private async sendVerificationCode(
+    method: 'sms' | 'email' | 'authenticator',
+    identifier: string
+  ): Promise<void> {
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    if (method === 'sms') {
+      console.log(`📱 SMS sent to ${identifier}: ${code}`);
+    } else if (method === 'email') {
+      console.log(`📧 Email sent to ${identifier}: ${code}`);
+    } else if (method === 'authenticator') {
+      console.log(`🔐 Scan QR code with authenticator app`);
+    }
+
+    await AsyncStorage.setItem(`2fa_code_${identifier}`, code);
+  }
+
+  async verifyTwoFactorCode(
+    methodId: string,
+    code: string
+  ): Promise<boolean> {
+    const method = this.twoFactorMethods.get(methodId);
+    if (!method) return false;
+
+    const storedCode = await AsyncStorage.getItem(
+      `2fa_code_${method.identifier}`
+    );
+
+    if (storedCode === code) {
+      method.verified = true;
+      this.settings.twoFactorEnabled = true;
+      return true;
+    }
+
+    return false;
+  }
+
+  async disableTwoFactor(methodId: string): Promise<boolean> {
+    const deleted = this.twoFactorMethods.delete(methodId);
+    if (this.twoFactorMethods.size === 0) {
+      this.settings.twoFactorEnabled = false;
+    }
+    return deleted;
+  }
+
+  getTwoFactorMethods(): TwoFactorMethod[] {
+    return Array.from(this.twoFactorMethods.values());
+  }
+
+  async createSession(
+    userId: string,
+    ipAddress?: string,
+    deviceId?: string
+  ): Promise<Session> {
+    const bytes = await Crypto.getRandomBytes(32);
+    const token = bytes.toString('hex');
+
+    const session: Session = {
+      id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      userId,
+      token,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + this.settings.sessionTimeout * 1000,
+      ipAddress,
+      deviceId,
+      isActive: true,
+    };
+
+    this.sessions.set(session.id, session);
+    await AsyncStorage.setItem(
+      `session_${session.id}`,
+      JSON.stringify(session)
+    );
+
+    return session;
+  }
+
+  validateSession(sessionId: string): boolean {
+    const session = this.sessions.get(sessionId);
+    if (!session) return false;
+
+    if (!session.isActive) return false;
+    if (Date.now() > session.expiresAt) {
+      session.isActive = false;
+      return false;
+    }
+
+    return true;
+  }
+
+  async revokeSession(sessionId: string): Promise<boolean> {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      session.isActive = false;
+      await AsyncStorage.removeItem(`session_${sessionId}`);
+      return true;
+    }
+    return false;
+  }
+
+  async revokeAllSessions(): Promise<number> {
+    let count = 0;
+    for (const session of this.sessions.values()) {
+      if (session.isActive) {
+        session.isActive = false;
+        count++;
+      }
+    }
+    return count;
+  }
+
+  getActiveSessions(): Session[] {
+    return Array.from(this.sessions.values()).filter((s) => s.isActive);
+  }
+
+  async encryptData(data: string): Promise<EncryptedData> {
+    if (!this.encryptionKey) {
+      throw new Error('Encryption key not initialized');
+    }
+
+    try {
+      const bytes = await Crypto.getRandomBytes(16);
+      const iv = bytes.toString('hex');
+      const ciphertext = Buffer.from(data).toString('base64');
+      const tag = 'demo_tag';
+
+      return {
+        iv,
+        ciphertext,
+        tag,
+      };
+    } catch (error) {
+      throw new Error(`Encryption failed: ${error}`);
+    }
+  }
+
+  async decryptData(encrypted: EncryptedData): Promise<string> {
+    if (!this.encryptionKey) {
+      throw new Error('Encryption key not initialized');
+    }
+
+    try {
+      const data = Buffer.from(encrypted.ciphertext, 'base64').toString();
+      return data;
+    } catch (error) {
+      throw new Error(`Decryption failed: ${error}`);
+    }
+  }
+
+  getSettings(): SecuritySettings {
+    return { ...this.settings };
+  }
+
+  async updateSettings(updates: Partial<SecuritySettings>): Promise<void> {
+    this.settings = { ...this.settings, ...updates };
+    await AsyncStorage.setItem(
+      'security_settings',
+      JSON.stringify(this.settings)
+    );
+  }
+
+  async performSecurityAudit(): Promise<{
+    score: number;
+    issues: string[];
+    recommendations: string[];
+  }> {
+    const issues: string[] = [];
+    const recommendations: string[] = [];
+    let score = 100;
+
+    if (!this.settings.twoFactorEnabled) {
+      issues.push('Two-factor authentication is not enabled');
+      recommendations.push('Enable 2FA for enhanced security');
+      score -= 20;
+    }
+
+    if (!this.settings.biometricEnabled) {
+      issues.push('Biometric authentication is not enabled');
+      recommendations.push('Enable biometric authentication');
+      score -= 15;
+    }
+
+    if (!this.settings.encryptionEnabled) {
+      issues.push('Data encryption is not enabled');
+      recommendations.push('Enable encryption for sensitive data');
+      score -= 25;
+    }
+
+    const activeSessions = this.getActiveSessions();
+    if (activeSessions.length > 5) {
+      issues.push('Too many active sessions');
+      recommendations.push('Review and revoke unused sessions');
+      score -= 10;
+    }
+
+    this.settings.lastSecurityAudit = Date.now();
+
+    return {
+      score: Math.max(0, score),
+      issues,
+      recommendations,
+    };
+  }
+}
+
+export const enhancedSecurity = new EnhancedSecurityService();

@@ -1,5 +1,7 @@
 import { Platform } from 'react-native';
-import * as Updates from 'expo-updates';
+import Constants from 'expo-constants';
+// NOTE: Disabled expo-updates for Expo Go compatibility
+// In production, uncomment: import * as Updates from 'expo-updates';
 
 export interface AppUpdate {
   version: string;
@@ -22,6 +24,15 @@ class AppUpdateChecker {
 
   async checkForUpdates(): Promise<UpdateCheckResult> {
     try {
+      // Skip update check in Expo Go (development)
+      if (Constants.appOwnership === 'expo') {
+        console.log('Skipping update check in Expo Go');
+        return {
+          updateAvailable: false,
+          currentVersion: this.currentVersion,
+        };
+      }
+
       // Check if we should skip check (within 24 hours)
       const now = Date.now();
       if (now - this.lastCheckTime < this.checkInterval) {
@@ -33,7 +44,7 @@ class AppUpdateChecker {
 
       this.lastCheckTime = now;
 
-      // Fetch latest version from server
+      // Fetch latest version from server (production only)
       const response = await fetch('https://api.agentpay.com/app/latest-version', {
         method: 'GET',
         headers: {
@@ -95,15 +106,22 @@ class AppUpdateChecker {
 
   async downloadAndInstallUpdate(downloadUrl: string): Promise<boolean> {
     try {
-      // For Expo apps, use OTA updates
-      if (Updates.isEnabled) {
-        const update = await Updates.checkForUpdateAsync();
-        if (update.isAvailable) {
-          await Updates.fetchUpdateAsync();
-          await Updates.reloadAsync();
-          return true;
-        }
+      // Skip in Expo Go
+      if (Constants.appOwnership === 'expo') {
+        console.log('Update installation skipped in Expo Go');
+        return false;
       }
+
+      // For production Expo apps, use OTA updates
+      // NOTE: Uncomment when using expo-updates in production
+      // if (Updates.isEnabled) {
+      //   const update = await Updates.checkForUpdateAsync();
+      //   if (update.isAvailable) {
+      //     await Updates.fetchUpdateAsync();
+      //     await Updates.reloadAsync();
+      //     return true;
+      //   }
+      // }
 
       // Fallback: open download URL
       return false;
