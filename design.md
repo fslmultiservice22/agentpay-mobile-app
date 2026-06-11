@@ -1,155 +1,215 @@
-# AgentPay Wallet - Mobile App Design
+# AgentPay Wallet - Mobile UI/UX Design System
 
-## Overview
+## Design Philosophy
 
-AgentPay Wallet è un'app mobile per la gestione di pagamenti tramite agenti AI. L'app consente agli utenti di gestire un wallet self-custodial su blockchain EVM, impostare policy di spesa e autorizzare transazioni in stablecoin (USD1) e token nativi.
+AgentPay Wallet follows **Apple Human Interface Guidelines (HIG)** to deliver a first-party iOS app experience. The design prioritizes **one-handed usage** on mobile portrait orientation (9:16) with clean, minimal aesthetics and intuitive interactions.
 
-## Screen List
+---
 
-1. **Onboarding / Wallet Setup** - Creazione o importazione del wallet
-2. **Home / Dashboard** - Visualizzazione saldo, transazioni recenti, azioni rapide
-3. **Send Payment** - Invio di pagamenti a indirizzi specifici
-4. **Receive** - Visualizzazione indirizzo wallet e QR code
-5. **Transactions History** - Elenco di tutte le transazioni
-6. **Policy Settings** - Configurazione limiti di spesa giornalieri/settimanali
-7. **Manual Approvals** - Gestione approvazioni manuali per transazioni grandi
-8. **Settings** - Impostazioni generali, tema, valuta di visualizzazione
+## Screen Architecture
 
-## Primary Content and Functionality
+### Core Screens
+1. **Splash Screen** - Logo and loading animation
+2. **Onboarding** - Welcome and feature explanation
+3. **Wallet Connection** - MetaMask, WalletConnect, Import seed
+4. **Home Dashboard** - Portfolio overview, quick actions
+5. **Portfolio Dashboard** - Real-time charts, holdings, performance
+6. **Transaction History** - Chronological list with filters
+7. **Recurring Payments** - Scheduled transfers management
+8. **Send Payment** - Recipient, amount, confirmation
+9. **Receive Payment** - QR code, address sharing
+10. **Settings** - Account, notifications, security
 
-### 1. Onboarding / Wallet Setup
-- **Content**: Form per creazione nuovo wallet o importazione da seed phrase
-- **Functionality**: 
-  - Generazione nuovo wallet con password
-  - Importazione da seed phrase (12/24 parole)
-  - Backup del seed phrase
-  - Conferma password
+### Tab Navigation
+- Home - Portfolio overview
+- Portfolio - Charts and analytics
+- Transactions - History and export
+- Recurring - Scheduled payments
+- Settings - Configuration
 
-### 2. Home / Dashboard
-- **Content**: 
-  - Saldo USD1 prominente (grande numero)
-  - Saldo BNB per gas
-  - Ultimi 5 trasferimenti
-  - Pulsanti azione rapida (Send, Receive, History)
-- **Functionality**:
-  - Pull-to-refresh per aggiornare saldi
-  - Tap su transazione per dettagli
-  - Copia indirizzo wallet
+---
 
-### 3. Send Payment
-- **Content**:
-  - Campo indirizzo destinatario
-  - Campo importo
-  - Selezione token (USD1, BNB, altri)
-  - Selezione rete (BSC, Ethereum)
-  - Stima gas fee
-  - Pulsante "Review & Sign"
-- **Functionality**:
-  - Validazione indirizzo
-  - Controllo saldo disponibile
-  - Calcolo gas fee in tempo reale
-  - Firma transazione localmente
-  - Broadcast su blockchain
+## Color Palette
 
-### 4. Receive
-- **Content**:
-  - Indirizzo wallet copiabile
-  - QR code dell'indirizzo
-  - Istruzioni di finanziamento
-- **Functionality**:
-  - Copia indirizzo negli appunti
-  - Condivisione QR code
+### Primary Colors
+| Color | Light | Dark | Usage |
+|-------|-------|------|-------|
+| Primary | #0a7ea4 | #0a7ea4 | Buttons, links, active states |
+| Background | #ffffff | #151718 | Screen backgrounds |
+| Surface | #f5f5f5 | #1e2022 | Cards, elevated surfaces |
+| Foreground | #11181C | #ECEDEE | Primary text |
+| Muted | #687076 | #9BA1A6 | Secondary text |
 
-### 5. Transactions History
-- **Content**:
-  - Lista di tutte le transazioni con:
-    - Indirizzo destinatario/mittente
-    - Importo
-    - Data/ora
-    - Status (Pending, Confirmed, Failed)
-    - Hash transazione
-- **Functionality**:
-  - Filtro per tipo (sent/received)
-  - Ricerca per indirizzo
-  - Tap per visualizzare dettagli completi
-  - Link a block explorer
+### Semantic Colors
+| Color | Hex | Usage |
+|-------|-----|-------|
+| Success | #22C55E | Completed transactions, positive changes |
+| Warning | #F59E0B | Pending transactions, alerts |
+| Error | #EF4444 | Failed transactions, errors |
+| Border | #E5E7EB / #334155 | Dividers, borders |
 
-### 6. Policy Settings
-- **Content**:
-  - Limite giornaliero USD1
-  - Limite settimanale USD1
-  - Soglia approvazione manuale
-  - Indirizzi whitelist/blacklist
-- **Functionality**:
-  - Modifica limiti
-  - Salvataggio policy localmente
-  - Visualizzazione spesa corrente vs limite
-
-### 7. Manual Approvals
-- **Content**:
-  - Lista approvazioni in sospeso
-  - Dettagli transazione (importo, destinatario, motivo)
-  - Pulsanti Approve/Reject
-- **Functionality**:
-  - Approvazione transazione
-  - Rifiuto transazione
-  - Notifica di completamento
-
-### 8. Settings
-- **Content**:
-  - Toggle tema (light/dark)
-  - Selezione valuta di visualizzazione
-  - Informazioni app
-  - Logout / Reset wallet
-- **Functionality**:
-  - Cambio tema in tempo reale
-  - Reset wallet con conferma
+---
 
 ## Key User Flows
 
-### Flow 1: Primo accesso - Creazione wallet
-1. Utente apre app → Onboarding
-2. Sceglie "Create New Wallet"
-3. Inserisce password
-4. Visualizza seed phrase
-5. Conferma seed phrase (scrivendo 3 parole casuali)
-6. Wallet creato → Home screen
+### Flow 1: View Portfolio & Monitor Prices
+1. User opens app → Home Screen
+2. Taps Portfolio Dashboard tab
+3. Views price chart with time range selector
+4. Taps holdings list for detailed breakdown
+5. Taps individual holding for details
 
-### Flow 2: Invio pagamento
-1. Utente tocca "Send" da Home
-2. Inserisce indirizzo destinatario
-3. Inserisce importo USD1
-4. Visualizza stima gas fee
-5. Tocca "Review & Sign"
-6. Conferma transazione
-7. Transazione firmata e broadcastata
-8. Visualizza hash transazione
-9. Torna a Home
+### Flow 2: Send Money to Bank Account
+1. User taps Send button on Home
+2. Enters recipient IBAN (validated)
+3. Enters amount and description
+4. Confirms transaction details
+5. Receives confirmation with transaction ID
 
-### Flow 3: Approvazione transazione grande
-1. Utente richiede transazione > limite manuale
-2. App mostra "Awaiting Approval"
-3. Utente va a "Manual Approvals"
-4. Visualizza dettagli transazione
-5. Tocca "Approve"
-6. Transazione completata
-7. Notifica di successo
+### Flow 3: Schedule Recurring Payment
+1. Navigate to Recurring Payments tab
+2. Tap Create Payment button
+3. Fill recipient info (IBAN, name)
+4. Select frequency (daily/weekly/monthly)
+5. Confirm and payment scheduled
+6. Receive confirmation notification
 
-## Color Choices
+### Flow 4: Export Transaction History
+1. Navigate to Transactions tab
+2. Apply filters (date range, type)
+3. Tap Export button
+4. Select format (CSV/JSON/PDF)
+5. File downloaded to device
+6. Option to share or open
 
-- **Primary**: #0a7ea4 (Blu acceso - azione principale)
-- **Background**: #ffffff (light) / #151718 (dark)
-- **Surface**: #f5f5f5 (light) / #1e2022 (dark)
-- **Foreground**: #11181C (light) / #ECEDEE (dark)
-- **Success**: #22C55E (verde - transazione confermata)
-- **Warning**: #F59E0B (arancione - approvazione richiesta)
-- **Error**: #EF4444 (rosso - transazione fallita)
-- **Muted**: #687076 (light) / #9BA1A6 (dark) - testo secondario
+### Flow 5: Setup Security & Backup
+1. Navigate to Settings → Security
+2. Tap Backup Seed Phrase
+3. Complete security verification
+4. Display 12/24 word seed phrase
+5. User writes down or exports securely
+6. Confirm backup complete
 
-## Design Principles
+---
 
-- **Mobile-first**: Orientamento portrait (9:16), utilizzo a una mano
-- **Apple HIG**: Design coerente con iOS standard
-- **Security-focused**: Nessun dato sensibile visibile per default
-- **Clear feedback**: Ogni azione ha feedback visivo immediato
-- **Minimalist**: Interfaccia pulita e focalizzata su azioni principali
+## Interaction Design
+
+### Press Feedback
+| Element | Feedback | Implementation |
+|---------|----------|----------------|
+| Primary Buttons | Scale 0.97 + haptic | scale: 0.97 + impactAsync(Light) |
+| List Items | Opacity 0.7 | opacity: 0.7 on press |
+| Icons | Opacity 0.6 | opacity: 0.6 on press |
+| Cards | Subtle shadow lift | Shadow increase on press |
+
+### Haptic Feedback
+- Button tap → Light impact
+- Toggle/Switch → Medium impact
+- Success → Success notification
+- Error → Error notification
+
+### Animations
+- Transitions → 200-300ms duration
+- Scale changes → 0.95-0.98 range
+- Fade in/out → 150-250ms
+- No bouncy springs → Prefer timing curves
+
+---
+
+## Accessibility
+
+### Text Sizing
+- Titles → 24-28pt (bold)
+- Subtitles → 16-18pt (semibold)
+- Body → 14-16pt (regular)
+- Captions → 12-14pt (regular)
+- Line height → 1.2-1.5× font size
+
+### Touch Targets
+- Minimum → 44×44pt (iOS standard)
+- Buttons → 48×48pt preferred
+- Spacing → 16pt between interactive elements
+
+### Color Contrast
+- Text on background → 4.5:1 minimum (WCAG AA)
+- UI elements → 3:1 minimum
+- Dark mode → Same ratios maintained
+
+---
+
+## Component Library
+
+### Buttons
+- Primary → Full width, tinted background
+- Secondary → Outlined, no background
+- Tertiary → Text only, minimal styling
+- Disabled → Reduced opacity
+
+### Cards
+- Standard → Rounded corners (12pt), shadow, padding 16pt
+- Elevated → Increased shadow depth
+- Pressable → Opacity feedback on press
+
+### Lists
+- Dividers → 1pt border, muted color
+- Spacing → 12pt vertical padding per item
+- Swipe actions → Delete, archive on long press
+
+### Forms
+- Text Input → Border on focus, clear button
+- Validation → Real-time feedback, error color
+- Keyboard → Numeric for amounts, email for emails
+
+---
+
+## Navigation
+
+### Tab Bar
+- 5 tabs → Home, Portfolio, Transactions, Recurring, Settings
+- Icons → SF Symbols (iOS native)
+- Labels → Visible always
+- Spacing → Equal distribution
+
+### Header
+- Title → Left-aligned, bold
+- Back button → Left side, chevron icon
+- Actions → Right-aligned (search, menu)
+
+### Modals & Sheets
+- Half-sheet → For secondary actions
+- Full-screen → For complex flows
+- Dismiss → Swipe down or X button
+
+---
+
+## Performance Optimization
+
+### List Rendering
+- FlatList → Always for scrollable lists
+- Virtualization → Enabled for 50+ items
+- Key prop → Unique, stable keys
+
+### Image Loading
+- Placeholder → Blur hash or skeleton
+- Lazy loading → Images below fold
+- Caching → Expo Image with cache headers
+
+### State Management
+- Context + useReducer → For app state
+- AsyncStorage → For persistence
+- TanStack Query → For server data
+
+---
+
+## Delivery Checklist
+
+- [ ] All buttons and links work
+- [ ] Core user flows tested end-to-end
+- [ ] Responsive on all device sizes
+- [ ] Dark mode tested and working
+- [ ] Accessibility tested (VoiceOver, text scaling)
+- [ ] Performance optimized (< 3s load time)
+- [ ] No console errors or warnings
+- [ ] Haptics and animations working
+- [ ] Offline mode graceful
+- [ ] Error states handled with user-friendly messages

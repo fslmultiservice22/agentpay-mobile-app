@@ -5,7 +5,10 @@ import { SymbolWeight, SymbolViewProps } from "expo-symbols";
 import { ComponentProps } from "react";
 import { OpaqueColorValue, type StyleProp, type TextStyle } from "react-native";
 
-type IconMapping = Record<SymbolViewProps["name"], ComponentProps<typeof MaterialIcons>["name"]>;
+type IconMapping = Record<
+  SymbolViewProps["name"],
+  ComponentProps<typeof MaterialIcons>["name"]
+>;
 type IconSymbolName = keyof typeof MAPPING;
 
 /**
@@ -14,7 +17,37 @@ type IconSymbolName = keyof typeof MAPPING;
  * - see SF Symbols in the [SF Symbols](https://developer.apple.com/sf-symbols/) app.
  */
 const MAPPING = {
+  // Home
   "house.fill": "home",
+  // Trading
+  "chart.line.uptrend.xyaxis": "trending-up",
+  // Portfolio
+  "briefcase.fill": "work",
+  // Dashboard
+  "square.grid.2x2.fill": "dashboard",
+  // Copy Trade
+  "doc.text.fill": "description",
+  // Leaderboard
+  "star.fill": "star-rate",
+  // Settings
+  "gear": "settings",
+  // Alerts
+  "bell.fill": "notifications-active",
+  // Swap
+  "arrow.left.arrow.right": "swap-horiz",
+  // Gas
+  "bolt.fill": "flash-on",
+  // Rebalance
+  "arrow.2.squarepath": "sync",
+  // Multi Portfolio
+  "folder.fill": "folder",
+  // Swap Analytics
+  "chart.bar.fill": "bar-chart",
+  // Credit
+  "creditcard.fill": "credit-card",
+  // Social Trading
+  "network": "group",
+  // Fallback icons
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",
   "chevron.right": "chevron-right",
@@ -37,5 +70,27 @@ export function IconSymbol({
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
-  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
+  const mappedName = MAPPING[name];
+  
+  // Fallback to a default icon if the name is not in the mapping
+  if (!mappedName) {
+    console.warn(`IconSymbol: "${name}" not found in MAPPING, using fallback icon`);
+    return (
+      <MaterialIcons
+        color={color}
+        size={size}
+        name="help-outline"
+        style={style}
+      />
+    );
+  }
+  
+  return (
+    <MaterialIcons
+      color={color}
+      size={size}
+      name={mappedName}
+      style={style}
+    />
+  );
 }
