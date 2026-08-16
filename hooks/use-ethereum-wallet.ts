@@ -184,6 +184,17 @@ export function useEthereumWallet() {
   }, [wallets]);
 
   /**
+   * Get the balance (total value) of a wallet.
+   * Defaults to the active wallet when no address is provided.
+   */
+  const getBalance = useCallback(async (address?: string): Promise<number> => {
+    const target = address
+      ? wallets.find(w => w.address.toLowerCase() === address.toLowerCase())
+      : activeWallet;
+    return target ? target.totalValue : 0;
+  }, [wallets, activeWallet]);
+
+  /**
    * Refresh wallet data
    */
   const refreshWallet = useCallback(async (address?: string) => {
@@ -222,12 +233,17 @@ export function useEthereumWallet() {
     wallets,
     activeWallet,
     wallet: activeWallet, // For backward compatibility
+    // Flattened conveniences used across hooks/screens
+    address: activeWallet?.address ?? null,
+    isConnected: !!activeWallet,
     loading,
+    isLoading: loading,
     error,
     connectWallet,
     disconnectWallet,
     switchActiveWallet,
     refreshWallet,
     fetchWalletData,
+    getBalance,
   };
 }

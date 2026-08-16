@@ -51,7 +51,9 @@ export function useMultiChainWallet(): UseMultiChainWalletReturn {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       if (stored) {
         const data = JSON.parse(stored);
-        const walletsMap = new Map<BlockchainType, string>(Object.entries(data.wallets || {}));
+        const walletsMap = new Map<BlockchainType, string>(
+          Object.entries(data.wallets || {}) as [BlockchainType, string][]
+        );
         setWallets(walletsMap);
         setPrimaryBlockchain(data.primaryBlockchain || 'ethereum');
         setIsMultiChain(walletsMap.size > 1);

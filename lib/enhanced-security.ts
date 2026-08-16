@@ -39,6 +39,17 @@ export interface EncryptedData {
   tag: string;
 }
 
+/**
+ * Convert a byte array to a lowercase hexadecimal string.
+ * `Uint8Array.toString()` does not accept an encoding argument, so the
+ * conversion has to be performed explicitly.
+ */
+function toHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 class EnhancedSecurityService {
   private settings: SecuritySettings = {
     twoFactorEnabled: false,
@@ -61,7 +72,7 @@ class EnhancedSecurityService {
       let key = await AsyncStorage.getItem('encryption_key');
       if (!key) {
         const bytes = await Crypto.getRandomBytes(32);
-        key = bytes.toString('hex');
+        key = toHex(bytes);
         await AsyncStorage.setItem('encryption_key', key);
       }
       this.encryptionKey = key;
@@ -143,7 +154,7 @@ class EnhancedSecurityService {
     deviceId?: string
   ): Promise<Session> {
     const bytes = await Crypto.getRandomBytes(32);
-    const token = bytes.toString('hex');
+    const token = toHex(bytes);
 
     const session: Session = {
       id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -210,7 +221,7 @@ class EnhancedSecurityService {
 
     try {
       const bytes = await Crypto.getRandomBytes(16);
-      const iv = bytes.toString('hex');
+      const iv = toHex(bytes);
       const ciphertext = Buffer.from(data).toString('base64');
       const tag = 'demo_tag';
 

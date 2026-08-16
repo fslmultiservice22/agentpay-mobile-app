@@ -3,9 +3,12 @@
  * Aave, Compound, Curve integration for lending and earning yield
  */
 
+/** Lending protocols supported by the service. */
+export type LendingProtocol = 'aave' | 'compound' | 'curve';
+
 export interface LendingPool {
   id: string;
-  protocol: 'aave' | 'compound' | 'curve';
+  protocol: LendingProtocol;
   asset: string; // e.g., "USDC", "ETH", "DAI"
   totalLiquidity: number;
   totalBorrowed: number;
@@ -22,7 +25,7 @@ export interface LendingPosition {
   id: string;
   userId: string;
   poolId: string;
-  protocol: 'aave' | 'compound' | 'curve';
+  protocol: LendingProtocol;
   asset: string;
   amount: number;
   aToken: string; // aUSDC, cUSDC, etc.
@@ -38,7 +41,7 @@ export interface BorrowingPosition {
   id: string;
   userId: string;
   poolId: string;
-  protocol: 'aave' | 'compound' | 'curve';
+  protocol: LendingProtocol;
   asset: string;
   borrowAmount: number;
   collateralAsset: string;
@@ -54,14 +57,14 @@ export interface BorrowingPosition {
 export interface RewardClaim {
   id: string;
   userId: string;
-  protocol: 'aave' | 'compound' | 'curve';
+  protocol: LendingProtocol;
   rewardToken: string;
   amount: number;
   claimedAt: number;
 }
 
 export interface LendingAnalytics {
-  protocol: 'aave' | 'compound' | 'curve';
+  protocol: LendingProtocol;
   totalSupplied: number;
   totalBorrowed: number;
   totalInterestEarned: number;
@@ -336,7 +339,7 @@ class LendingProtocolService {
   /**
    * Claim rewards
    */
-  claimRewards(userId: string, protocol: string): number {
+  claimRewards(userId: string, protocol: LendingProtocol): number {
     const positions = Array.from(this.lendingPositions.values()).filter(
       p => p.userId === userId && p.protocol === protocol && p.status === 'active'
     );
@@ -408,7 +411,7 @@ class LendingProtocolService {
         : 0;
 
       analytics.push({
-        protocol: protocol as 'aave' | 'compound' | 'curve',
+        protocol: protocol as LendingProtocol,
         totalSupplied,
         totalBorrowed,
         totalInterestEarned,

@@ -7,10 +7,26 @@
 // import * as Clipboard from 'expo-clipboard';
 // import { Platform, Alert } from 'react-native';
 
-// Mock for testing
-const Sharing = { isAvailableAsync: () => Promise.resolve(false), shareAsync: () => Promise.resolve() };
-const Clipboard = { setStringAsync: () => Promise.resolve(), getStringAsync: () => Promise.resolve('') };
-const Platform = { OS: 'ios' };
+// Lightweight stand-ins for `expo-sharing` / `expo-clipboard`, kept so that the
+// service stays importable in tests and on web without the native modules.
+// The signatures mirror the real APIs so call sites type-check correctly.
+interface ShareOptions {
+  mimeType?: string;
+  dialogTitle?: string;
+  UTI?: string;
+}
+
+const Sharing = {
+  isAvailableAsync: (): Promise<boolean> => Promise.resolve(false),
+  shareAsync: (_url: string, _options?: ShareOptions): Promise<void> => Promise.resolve(),
+};
+
+const Clipboard = {
+  setStringAsync: (_text: string): Promise<boolean> => Promise.resolve(true),
+  getStringAsync: (): Promise<string> => Promise.resolve(''),
+};
+
+const Platform: { OS: string } = { OS: 'ios' };
 
 export interface ShareContent {
   title: string;

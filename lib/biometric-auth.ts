@@ -80,20 +80,28 @@ class BiometricAuthService {
 
     try {
       const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: options.reason ?? 'Confirm your identity',
+        fallbackLabel: options.fallbackLabel,
         disableDeviceFallback: options.disableDeviceFallback || false,
-      } as any);
+      });
 
       if (result.success) {
         return {
           success: true,
           biometricType: this.supportedBiometrics[0],
         };
-      } else {
-        return {
-          success: false,
-          error: result.error || 'Authentication failed',
-        };
       }
+
+      // `error` only exists on the failure branch of LocalAuthenticationResult
+      const failure = result as Extract<
+        LocalAuthentication.LocalAuthenticationResult,
+        { success: false }
+      >;
+
+      return {
+        success: false,
+        error: failure.error || 'Authentication failed',
+      };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {

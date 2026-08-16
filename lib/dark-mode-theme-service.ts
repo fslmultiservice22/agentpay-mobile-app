@@ -40,7 +40,7 @@ class DarkModeThemeService {
   private userPreferences: Map<string, ThemePreference> = new Map();
   private themeChangeEvents: Map<string, ThemeChangeEvent> = new Map();
   private themeConfig: ThemeConfig;
-  private systemDarkModeListener?: (isDark: boolean) => void;
+  private systemDarkModeListener?: (event: MediaQueryListEvent | MediaQueryList) => void;
   private autoSwitchInterval?: NodeJS.Timeout;
 
   constructor() {
@@ -98,7 +98,10 @@ class DarkModeThemeService {
         }
       };
 
-      darkModeQuery.addEventListener('change', this.systemDarkModeListener as any);
+      darkModeQuery.addEventListener('change', this.systemDarkModeListener);
+
+      // Apply the current system preference immediately on startup
+      this.systemDarkModeListener(darkModeQuery);
     }
   }
 
@@ -367,7 +370,7 @@ class DarkModeThemeService {
 
     if (typeof window !== 'undefined' && window.matchMedia && this.systemDarkModeListener) {
       const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      darkModeQuery.removeEventListener('change', this.systemDarkModeListener as any);
+      darkModeQuery.removeEventListener('change', this.systemDarkModeListener);
     }
   }
 }

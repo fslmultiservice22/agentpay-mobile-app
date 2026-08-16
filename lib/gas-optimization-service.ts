@@ -3,6 +3,10 @@
  * Real-time gas tracking, fee estimation, and optimization strategies
  */
 
+export type GasStrategy = 'standard' | 'fast' | 'instant' | 'custom';
+
+export type NetworkCongestion = 'low' | 'medium' | 'high';
+
 export interface GasPrice {
   network: string;
   standard: number;
@@ -10,6 +14,8 @@ export interface GasPrice {
   instant: number;
   timestamp: number;
   unit: string; // gwei
+  /** Current congestion level of the network, used to raise warnings. */
+  networkCongestion: NetworkCongestion;
 }
 
 export interface FeeEstimate {
@@ -18,7 +24,7 @@ export interface FeeEstimate {
   network: string;
   gasLimit: number;
   gasPrice: number;
-  strategy: 'standard' | 'fast' | 'custom';
+  strategy: GasStrategy;
   estimatedFee: number;
   estimatedFeeUSD: number;
   estimatedTime: number; // seconds
@@ -31,7 +37,7 @@ export interface GasHistory {
   timestamp: number;
   gasPrice: number;
   transactionCount: number;
-  networkCongestion: 'low' | 'medium' | 'high';
+  networkCongestion: NetworkCongestion;
 }
 
 export interface OptimizationStrategy {
@@ -71,6 +77,7 @@ class GasOptimizationService {
     const networks = ['ethereum', 'polygon', 'arbitrum', 'optimism', 'solana'];
 
     for (const network of networks) {
+      const networkCongestion: NetworkCongestion = Math.random() > 0.5 ? 'low' : 'medium';
       const gasPrice: GasPrice = {
         network,
         standard: Math.random() * 50 + 20, // 20-70 gwei
@@ -78,6 +85,7 @@ class GasOptimizationService {
         instant: Math.random() * 120 + 80, // 80-200 gwei
         timestamp: Date.now(),
         unit: 'gwei',
+        networkCongestion,
       };
 
       this.gasPrices.set(network, gasPrice);
@@ -89,7 +97,7 @@ class GasOptimizationService {
         timestamp: Date.now(),
         gasPrice: gasPrice.standard,
         transactionCount: Math.floor(Math.random() * 10000),
-        networkCongestion: Math.random() > 0.5 ? 'low' : 'medium',
+        networkCongestion,
       };
 
       this.gasHistory.set(history.id, history);
@@ -117,7 +125,7 @@ class GasOptimizationService {
     network: string,
     transactionType: FeeEstimate['transactionType'],
     gasLimit: number,
-    strategy: 'standard' | 'fast' | 'custom' = 'standard',
+    strategy: GasStrategy = 'standard',
     customGasPrice?: number
   ): FeeEstimate {
     const gasPrice = this.gasPrices.get(network);
@@ -358,6 +366,7 @@ class GasOptimizationService {
    * Update gas prices (simulated real-time update)
    */
   updateGasPrices(network: string): GasPrice {
+    const networkCongestion: NetworkCongestion = Math.random() > 0.5 ? 'low' : 'medium';
     const gasPrice: GasPrice = {
       network,
       standard: Math.random() * 50 + 20,
@@ -365,6 +374,7 @@ class GasOptimizationService {
       instant: Math.random() * 120 + 80,
       timestamp: Date.now(),
       unit: 'gwei',
+      networkCongestion,
     };
 
     this.gasPrices.set(network, gasPrice);
@@ -376,7 +386,7 @@ class GasOptimizationService {
       timestamp: Date.now(),
       gasPrice: gasPrice.standard,
       transactionCount: Math.floor(Math.random() * 10000),
-      networkCongestion: Math.random() > 0.5 ? 'low' : 'medium',
+      networkCongestion,
     };
 
     this.gasHistory.set(history.id, history);

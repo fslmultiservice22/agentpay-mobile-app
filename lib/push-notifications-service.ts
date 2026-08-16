@@ -63,7 +63,11 @@ class PushNotificationsService {
       // Set notification handler
       Notifications.setNotificationHandler({
         handleNotification: async () => ({
+          // `shouldShowAlert` is deprecated in expo-notifications >= 0.29,
+          // replaced by the banner/list pair. Both are kept for compatibility.
           shouldShowAlert: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
           shouldPlaySound: this.settings.soundEnabled,
           shouldSetBadge: true,
         }),

@@ -78,9 +78,14 @@ class AIPortfolioRecommendationsService {
    * Analyze portfolio composition
    */
   private analyzeComposition(portfolio: any): any {
-    const totalValue = Object.values(portfolio).reduce((sum: number, val: any) => sum + val.value, 0);
-    const concentrations = Object.values(portfolio).map((asset: any) => asset.value / totalValue);
-    const maxConcentration = Math.max(...concentrations);
+    const totalValue = Object.values(portfolio).reduce<number>(
+      (sum, val: any) => sum + (Number(val?.value) || 0),
+      0,
+    );
+    const concentrations = Object.values(portfolio).map((asset: any) =>
+      totalValue > 0 ? (Number(asset?.value) || 0) / totalValue : 0,
+    );
+    const maxConcentration = concentrations.length > 0 ? Math.max(...concentrations) : 0;
 
     return {
       concentration: maxConcentration,

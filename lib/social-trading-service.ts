@@ -223,8 +223,9 @@ class SocialTradingService {
   async updateLeaderboard(): Promise<void> {
     this.leaderboard = Array.from(this.traders.values())
       .sort((a, b) => {
-        const aScore = (b.totalReturn * 0.5) + (b.winRate * 0.3) + (b.followers * 0.2);
-        const bScore = (a.totalReturn * 0.5) + (a.winRate * 0.3) + (a.followers * 0.2);
+        // Composite score: return weighs the most, then win rate, then audience
+        const aScore = (a.totalReturn * 0.5) + (a.winRate * 0.3) + (a.followers * 0.2);
+        const bScore = (b.totalReturn * 0.5) + (b.winRate * 0.3) + (b.followers * 0.2);
         return bScore - aScore;
       })
       .map((trader, index) => ({
@@ -306,7 +307,7 @@ class SocialTradingService {
    * Get auto-copy status
    */
   getAutoCopyStatus(traderId: string): boolean {
-    return this.userFollowing.get(traderId)?.autoCP || false;
+    return this.userFollowing.get(traderId)?.autoCopy || false;
   }
 
   /**
@@ -316,7 +317,7 @@ class SocialTradingService {
     const following = this.userFollowing.get(traderId);
     if (!following) return false;
 
-    following.autoCP = enabled;
+    following.autoCopy = enabled;
     await this.persistData();
 
     return true;

@@ -83,7 +83,7 @@ class EmailNotificationsService {
       htmlContent: `
         <h2>Referral Commission Earned</h2>
         <p>You have earned a referral commission!</p>
-        <p><strong>Amount:</strong> ${{amount}}</p>
+        <p><strong>Amount:</strong> \${{amount}}</p>
         <p><strong>Referred User:</strong> {{referredUsername}}</p>
         <a href="https://agentpay.io/referrals">View Referrals</a>
       `,
@@ -123,7 +123,7 @@ class EmailNotificationsService {
       subject: 'Weekly Portfolio Report',
       htmlContent: `
         <h2>Your Weekly Portfolio Report</h2>
-        <p><strong>Portfolio Value:</strong> ${{portfolioValue}}</p>
+        <p><strong>Portfolio Value:</strong> \${{portfolioValue}}</p>
         <p><strong>Weekly Return:</strong> {{weeklyReturn}}%</p>
         <p><strong>Top Performer:</strong> {{topAsset}}</p>
         <p><strong>Trades Executed:</strong> {{tradeCount}}</p>

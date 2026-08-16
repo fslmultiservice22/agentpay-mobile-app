@@ -111,13 +111,12 @@ class InAppBrowserService {
   private async openInAppBrowser(url: string): Promise<BrowserResult> {
     try {
       const result = await WebBrowser.openBrowserAsync(url, {
-        displayImmediately: true,
         enableBarCollapsing: this.config.enableBarCollapsing,
-        enableControlsCollapsing: this.config.enableControlsCollapsing,
         showTitle: this.config.showTitle,
         toolbarColor: this.config.toolbarColor,
         secondaryToolbarColor: this.config.secondaryToolbarColor,
-        dismissButtonStyle: this.config.dismissButtonStyle as any,
+        readerMode: this.config.enableReadingList,
+        dismissButtonStyle: this.config.dismissButtonStyle,
       });
 
       this.openedUrls.push(url);
@@ -146,10 +145,10 @@ class InAppBrowserService {
   private async openCustomTabs(url: string): Promise<BrowserResult> {
     try {
       const result = await WebBrowser.openBrowserAsync(url, {
-        displayImmediately: true,
         toolbarColor: this.config.toolbarColor,
         secondaryToolbarColor: this.config.secondaryToolbarColor,
-        navigationBarColor: this.config.navigationBarColor,
+        controlsColor: this.config.navigationBarColor,
+        showTitle: this.config.showTitle,
       });
 
       this.openedUrls.push(url);

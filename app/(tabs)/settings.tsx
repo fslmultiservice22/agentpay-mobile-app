@@ -77,7 +77,11 @@ export default function SettingsScreen() {
             <View style={[styles.settingRow, { borderBottomWidth: 0 }]}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.settingLabel}>{t('wallet.address')}</Text>
-                <Text style={styles.addressText}>{wallet?.address?.substring(0, 6)}...{wallet?.address?.substring(-4)}</Text>
+                <Text style={styles.addressText}>
+                  {wallet.address
+                    ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
+                    : t('wallet.disconnected')}
+                </Text>
               </View>
             </View>
           </View>

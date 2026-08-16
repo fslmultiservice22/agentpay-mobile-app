@@ -1,6 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import { anchorWalletService, type AnchorNetwork, type AnchorAccount, type AnchorTransaction } from '@/lib/anchor-wallet-service';
 
+// Re-export the service types so consumers can import them directly from the hook
+export type { AnchorNetwork, AnchorAccount, AnchorTransaction };
+
 export interface UseAnchorWalletReturn {
   // State
   networks: AnchorNetwork[];

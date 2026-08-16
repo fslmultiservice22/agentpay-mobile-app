@@ -40,15 +40,7 @@ export function WidgetDashboard({ onRefresh, onTap }: WidgetDashboardProps) {
     }
   };
 
-  if (!widgetData) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.emptyText, { color: colors.muted }]}>No data available</Text>
-      </View>
-    );
-  }
-
-  const isPositive = widgetData.changePercent >= 0;
+  const isPositive = (widgetData?.changePercent ?? 0) >= 0;
   const emoji = isPositive ? '📈' : '📉';
   const changeColor = isPositive ? '#22C55E' : '#EF4444';
 
@@ -123,7 +115,21 @@ export function WidgetDashboard({ onRefresh, onTap }: WidgetDashboardProps) {
       color: colors.muted,
       marginTop: 8,
     },
+    emptyText: {
+      fontSize: 14,
+      textAlign: 'center',
+      color: colors.muted,
+    },
   });
+
+  // Rendered only after `styles` exists, so the empty state can be themed too.
+  if (!widgetData) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.emptyText}>No data available</Text>
+      </View>
+    );
+  }
 
   const lastUpdatedTime = new Date(widgetData.lastUpdated).toLocaleTimeString();
 

@@ -71,7 +71,10 @@ class PortfolioTrackingService {
         amount: h.amount,
         value: h.value,
         valueUsd: (parseFloat(h.value) * 2500).toString(),
-        percentage: (parseFloat(h.value) / parseFloat(totalValue)) * 100,
+        percentage:
+          parseFloat(totalValue) > 0
+            ? (parseFloat(h.value) / parseFloat(totalValue)) * 100
+            : 0,
       })),
       gainLoss: '0',
       gainLossPercentage: 0,
@@ -258,7 +261,7 @@ class PortfolioTrackingService {
       : 0;
 
     const topHolding = current.holdings.length > 0
-      ? current.holdings.reduce((max, h) => parseFloat(h.percentage) > parseFloat(max.percentage) ? h : max).symbol
+      ? current.holdings.reduce((max, h) => (h.percentage > max.percentage ? h : max)).symbol
       : '';
 
     // Calculate Herfindahl index for diversification (0-1, lower is more diversified)

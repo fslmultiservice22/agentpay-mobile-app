@@ -29,8 +29,9 @@ interface ChartData {
 export default function PortfolioDashboardScreen() {
   const { t } = useI18n();
   const colors = useColors();
-  const { wallet } = useEthereumWallet();
-  const { currentPortfolio, isLoading, error, loadPortfolioHistory } = usePortfolioDashboard(wallet?.activeWallet?.address || null);
+  const { activeWallet } = useEthereumWallet();
+  const { currentPortfolio, metrics, isLoading, error, loadPortfolioHistory } =
+    usePortfolioDashboard(activeWallet?.address || null);
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('24h');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -49,13 +50,19 @@ export default function PortfolioDashboardScreen() {
       labels: currentPortfolio.slice(-10).map((_, i) => `${i}`),
       datasets: [
         {
-          data: currentPortfolio.slice(-10).map(p => p.value),
+          data: currentPortfolio.slice(-10).map(p => Number(p.value) || 0),
           strokeWidth: 2,
           color: () => colors.primary,
         },
       ],
     };
   }, [currentPortfolio, colors.primary]);
+
+  // Total portfolio value, derived once and reused across the screen
+  const totalValue = useMemo(
+    () => currentPortfolio.reduce((sum, p) => sum + (Number(p.value) || 0), 0),
+    [currentPortfolio],
+  );
 
   const pieData = useMemo(() => {
     if (!currentPortfolio || currentPortfolio.length === 0) {
@@ -66,11 +73,13 @@ export default function PortfolioDashboardScreen() {
       labels: currentPortfolio.map(c => c.symbol),
       datasets: [
         {
-          data: currentPortfolio.map(c => (c.value / currentPortfolio.reduce((sum, p) => sum + p.value, 0)) * 100),
+          data: currentPortfolio.map(c =>
+            totalValue > 0 ? ((Number(c.value) || 0) / totalValue) * 100 : 0,
+          ),
         },
       ],
     };
-  }, [currentPortfolio]);
+  }, [currentPortfolio, totalValue]);
 
   const styles = StyleSheet.create({
     container: {
@@ -159,9 +168,19 @@ export default function PortfolioDashboardScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>{t('portfolio.title')}</Text>
-          <Text style={styles.value}>${currentPortfolio.reduce((sum, p) => sum + p.value, 0).toFixed(2)}</Text>
-          <Text style={[styles.value, { fontSize: 16, color: colors.success }]}>
-            +0.00%
+          <Text style={styles.value}>${totalValue.toFixed(2)}</Text>
+          <Text
+            style={[
+              styles.value,
+              {
+                fontSize: 16,
+                color:
+                  (metrics?.totalChangePercent24h ?? 0) >= 0 ? colors.success : colors.error,
+              },
+            ]}
+          >
+            {(metrics?.totalChangePercent24h ?? 0) >= 0 ? '+' : ''}
+            {(metrics?.totalChangePercent24h ?? 0).toFixed(2)}%
           </Text>
         </View>
 
@@ -245,10 +264,14 @@ export default function PortfolioDashboardScreen() {
                 >
                   <View>
                     <Text style={{ color: colors.foreground, fontWeight: '600' }}>{holding.symbol}</Text>
-                    <Text style={{ color: colors.muted, fontSize: 12 }}>{holding.amount.toFixed(4)}</Text>
+                    <Text style={{ color: colors.muted, fontSize: 12 }}>
+                      {(Number(holding.amount) || 0).toFixed(4)}
+                    </Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ color: colors.foreground, fontWeight: '600' }}>${holding.value.toFixed(2)}</Text>
+                    <Text style={{ color: colors.foreground, fontWeight: '600' }}>
+                      ${(Number(holding.value) || 0).toFixed(2)}
+                    </Text>
                     <Text style={{ color: colors.muted, fontSize: 12 }}>{holding.percentage.toFixed(1)}%</Text>
                   </View>
                 </View>

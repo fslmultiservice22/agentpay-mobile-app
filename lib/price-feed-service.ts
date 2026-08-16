@@ -41,7 +41,7 @@ class PriceFeedService {
   private priceCache: Map<string, PriceData> = new Map();
   private alerts: Map<string, PriceAlert> = new Map();
   private priceHistory: Map<string, PriceHistory> = new Map();
-  private updateInterval: NodeJS.Timer | null = null;
+  private updateInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     this.initializeMockPrices();
