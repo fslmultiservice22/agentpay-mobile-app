@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
@@ -13,14 +13,23 @@ export default function WalletExportScreen() {
   const colors = useColors();
   const { t } = useI18n();
   const router = useRouter();
-  const { config, loadConfig, exportJSON } = useWalletJSON();
+  const { config, loading, loadConfig, exportJSON } = useWalletJSON();
 
   const [jsonString, setJsonString] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  // Distinguishes "still reading AsyncStorage" from "nothing stored", so the
+  // empty state is only shown once we are sure there is no configuration.
+  const [hasCheckedStorage, setHasCheckedStorage] = useState(false);
 
   useEffect(() => {
-    loadConfig();
-  }, []);
+    let cancelled = false;
+    loadConfig().finally(() => {
+      if (!cancelled) setHasCheckedStorage(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadConfig]);
 
   useEffect(() => {
     if (config) {
@@ -67,16 +76,53 @@ export default function WalletExportScreen() {
     }
   };
 
-  if (!config) {
+  // Still reading the local storage: avoid flashing the empty state.
+  if (!config && (loading || !hasCheckedStorage)) {
     return (
       <ScreenContainer className="flex-1 items-center justify-center gap-4">
-        <Text className="text-lg text-muted text-center px-4">{t('wallet.noConfigToExport')}</Text>
-        <TouchableOpacity
-          className="bg-primary px-6 py-3 rounded-lg"
-          onPress={() => router.back()}
-        >
-          <Text className="text-background font-semibold">{t('wallet.goBack')}</Text>
-        </TouchableOpacity>
+        <ActivityIndicator color={colors.primary} />
+        <Text className="text-sm text-muted text-center px-8">{t('common.loading')}</Text>
+      </ScreenContainer>
+    );
+  }
+
+  // No wallet configuration stored on this device (typically after a reinstall or
+  // after clearing the app data). Explain what happened and offer a recovery path
+  // instead of dead-ending on a "go back" button.
+  if (!config) {
+    return (
+      <ScreenContainer className="flex-1 items-center justify-center px-6 gap-4">
+        <Text className="text-5xl mb-2">🗄️</Text>
+        <Text className="text-xl font-bold text-foreground text-center">
+          {t('wallet.noConfigToExport')}
+        </Text>
+        <Text className="text-sm text-muted text-center leading-relaxed">
+          {t('wallet.noConfigToExportDescription')}
+        </Text>
+
+        <View className="w-full gap-3 mt-4">
+          <TouchableOpacity
+            className="bg-primary rounded-lg p-4"
+            onPress={() => router.push('/wallet-import')}
+            accessibilityRole="button"
+            accessibilityLabel={t('wallet.importBackup')}
+          >
+            <Text className="text-center text-white font-semibold">
+              {t('wallet.importBackup')}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="rounded-lg p-4 border border-border bg-transparent"
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel={t('wallet.goBack')}
+          >
+            <Text className="text-center text-foreground font-semibold">
+              {t('wallet.goBack')}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScreenContainer>
     );
   }

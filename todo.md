@@ -291,7 +291,7 @@
 ## Critical Bug Fixes - Fase 36 (IN PROGRESS)
 - [ ] Fix trading screen - swap operations not showing
 - [ ] Fix portfolio screen - connected wallets not displaying
-- [ ] Fix wallet export error - "wallet.noConfigToExport"
+- [x] Fix wallet export error - "wallet.noConfigToExport" (vedi "Fix i18n e recupero backup wallet" in fondo al file)
 - [ ] Add second wallet address (0x14ea40648fc8c1781d19363f5b9cc9a877ac2469)
 - [ ] Implement transaction history display for all wallets
 - [ ] Test all fixes end-to-end and verify functionality
@@ -516,3 +516,20 @@
 - [x] Zero TypeScript errors
 - [x] All features working end-to-end
 - [x] Production-ready codebase
+
+
+## Fix i18n e recupero backup wallet — 16 agosto 2026 (COMPLETATO) ✅
+
+Correzione dei problemi P0 riscontrati nell'audit pubblico del 16 agosto 2026.
+
+- [x] `hooks/use-i18n.ts`: `t()` usava un lookup annidato (`key.split('.')`) mentre i dizionari sono piatti, quindi ogni traduzione restituiva la chiave tecnica. Ora il lookup piatto è primario, quello annidato resta come fallback, segue il fallback sulla lingua inglese e, come ultima risorsa, `humanizeKey()` produce un'etichetta leggibile invece di un identificatore da sviluppatore.
+- [x] `hooks/use-i18n.ts`: esportate `translate()` e `humanizeKey()` per riuso fuori da React e nei test; `t()` è memoizzata con `useCallback`.
+- [x] `lib/i18n/translations.ts`: aggiunte 82 chiavi mancanti in tutte le 8 lingue (da 192 a 274 chiavi per lingua), comprese tutte le `wallet.*` di import/export, `trading.*` di copy trading, `social.*`, `kyc.*`, `portfolio.*` e `common.*`.
+- [x] `app/wallet-export.tsx`: lo stato "nessuna configurazione" ora spiega che i dati locali vengono rimossi da reinstallazione o cancellazione dati, chiarisce che il file non contiene chiavi private e offre un pulsante **Importa backup** verso `/wallet-import` oltre a *Torna indietro*. Aggiunto stato di caricamento per non mostrare lo stato vuoto mentre si legge AsyncStorage.
+- [x] `app/wallet-import.tsx`: sostituita la stringa hardcoded in inglese del selettore file con chiavi tradotte.
+- [x] `vitest.config.ts` creato: alias `@/` e `@shared` (la loro assenza faceva fallire `bank-integration` e `transaction-tracker`) e `__DEV__` definito per il runtime Node.
+- [x] `tests/i18n-lookup.test.ts` nuovo (8 test): regressione sul lookup piatto, fallback di lingua, humanize, più un controllo automatico che ogni chiave `t('x.y')` presente nel codice sia definita nei dizionari.
+- [x] `tests/telegram-bot.test.ts`: usa `describe.skipIf` quando `TELEGRAM_BOT_TOKEN` non è configurato, invece di fallire.
+- [x] `tests/bank-integration.test.ts`: corretti due test dipendenti da una race condition sullo stato del bonifico e da un id di transazione inesistente.
+- [x] Verifica: `npx vitest run` → 760 test passati, 7 skipped, 0 falliti (43 file passati, 2 skipped). Prima delle correzioni: 741 passati con 3 file in errore.
+- [x] Verifica: `npx tsc --noEmit` → 54 errori preesistenti, nessuno nei file modificati (invariato rispetto al baseline).

@@ -45,17 +45,30 @@ describe('Bank Integration Service', () => {
 
     expect(result).toBeDefined();
     expect(result.id).toBeDefined();
-    expect(result.status).toBe('pending');
+    // `initiateTransfer` kicks off `processTransfer` without awaiting it, so the
+    // status may already have moved past 'pending' by the time we assert.
+    expect(['pending', 'processing', 'completed', 'failed']).toContain(result.status);
   });
 
-  it('should get transfer status', async () => {
-    const status = await bankIntegration.getTransferStatus(
-      'txn_123456'
+  it('should get transfer status for a known transfer', async () => {
+    const accounts = bankIntegration.getAccounts();
+    const transfer = await bankIntegration.initiateTransfer(
+      500,
+      accounts[0]?.id || 'acc_test',
+      'acc_recipient',
+      'EUR',
+      'stripe'
     );
-    expect(status).toBeDefined();
+
+    const status = bankIntegration.getTransferStatus(transfer.id);
+    expect(status).not.toBeNull();
     expect(['pending', 'processing', 'completed', 'failed']).toContain(
-      status.status
+      status!.status
     );
+  });
+
+  it('should return null for an unknown transfer', () => {
+    expect(bankIntegration.getTransferStatus('txn_does_not_exist')).toBeNull();
   });
 
   it('should cancel transfer', async () => {

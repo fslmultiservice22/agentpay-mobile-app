@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { translations as TRANSLATIONS, type Language } from '@/lib/i18n/translations';
 
@@ -6,6 +6,82 @@ export type { Language };
 
 const LANGUAGE_STORAGE_KEY = 'agentpay_language';
 const DEFAULT_LANGUAGE: Language = 'en';
+/** Language always used as last resort before showing a human readable fallback. */
+const FALLBACK_LANGUAGE: Language = 'en';
+
+/**
+ * Resolve a translation key inside a single dictionary.
+ *
+ * The dictionaries in `lib/i18n/translations.ts` use **flat** keys
+ * (e.g. `'wallet.noConfigToExport'`), so the flat lookup is attempted first.
+ * A nested lookup (`wallet` -> `noConfigToExport`) is kept as a fallback so that
+ * partially nested dictionaries keep working.
+ *
+ * Returns `undefined` when the key cannot be resolved to a non-empty string.
+ */
+function resolveKey(dictionary: unknown, key: string): string | undefined {
+  if (!dictionary || typeof dictionary !== 'object') return undefined;
+
+  // 1. Flat lookup — the format actually used by the app dictionaries.
+  const flat = (dictionary as Record<string, unknown>)[key];
+  if (typeof flat === 'string' && flat.length > 0) return flat;
+
+  // 2. Nested lookup — tolerated for backward compatibility.
+  if (!key.includes('.')) return undefined;
+
+  let current: unknown = dictionary;
+  for (const segment of key.split('.')) {
+    if (current && typeof current === 'object' && segment in (current as Record<string, unknown>)) {
+      current = (current as Record<string, unknown>)[segment];
+    } else {
+      return undefined;
+    }
+  }
+
+  return typeof current === 'string' && current.length > 0 ? current : undefined;
+}
+
+/**
+ * Turn a translation key into a readable label as an absolute last resort.
+ *
+ * `'wallet.noConfigToExport'` becomes `'No config to export'`, so the user never
+ * sees a raw developer identifier even if a key is missing in every dictionary.
+ */
+export function humanizeKey(key: string): string {
+  const lastSegment = key.includes('.') ? key.slice(key.lastIndexOf('.') + 1) : key;
+  const spaced = lastSegment
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .trim();
+  if (!spaced) return key;
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
+}
+
+/**
+ * Translate a key using the given language, then the fallback language, then an
+ * explicit default value, then a humanized version of the key itself.
+ *
+ * Exported so that non-React code (services, tests) can reuse the same logic.
+ */
+export function translate(language: Language, key: string, defaultValue?: string): string {
+  if (!key) return defaultValue ?? '';
+
+  const fromLanguage = resolveKey(TRANSLATIONS[language], key);
+  if (fromLanguage !== undefined) return fromLanguage;
+
+  if (language !== FALLBACK_LANGUAGE) {
+    const fromFallback = resolveKey(TRANSLATIONS[FALLBACK_LANGUAGE], key);
+    if (fromFallback !== undefined) return fromFallback;
+  }
+
+  if (defaultValue !== undefined && defaultValue.length > 0) return defaultValue;
+
+  if (__DEV__) {
+    console.warn(`[i18n] Missing translation key: "${key}" (language: ${language})`);
+  }
+
+  return humanizeKey(key);
+}
 
 /**
  * Hook for multi-language support
@@ -48,20 +124,10 @@ export function useI18n() {
   };
 
   // Get translation for a key
-  const t = (key: string, defaultValue?: string): string => {
-    const keys = key.split('.');
-    let value: any = TRANSLATIONS[language];
-
-    for (const k of keys) {
-      if (value && typeof value === 'object' && k in value) {
-        value = value[k];
-      } else {
-        return defaultValue || key;
-      }
-    }
-
-    return typeof value === 'string' ? value : defaultValue || key;
-  };
+  const t = useCallback(
+    (key: string, defaultValue?: string): string => translate(language, key, defaultValue),
+    [language]
+  );
 
   // Get all available languages
   const availableLanguages = Object.keys(TRANSLATIONS) as Language[];

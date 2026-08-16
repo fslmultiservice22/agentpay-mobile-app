@@ -20,10 +20,9 @@ export default function WalletImportScreen() {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
   const handlePickFile = async () => {
-    Alert.alert(
-      t('wallet.info'),
-      'Paste your wallet JSON configuration in the text field below.'
-    );
+    // Native document picking is not wired yet: guide the user to the paste flow
+    // rather than showing an untranslated developer string.
+    Alert.alert(t('wallet.selectFile'), t('wallet.pasteJSON'));
   };
 
   const handlePasteExample = () => {
