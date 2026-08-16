@@ -533,3 +533,27 @@ Correzione dei problemi P0 riscontrati nell'audit pubblico del 16 agosto 2026.
 - [x] `tests/bank-integration.test.ts`: corretti due test dipendenti da una race condition sullo stato del bonifico e da un id di transazione inesistente.
 - [x] Verifica: `npx vitest run` → 760 test passati, 7 skipped, 0 falliti (43 file passati, 2 skipped). Prima delle correzioni: 741 passati con 3 file in errore.
 - [x] Verifica: `npx tsc --noEmit` → 54 errori preesistenti, nessuno nei file modificati (invariato rispetto al baseline).
+
+
+## AgentPay Session v81 — TypeScript, Trading, Social, KYC e Portfolio (COMPLETATA) ✅
+- [x] Applicata la patch locale `agentpay-mobile-app-d664cc0.patch` sopra il clone GitHub del commit `6e3b35e` tramite `git am`.
+- [x] Corretti tutti i 54 errori TypeScript preesistenti; `npx tsc --noEmit` passa con codice 0.
+- [x] Aggiunti 93 nuove chiavi i18n coerenti in tutte le 8 lingue e verificata la copertura automatica delle chiavi usate nel codice.
+- [x] Trading migliorato con quote deterministiche per token e rete, price impact, fee breakdown, validazione saldo/gas, selezione token, inverti coppia, quick amounts, slippage e conferma.
+- [x] Social trading migliorato con ricerca, ordinamento, tab following/copy, configurazione auto-copy, validazione percentuale, gestione copy trade e navigazione al profilo.
+- [x] KYC migliorato con form anagrafico validato, requisiti per livello, stato dei documenti, progress ponderato, privacy note e stato di revisione.
+- [x] Portfolio migliorato con grafici SVG area/donut reali, storico filtrabile 24h/7d/30d/90d, metriche, composizione, sorting holdings ed empty state.
+- [x] Aggiunti 21 test unitari per `swap-quote-service`.
+- [x] Verifica finale: 44 file test passati, 2 skipped; 781 test passati, 7 skipped; 0 fallimenti.
+- [x] Patch finale generata con `git format-patch`.
+
+Nota: il repository del sito `/home/ubuntu/fsl-agentpay-platform` non è presente nel sandbox; nessun aggiornamento del sito/changelog è stato applicato.
+
+---
+
+## Testing & Deployment — aggiornamento v81
+- [x] `npx tsc --noEmit`
+- [x] `npx vitest run tests/swap-quote-service.test.ts` — 21 test passati
+- [x] `npx vitest run` — 44 file passati, 2 skipped; 781 test passati, 7 skipped
+- [ ] Build APK/EAS su dispositivo reale — fuori dallo scope della sessione
+- [ ] Push su GitHub — richiede esecuzione da parte dell'utente o autorizzazione esplicita
