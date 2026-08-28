@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, vi } from 'vitest';
-import { TelegramBotService } from '/home/ubuntu/agentpay-mobile-app/lib/telegram/telegram-service';
+import { TelegramBotService } from '../lib/telegram/telegram-service';
 
 describe('Telegram Integration', () => {
   let telegramService: TelegramBotService;
@@ -7,7 +7,7 @@ describe('Telegram Integration', () => {
   beforeAll(() => {
     // Usa un token di test
     telegramService = new TelegramBotService(
-      '8763812695:AAEsTC_rp0iCNN9oanYbRUNvsXfX2Q4YOsM',
+      '000000000:TEST_TOKEN_FOR_UNIT_TEST_ONLY',
       'tradingT23_bot'
     );
   });
