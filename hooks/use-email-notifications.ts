@@ -97,12 +97,10 @@ export function useEmailNotifications() {
 
         // Check if user opted out
         if (template === 'promotional' && !prefs.marketing) {
-          console.log('User opted out of marketing emails');
           return null;
         }
 
         if (template === 'security_alert' && !prefs.security) {
-          console.log('User opted out of security emails');
           return null;
         }
 

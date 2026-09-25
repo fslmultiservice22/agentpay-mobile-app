@@ -39,7 +39,7 @@ class PriceService {
 
   private priceCache: Map<string, PriceData> = new Map();
   private subscriptions: Map<string, PriceSubscription[]> = new Map();
-  private updateTimers: Map<string, NodeJS.Timeout> = new Map();
+  private updateTimers: Map<string, ReturnType<typeof setInterval>> = new Map();
   private isConnected = false;
   private reconnectCount = 0;
 
@@ -47,8 +47,6 @@ class PriceService {
    * Initialize price service
    */
   public async init(): Promise<void> {
-    console.log('[Price] Service initialized');
-    console.log('[Price] Data source:', this.config.dataSource);
   }
 
   /**
@@ -63,7 +61,6 @@ class PriceService {
     const subscription: PriceSubscription = { symbol, callback };
     this.subscriptions.get(symbol)!.push(subscription);
 
-    console.log('[Price] Subscribed to', symbol);
 
     // Return unsubscribe function
     return () => {
@@ -232,7 +229,6 @@ class PriceService {
    */
   private async fetchFromCoinMarketCap(symbol: string): Promise<PriceData | null> {
     // Note: CoinMarketCap requires API key
-    console.log('[Price] CoinMarketCap requires API key');
     return null;
   }
 
@@ -290,7 +286,6 @@ class PriceService {
    */
   public updateConfig(config: Partial<PriceConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log('[Price] Config updated:', this.config);
   }
 
   /**
@@ -312,7 +307,6 @@ class PriceService {
    */
   public clearCache(): void {
     this.priceCache.clear();
-    console.log('[Price] Cache cleared');
   }
 
   /**
@@ -323,7 +317,6 @@ class PriceService {
     this.updateTimers.clear();
     this.subscriptions.clear();
     this.priceCache.clear();
-    console.log('[Price] Service cleaned up');
   }
 
   /**

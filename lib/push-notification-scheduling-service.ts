@@ -51,7 +51,7 @@ class PushNotificationSchedulingService {
   private scheduledNotifications: Map<string, ScheduledNotification> = new Map();
   private notificationSchedules: Map<string, NotificationSchedule> = new Map();
   private notificationHistory: Map<string, NotificationHistory> = new Map();
-  private scheduledTasks: Map<string, NodeJS.Timeout> = new Map();
+  private scheduledTasks: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
   /**
    * Create scheduled notification

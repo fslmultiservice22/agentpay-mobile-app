@@ -21,21 +21,45 @@ export function useSwapAnalytics() {
 
   // Recalculate analytics when swaps or time range changes
   useEffect(() => {
-    if (swaps.length > 0) {
-      calculateAnalytics();
-    }
+    calculateAnalytics();
   }, [swaps, timeRange]);
 
   const loadSwapHistory = useCallback(async () => {
     try {
       setIsLoading(true);
       const cached = await AsyncStorage.getItem(STORAGE_KEY);
-      const history = cached ? JSON.parse(cached) : MOCK_SWAP_HISTORY;
+      const history: SwapRecord[] = cached ? JSON.parse(cached) : MOCK_SWAP_HISTORY;
+      // Pre-calculate analytics synchronously before clearing isLoading
+      // to avoid a render where isLoading=false but analytics=null
+      const now = Date.now();
+      const filtered = history.filter((s) => now - s.timestamp <= 7 * 24 * 60 * 60 * 1000);
+      const statistics = calculateSwapStatistics(filtered);
+      const blockchainStats = calculateBlockchainStats(filtered);
+      const tokenStats = calculateTokenStats(filtered);
+      const timeSeries = generateTimeSeries(filtered);
+      setAnalytics({
+        statistics,
+        blockchainStats,
+        tokenStats,
+        timeSeries,
+        recentSwaps: filtered.slice(-10).reverse(),
+      });
       setSwaps(history);
       setError(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load swap history';
       setError(errorMessage);
+      // Fallback: compute analytics from mock data
+      try {
+        const filtered = MOCK_SWAP_HISTORY.filter((s) => Date.now() - s.timestamp <= 7 * 24 * 60 * 60 * 1000);
+        setAnalytics({
+          statistics: calculateSwapStatistics(filtered),
+          blockchainStats: calculateBlockchainStats(filtered),
+          tokenStats: calculateTokenStats(filtered),
+          timeSeries: generateTimeSeries(filtered),
+          recentSwaps: filtered.slice(-10).reverse(),
+        });
+      } catch (_) {}
       setSwaps(MOCK_SWAP_HISTORY);
     } finally {
       setIsLoading(false);

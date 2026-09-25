@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 5.0.0"
+    "version": ">= 23.2.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "preview": {
@@ -18,23 +19,35 @@
         "buildType": "apk"
       }
     },
-    "production": {
+    "production-apk": {
+      "distribution": "internal",
+      "autoIncrement": true,
       "android": {
-        "buildType": "aab"
+        "buildType": "apk"
+      }
+    },
+    "prelaunch": {
+      "node": "22.14.0",
+      "environment": "preview",
+      "distribution": "internal",
+      "developmentClient": false,
+      "autoIncrement": true,
+      "android": {
+        "buildType": "apk",
+        "credentialsSource": "remote"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
       }
     }
   },
   "submit": {
     "production": {
       "android": {
-        "serviceAccount": "~/.android/service-account-key.json",
-        "track": "internal"
-      }
-    }
-  },
-  "publish": {
-    "production": {
-      "android": {
+        "serviceAccountKeyPath": "~/.android/service-account-key.json",
         "track": "internal"
       }
     }

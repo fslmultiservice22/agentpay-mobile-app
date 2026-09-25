@@ -1,35 +1,27 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from "vitest";
 
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
+const testWithTelegramToken = telegramBotToken && process.env.RUN_LIVE_INTEGRATION_TESTS === "1" ? it : it.skip;
 
-/**
- * These checks validate a real Telegram bot credential, so they only make sense
- * when `TELEGRAM_BOT_TOKEN` is provided by the environment (CI secret or local
- * `.env`). Without it the suite is skipped instead of failing, so a missing
- * optional secret cannot be mistaken for a regression in the app code.
- */
-describe.skipIf(!TELEGRAM_BOT_TOKEN)('Telegram Bot Integration', () => {
-  it('should validate Telegram bot token format', () => {
-    // Token format: numbers:alphanumeric
-    const tokenRegex = /^\d+:[A-Za-z0-9_-]+$/;
-    expect(TELEGRAM_BOT_TOKEN).toMatch(tokenRegex);
+describe("Telegram Bot Integration", () => {
+  it("valida il formato del token solo quando è disponibile", () => {
+    if (!telegramBotToken) return;
+    expect(telegramBotToken).toMatch(/^\d+:[A-Za-z0-9_-]+$/);
   });
 
-  it('should verify bot token structure', () => {
-    const [botId, botToken] = (TELEGRAM_BOT_TOKEN as string).split(':');
+  testWithTelegramToken("convalida il nuovo token con Telegram getMe senza inviare messaggi", async () => {
+    const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/getMe`, {
+      signal: AbortSignal.timeout(10_000),
+    });
 
-    expect(botId).toBeTruthy();
-    expect(botToken).toBeTruthy();
-    expect(botId).toMatch(/^\d+$/);
-    expect(botToken.length).toBeGreaterThan(20);
-  });
+    expect(response.status).toBe(200);
+    const payload = await response.json() as {
+      ok?: boolean;
+      result?: { is_bot?: boolean; username?: string };
+    };
 
-  it('should have valid bot credentials', () => {
-    const [botId, botToken] = (TELEGRAM_BOT_TOKEN as string).split(':');
-
-    expect(botId).toBeTruthy();
-    expect(botToken).toBeTruthy();
-    expect(botId).toMatch(/^\d+$/);
-    expect(botToken.length).toBeGreaterThan(20);
+    expect(payload.ok).toBe(true);
+    expect(payload.result?.is_bot).toBe(true);
+    expect(payload.result?.username).toBe("tradingT23_bot");
   });
 });

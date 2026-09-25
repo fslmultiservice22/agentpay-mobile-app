@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, RefreshControl, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from './ui/icon-symbol';
 import { widgetService, WidgetData } from '@/lib/widget-service';
@@ -45,6 +45,12 @@ export function WidgetDashboard({ onRefresh, onTap }: WidgetDashboardProps) {
   const changeColor = isPositive ? '#22C55E' : '#EF4444';
 
   const styles = StyleSheet.create({
+    emptyText: {
+      fontSize: 14,
+      color: colors.muted,
+      textAlign: 'center',
+      padding: 16,
+    },
     container: {
       borderRadius: 16,
       padding: 16,
@@ -115,18 +121,12 @@ export function WidgetDashboard({ onRefresh, onTap }: WidgetDashboardProps) {
       color: colors.muted,
       marginTop: 8,
     },
-    emptyText: {
-      fontSize: 14,
-      textAlign: 'center',
-      color: colors.muted,
-    },
   });
 
-  // Rendered only after `styles` exists, so the empty state can be themed too.
   if (!widgetData) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.emptyText}>No data available</Text>
+      <View style={[styles.container, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.emptyText, { color: colors.muted }]}>No data available</Text>
       </View>
     );
   }

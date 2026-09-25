@@ -1,6 +1,38 @@
 import { useState, useCallback, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { validateIBAN, maskIBAN } from "@/lib/iban-validator";
+import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
+
+// Helper: send a local notification for transfer status change
+async function sendTransferStatusNotification(
+  status: 'completed' | 'failed',
+  amount: number,
+  currency: string,
+  reference: string
+): Promise<void> {
+  try {
+    if (Platform.OS === 'web') return;
+    const { status: perm } = await Notifications.getPermissionsAsync();
+    if (perm !== 'granted') return;
+
+    const isOk = status === 'completed';
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: isOk ? '✅ Bonifico completato' : '❌ Bonifico fallito',
+        body: isOk
+          ? `Il tuo bonifico di €${amount.toLocaleString('it-IT', { minimumFractionDigits: 2 })} (${reference}) è stato completato con successo.`
+          : `Il bonifico di €${amount.toLocaleString('it-IT', { minimumFractionDigits: 2 })} (${reference}) non è andato a buon fine.`,
+        data: { status, amount, currency, reference },
+        ...(Platform.OS === 'android' ? { channelId: 'agentpay-reminders' } : {}),
+      },
+      trigger: { seconds: 1, repeats: false } as any,
+    });
+  } catch (err) {
+    // Non-blocking: ignore notification errors
+    console.warn('Transfer notification error:', err);
+  }
+}
 
 export interface BankAccount {
   id: string;
@@ -193,7 +225,10 @@ export function useBankAccounts() {
   const completeTransfer = useCallback(
     async (transferId: string, success: boolean = true): Promise<boolean> => {
       try {
-        const updated = transfers.map((t) =>
+        // Read fresh data from AsyncStorage to avoid stale closure bug
+        const raw = await AsyncStorage.getItem(TRANSFERS_KEY);
+        const currentTransfers: BankTransfer[] = raw ? JSON.parse(raw) : [];
+        const updated = currentTransfers.map((t) =>
           t.id === transferId
             ? {
                 ...t,
@@ -210,11 +245,23 @@ export function useBankAccounts() {
         // Update account last used
         const transfer = updated.find((t) => t.id === transferId);
         if (transfer && success) {
-          const accountUpdated = accounts.map((a) =>
+          const rawAccounts = await AsyncStorage.getItem(STORAGE_KEY);
+          const currentAccounts: BankAccount[] = rawAccounts ? JSON.parse(rawAccounts) : [];
+          const accountUpdated = currentAccounts.map((a) =>
             a.id === transfer.accountId ? { ...a, lastUsed: Date.now() } : a
           );
           await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(accountUpdated));
           setAccounts(accountUpdated);
+        }
+
+        // Send automatic status-change notification
+        if (transfer) {
+          sendTransferStatusNotification(
+            success ? 'completed' : 'failed',
+            transfer.amount,
+            transfer.currency,
+            transfer.reference
+          );
         }
 
         return success;
@@ -223,7 +270,7 @@ export function useBankAccounts() {
         return false;
       }
     },
-    [transfers, accounts]
+    [] // no deps: reads fresh from AsyncStorage every time
   );
 
   const getTransferHistory = useCallback(
@@ -252,5 +299,6 @@ export function useBankAccounts() {
     completeTransfer,
     getTransferHistory,
     getDefaultAccount,
+    reloadTransfers: loadTransfers,
   };
 }

@@ -5,10 +5,10 @@ describe('Telegram Integration', () => {
   let telegramService: TelegramBotService;
 
   beforeAll(() => {
-    // Usa un token di test
+    // Token sintetico: il test non effettua chiamate alla rete Telegram.
     telegramService = new TelegramBotService(
-      '000000000:TEST_TOKEN_FOR_UNIT_TEST_ONLY',
-      'tradingT23_bot'
+      '0000000000:TEST_TOKEN_NOT_USED',
+      'agentpay_test_bot'
     );
   });
 

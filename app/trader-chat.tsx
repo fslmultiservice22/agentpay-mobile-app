@@ -1,4 +1,4 @@
-import { ScrollView, View, Text, Pressable, FlatList, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, KeyboardAvoidingView, Platform, Pressable, FlatList } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useTraderMessaging } from '@/hooks/use-trader-messaging';
 import { useI18n } from '@/hooks/use-i18n';

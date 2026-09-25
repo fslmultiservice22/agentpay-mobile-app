@@ -79,7 +79,7 @@ class EmailNotificationsService {
 
     this.emailTemplates.set('referral_commission', {
       type: 'referral_commission',
-      subject: 'Referral Commission Earned - ${{amount}}',
+      subject: 'Referral Commission Earned - \${{amount}}',
       htmlContent: `
         <h2>Referral Commission Earned</h2>
         <p>You have earned a referral commission!</p>
@@ -87,7 +87,7 @@ class EmailNotificationsService {
         <p><strong>Referred User:</strong> {{referredUsername}}</p>
         <a href="https://agentpay.io/referrals">View Referrals</a>
       `,
-      textContent: 'You earned ${{amount}} from referral commission.',
+      textContent: 'You earned \${{amount}} from referral commission.',
     });
 
     this.emailTemplates.set('payment_confirmation', {
@@ -129,7 +129,7 @@ class EmailNotificationsService {
         <p><strong>Trades Executed:</strong> {{tradeCount}}</p>
         <a href="https://agentpay.io/reports">View Full Report</a>
       `,
-      textContent: 'Weekly report: Portfolio value ${{portfolioValue}}, Return {{weeklyReturn}}%',
+      textContent: 'Weekly report: Portfolio value \${{portfolioValue}}, Return {{weeklyReturn}}%',
     });
   }
 

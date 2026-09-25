@@ -29,8 +29,8 @@ class WebSocketNotificationsService {
 
   private messageQueue: WebSocketMessage[] = [];
   private listeners: Map<string, Set<(data: any) => void>> = new Map();
-  private reconnectTimer?: NodeJS.Timeout | number;
-  private heartbeatTimer?: NodeJS.Timeout | number;
+  private reconnectTimer?: ReturnType<typeof setTimeout>;
+  private heartbeatTimer?: ReturnType<typeof setTimeout>;
   private readonly MAX_RECONNECT_ATTEMPTS = 5;
   private readonly RECONNECT_DELAY = 3000; // 3 seconds
   private readonly HEARTBEAT_INTERVAL = 30000; // 30 seconds
@@ -165,7 +165,6 @@ class WebSocketNotificationsService {
    * Handle WebSocket open
    */
   private handleOpen(): void {
-    console.log('WebSocket connected');
     this.connectionState.connected = true;
     this.connectionState.connecting = false;
     this.connectionState.lastConnectTime = Date.now();
@@ -209,7 +208,6 @@ class WebSocketNotificationsService {
    * Handle WebSocket close
    */
   private handleClose(): void {
-    console.log('WebSocket disconnected');
     this.connectionState.connected = false;
     this.connectionState.connecting = false;
 
@@ -233,7 +231,6 @@ class WebSocketNotificationsService {
     this.connectionState.reconnectAttempts++;
     const delay = this.RECONNECT_DELAY * this.connectionState.reconnectAttempts;
 
-    console.log(`Attempting to reconnect in ${delay}ms (attempt ${this.connectionState.reconnectAttempts})`);
 
     this.reconnectTimer = setTimeout(() => {
       // Reconnection would be triggered by the application

@@ -80,7 +80,6 @@ class WalletConnectMobileService {
     }
 
     try {
-      console.log('WalletConnect Mobile Service initialized');
     } catch (error) {
       console.error('Failed to initialize WalletConnect:', error);
     }

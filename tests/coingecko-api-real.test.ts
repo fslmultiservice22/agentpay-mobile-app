@@ -1,13 +1,18 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { coingeckoAPIReal } from '../lib/coingecko-api-real';
 
 // Mock fetch
+const originalFetch = global.fetch;
 global.fetch = vi.fn();
 
 describe('Coingecko API Real', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     coingeckoAPIReal.clearCache();
+  });
+
+  afterAll(() => {
+    global.fetch = originalFetch;
   });
 
   describe('getPrice', () => {

@@ -32,7 +32,6 @@ class AdvancedChartingService {
    * Initialize advanced charting service
    */
   public async init(): Promise<void> {
-    console.log('[AdvancedCharting] Service initialized');
   }
 
   /**
@@ -43,7 +42,6 @@ class AdvancedChartingService {
     existing.push(series);
     this.chartData.set(chartId, existing);
 
-    console.log('[AdvancedCharting] Series added:', chartId, series.name);
   }
 
   /**
@@ -232,7 +230,6 @@ class AdvancedChartingService {
     existing.push(indicator);
     this.indicators.set(chartId, existing);
 
-    console.log('[AdvancedCharting] Indicator added:', chartId, indicator.type);
   }
 
   /**
@@ -262,7 +259,6 @@ class AdvancedChartingService {
     this.chartData.delete(chartId);
     this.indicators.delete(chartId);
 
-    console.log('[AdvancedCharting] Chart cleared:', chartId);
   }
 
   /**
@@ -272,14 +268,12 @@ class AdvancedChartingService {
     this.chartData.clear();
     this.indicators.clear();
 
-    console.log('[AdvancedCharting] All data cleared');
   }
 
   /**
    * Cleanup
    */
   public cleanup(): void {
-    console.log('[AdvancedCharting] Service cleaned up');
   }
 }
 

@@ -24,7 +24,6 @@ class AnalyticsService {
    * Initialize analytics service
    */
   public init(): void {
-    console.log('[Analytics] Service initialized');
   }
 
   /**
@@ -33,7 +32,6 @@ class AnalyticsService {
   public setUser(user: AnalyticsUser): void {
     if (!this.isEnabled) return;
     this.user = user;
-    console.log('[Analytics] User set:', user.id);
   }
 
   /**
@@ -41,7 +39,6 @@ class AnalyticsService {
    */
   public clearUser(): void {
     this.user = null;
-    console.log('[Analytics] User cleared');
   }
 
   /**
@@ -57,7 +54,6 @@ class AnalyticsService {
     };
 
     this.events.push(event);
-    console.log('[Analytics] Event tracked:', name, params);
   }
 
   /**
@@ -163,7 +159,6 @@ class AnalyticsService {
    */
   public clearEvents(): void {
     this.events = [];
-    console.log('[Analytics] Events cleared');
   }
 
   /**
@@ -171,7 +166,6 @@ class AnalyticsService {
    */
   public setEnabled(enabled: boolean): void {
     this.isEnabled = enabled;
-    console.log('[Analytics] Service', enabled ? 'enabled' : 'disabled');
   }
 
   /**

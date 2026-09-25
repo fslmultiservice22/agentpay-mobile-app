@@ -9,10 +9,8 @@ import {
   FlatList,
   ListRenderItem,
   ActivityIndicator,
-  ScrollView,
 } from 'react-native';
 import { useColors } from '@/hooks/use-colors';
-import { IconSymbol } from './ui/icon-symbol';
 import { yieldFarmingService, YieldPool, YieldPosition } from '@/lib/yield-farming';
 
 interface YieldFarmingDashboardProps {
@@ -26,7 +24,6 @@ export function YieldFarmingDashboard({ onPositionCreated }: YieldFarmingDashboa
   const [selectedPool, setSelectedPool] = useState<YieldPool | null>(null);
   const [depositAmount, setDepositAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showPoolModal, setShowPoolModal] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [stats, setStats] = useState({
     totalPositions: 0,
@@ -67,7 +64,6 @@ export function YieldFarmingDashboard({ onPositionCreated }: YieldFarmingDashboa
 
   const handleSelectPool = (pool: YieldPool) => {
     setSelectedPool(pool);
-    setShowPoolModal(false);
     setShowDepositModal(true);
   };
 

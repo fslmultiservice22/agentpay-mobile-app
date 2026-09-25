@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isValidEthereumAddress, normalizeEthereumAddress, BLOCKCHAIN_NETWORKS, BlockchainNetwork } from '@/lib/ethereum-validator';
+import { fetchRealWalletBalance } from '@/lib/blockchain-api-service';
 
 export interface WalletAsset {
   symbol: string;
@@ -68,49 +69,39 @@ export function useEthereumWallet() {
   }, []);
 
   /**
-   * Mock function to fetch wallet balance and assets
-   * In production, this would call Alchemy, Infura, or similar API
+   * Fetch real wallet balance using public APIs (Etherscan + CoinGecko + Infura)
    */
   const fetchWalletData = useCallback(async (address: string): Promise<ConnectedWallet> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const result = await fetchRealWalletBalance(address);
 
-    // Mock data for demonstration
-    const mockAssets: WalletAsset[] = [
+    // Build ETH asset
+    const assets: WalletAsset[] = [
       {
         symbol: 'ETH',
         name: 'Ethereum',
-        balance: 2.5,
-        value: 8500,
-        changePercent24h: 2.5,
-        network: 'ethereum',
+        balance: result.ethBalance,
+        value: result.ethValueUsd,
+        changePercent24h: result.totalChangePercent24h,
+        network: 'ethereum' as BlockchainNetwork,
       },
-      {
-        symbol: 'USDC',
-        name: 'USD Coin',
-        balance: 15000,
-        value: 15000,
-        changePercent24h: 0,
-        network: 'ethereum',
-        contractAddress: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-      },
-      {
-        symbol: 'MATIC',
-        name: 'Polygon',
-        balance: 5000,
-        value: 3700,
-        changePercent24h: -1.2,
-        network: 'polygon',
-      },
+      ...result.tokens.map(t => ({
+        symbol: t.symbol,
+        name: t.name,
+        balance: t.balance,
+        value: t.valueUsd,
+        changePercent24h: t.changePercent24h,
+        network: t.network as BlockchainNetwork,
+        contractAddress: t.contractAddress,
+      })),
     ];
 
     return {
       address: normalizeEthereumAddress(address),
-      totalValue: 27200,
-      totalChange: 850,
-      totalChangePercent: 3.2,
-      assets: mockAssets,
-      lastUpdated: Date.now(),
+      totalValue: result.totalValueUsd,
+      totalChange: result.totalChange24h,
+      totalChangePercent: result.totalChangePercent24h,
+      assets,
+      lastUpdated: result.lastUpdated,
     };
   }, []);
 
@@ -184,17 +175,6 @@ export function useEthereumWallet() {
   }, [wallets]);
 
   /**
-   * Get the balance (total value) of a wallet.
-   * Defaults to the active wallet when no address is provided.
-   */
-  const getBalance = useCallback(async (address?: string): Promise<number> => {
-    const target = address
-      ? wallets.find(w => w.address.toLowerCase() === address.toLowerCase())
-      : activeWallet;
-    return target ? target.totalValue : 0;
-  }, [wallets, activeWallet]);
-
-  /**
    * Refresh wallet data
    */
   const refreshWallet = useCallback(async (address?: string) => {
@@ -233,17 +213,12 @@ export function useEthereumWallet() {
     wallets,
     activeWallet,
     wallet: activeWallet, // For backward compatibility
-    // Flattened conveniences used across hooks/screens
-    address: activeWallet?.address ?? null,
-    isConnected: !!activeWallet,
     loading,
-    isLoading: loading,
     error,
     connectWallet,
     disconnectWallet,
     switchActiveWallet,
     refreshWallet,
     fetchWalletData,
-    getBalance,
   };
 }

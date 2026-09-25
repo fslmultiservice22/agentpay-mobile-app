@@ -26,7 +26,7 @@ const STORAGE_KEY = 'agentpay_multi_chain_balances';
  * Fetches and caches balance data for each supported blockchain
  */
 export function useMultiChainBalance() {
-  const { address } = useWallet();
+  const _w = useWallet(); const address = _w.activeWallet?.address;
   const { selectedBlockchain } = useBlockchain();
   const [balances, setBalances] = useState<Record<BlockchainId, ChainBalance>>({} as Record<BlockchainId, ChainBalance>);
   const [isLoading, setIsLoading] = useState(false);

@@ -27,7 +27,7 @@ export interface UseP2PTransferReturn {
  * Supporta invio di token ad altri indirizzi wallet
  */
 export function useP2PTransfer(): UseP2PTransferReturn {
-  const { address, isConnected } = useWallet();
+  const _w = useWallet(); const address = _w.activeWallet?.address; const isConnected = !!_w.activeWallet;
   const [transfers, setTransfers] = useState<P2PTransfer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,8 +35,9 @@ export function useP2PTransfer(): UseP2PTransferReturn {
   const sendTransfer = useCallback(
     async (toAddress: string, amount: string, token: string) => {
       if (!address || !isConnected) {
-        setError('Wallet not connected');
-        return;
+        const err = new Error('Wallet non connesso. Connetti un wallet Ethereum per inviare pagamenti.');
+        setError(err.message);
+        throw err;
       }
 
       setLoading(true);

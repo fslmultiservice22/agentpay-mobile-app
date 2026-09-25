@@ -17,11 +17,6 @@ export function useSocialAuth() {
     error: null,
   });
 
-  // Load saved accounts on mount
-  useEffect(() => {
-    loadSavedAccounts();
-  }, []);
-
   const loadSavedAccounts = useCallback(async () => {
     try {
       const saved = await AsyncStorage.getItem('social_accounts');
@@ -32,6 +27,11 @@ export function useSocialAuth() {
       console.error('Error loading social accounts:', error);
     }
   }, []);
+
+  // Load saved accounts on mount
+  useEffect(() => {
+    void loadSavedAccounts();
+  }, [loadSavedAccounts]);
 
   const saveAccounts = useCallback(async (accounts: SocialAccount[]) => {
     try {

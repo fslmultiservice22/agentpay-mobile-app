@@ -1,11 +1,8 @@
 import * as Linking from "expo-linking";
 import * as ReactNative from "react-native";
 
-// Extract scheme from bundle ID (last segment timestamp, prefixed with "manus")
-// e.g., "space.manus.my.app.t20240115103045" -> "manus20240115103045"
-const bundleId = "space.manus.agentpay.mobile.app.t20260512140915";
-const timestamp = bundleId.split(".").pop()?.replace(/^t/, "") ?? "";
-const schemeFromBundleId = `manus${timestamp}`;
+// Must stay aligned with app.config.ts.
+const schemeFromBundleId = "agentpay";
 
 const env = {
   portal: process.env.EXPO_PUBLIC_OAUTH_PORTAL_URL ?? "",
@@ -56,17 +53,6 @@ export function getApiBaseUrl(): string {
 export const SESSION_TOKEN_KEY = "app_session_token";
 export const USER_INFO_KEY = "manus-runtime-user-info";
 
-const encodeState = (value: string) => {
-  if (typeof globalThis.btoa === "function") {
-    return globalThis.btoa(value);
-  }
-  const BufferImpl = (globalThis as Record<string, any>).Buffer;
-  if (BufferImpl) {
-    return BufferImpl.from(value, "utf-8").toString("base64");
-  }
-  return value;
-};
-
 /**
  * Get the redirect URI for OAuth callback.
  * - Web: uses API server callback endpoint
@@ -82,9 +68,18 @@ export const getRedirectUri = () => {
   }
 };
 
-export const getLoginUrl = () => {
+export const getLoginUrl = async () => {
   const redirectUri = getRedirectUri();
-  const state = encodeState(redirectUri);
+  const apiBaseUrl = getApiBaseUrl();
+  if (!apiBaseUrl) throw new Error("OAuth API base URL is not configured");
+  const stateResponse = await fetch(`${apiBaseUrl}/api/oauth/state`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ redirectUri }),
+  });
+  if (!stateResponse.ok) throw new Error("Unable to initialize OAuth state");
+  const { state } = (await stateResponse.json()) as { state?: string };
+  if (!state) throw new Error("OAuth state is missing");
 
   const url = new URL(`${OAUTH_PORTAL_URL}/app-auth`);
   url.searchParams.set("appId", APP_ID);
@@ -106,7 +101,7 @@ export const getLoginUrl = () => {
  * @returns Always null, the callback is handled via deep link.
  */
 export async function startOAuthLogin(): Promise<string | null> {
-  const loginUrl = getLoginUrl();
+  const loginUrl = await getLoginUrl();
 
   if (ReactNative.Platform.OS === "web") {
     // On web, just redirect

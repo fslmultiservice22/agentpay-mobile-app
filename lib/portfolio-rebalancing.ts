@@ -45,7 +45,6 @@ class PortfolioRebalancingService {
    * Initialize portfolio rebalancing service
    */
   public async init(): Promise<void> {
-    console.log('[PortfolioRebalancing] Service initialized');
   }
 
   /**
@@ -69,7 +68,6 @@ class PortfolioRebalancingService {
     };
 
     this.strategies.set(strategy.id, strategy);
-    console.log('[PortfolioRebalancing] Strategy created:', name);
     return strategy;
   }
 
@@ -149,7 +147,6 @@ class PortfolioRebalancingService {
       }
     });
 
-    console.log('[PortfolioRebalancing] Generated', actions.length, 'rebalancing actions');
     return actions;
   }
 
@@ -165,7 +162,6 @@ class PortfolioRebalancingService {
 
     this.notifyListeners(Array.from(this.actions.values()));
 
-    console.log('[PortfolioRebalancing] Action executed:', actionId);
     return action;
   }
 
@@ -180,7 +176,6 @@ class PortfolioRebalancingService {
 
     this.notifyListeners(Array.from(this.actions.values()));
 
-    console.log('[PortfolioRebalancing] Action cancelled:', actionId);
     return action;
   }
 
@@ -218,7 +213,6 @@ class PortfolioRebalancingService {
       allocation.currentValue = currentValue;
     }
 
-    console.log('[PortfolioRebalancing] Allocation updated:', strategyId, symbol);
   }
 
   /**
@@ -282,7 +276,6 @@ class PortfolioRebalancingService {
   public clearAll(): void {
     this.strategies.clear();
     this.actions.clear();
-    console.log('[PortfolioRebalancing] All data cleared');
   }
 
   /**
@@ -290,7 +283,6 @@ class PortfolioRebalancingService {
    */
   public cleanup(): void {
     this.listeners = [];
-    console.log('[PortfolioRebalancing] Service cleaned up');
   }
 }
 

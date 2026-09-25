@@ -16,7 +16,9 @@ export interface NetworkSwitchResult {
  */
 export function useNetworkSwitch() {
   const { selectedBlockchain, setSelectedBlockchain } = useBlockchain();
-  const { address, getBalance } = useWallet();
+  const wallet = useWallet();
+  const address = wallet.activeWallet?.address;
+  const getBalance = wallet.refreshWallet;
   const [isSwitching, setIsSwitching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

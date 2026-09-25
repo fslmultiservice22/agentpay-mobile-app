@@ -60,7 +60,6 @@ class FirebaseAnalyticsService {
     try {
       this.userId = userId;
       await this.persistSession();
-      console.log('Firebase Analytics initialized');
     } catch (error) {
       console.error('Failed to initialize Firebase Analytics:', error);
     }
@@ -80,7 +79,6 @@ class FirebaseAnalyticsService {
       this.events.push(event);
       await this.persistEvents();
 
-      console.log(`Event logged: ${name}`, parameters);
     } catch (error) {
       console.error('Failed to log event:', error);
     }

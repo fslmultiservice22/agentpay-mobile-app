@@ -1,6 +1,6 @@
 /**
  * Recurring Payment Scheduler
- * Manages scheduled transfers to Qonto IBAN accounts
+ * Manages scheduled transfers to IBAN accounts
  */
 
 export type RecurrenceFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
@@ -61,7 +61,7 @@ class RecurringPaymentScheduler {
   private config: SchedulerConfig;
   private payments: Map<string, RecurringPayment> = new Map();
   private executions: Map<string, PaymentExecution[]> = new Map();
-  private timers: Map<string, NodeJS.Timeout> = new Map();
+  private timers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
   constructor(config: Partial<SchedulerConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -70,13 +70,13 @@ class RecurringPaymentScheduler {
   /**
    * Create a new recurring payment
    */
-  createRecurringPayment(payment: Omit<RecurringPayment, 'id' | 'executionCount' | 'failureCount' | 'createdAt' | 'updatedAt' | 'nextExecutionDate'>): RecurringPayment {
+  createRecurringPayment(payment: Omit<RecurringPayment, 'id' | 'executionCount' | 'failureCount' | 'createdAt' | 'updatedAt' | 'nextExecutionDate'> & { nextExecutionDate?: number }): RecurringPayment {
     const id = `rp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     const newPayment: RecurringPayment = {
       ...payment,
       id,
-      nextExecutionDate: payment.startDate,
+      nextExecutionDate: payment.nextExecutionDate ?? payment.startDate,
       executionCount: 0,
       failureCount: 0,
       createdAt: Date.now(),
@@ -243,7 +243,7 @@ class RecurringPaymentScheduler {
         execution.updatedAt = Date.now();
 
         // Simulate payment execution
-        // In production, this would call the Qonto API
+        // In production, this would call the bank API
         await this.simulatePaymentExecution(payment);
 
         execution.status = 'completed';

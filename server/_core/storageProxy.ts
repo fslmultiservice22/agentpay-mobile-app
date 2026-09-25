@@ -1,11 +1,20 @@
 import type { Express } from "express";
 import { ENV } from "./env";
+import { normalizeAgentPayStorageKey } from "./storage-policy";
 
 export function registerStorageProxy(app: Express) {
   app.get("/manus-storage/*", async (req, res) => {
-    const key = (req.params as Record<string, string>)[0];
-    if (!key) {
+    const requestedKey = (req.params as Record<string, string>)[0];
+    if (!requestedKey) {
       res.status(400).send("Missing storage key");
+      return;
+    }
+
+    let key: string;
+    try {
+      key = normalizeAgentPayStorageKey(requestedKey);
+    } catch {
+      res.status(403).send("Storage key forbidden");
       return;
     }
 
@@ -27,9 +36,7 @@ export function registerStorageProxy(app: Express) {
 
       if (!forgeResp.ok) {
         const body = await forgeResp.text().catch(() => "");
-        console.error(
-          `[StorageProxy] forge error: ${forgeResp.status} ${body}`,
-        );
+        console.error(`[StorageProxy] forge error: ${forgeResp.status} ${body}`);
         res.status(502).send("Storage backend error");
         return;
       }

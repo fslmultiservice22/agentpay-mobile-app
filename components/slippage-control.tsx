@@ -1,8 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { useColors } from '@/hooks/use-colors';
-import { useI18n } from '@/hooks/use-i18n';
-import { MAX_SLIPPAGE_PERCENT, MIN_SLIPPAGE_PERCENT } from '@/lib/swap-quote-service';
 
 interface SlippageControlProps {
   value: number;
@@ -12,16 +10,8 @@ interface SlippageControlProps {
 
 export function SlippageControl({ value, onChange, presets = [0.1, 0.5, 1.0] }: SlippageControlProps) {
   const colors = useColors();
-  const { t } = useI18n();
   const [customValue, setCustomValue] = useState(value.toString());
   const [isCustom, setIsCustom] = useState(!presets.includes(value));
-
-  // Keep the field in sync when the tolerance changes from outside (for
-  // instance when the trading screen resets it after a swap).
-  useEffect(() => {
-    setCustomValue(value.toString());
-    setIsCustom(!presets.includes(value));
-  }, [value, presets]);
 
   const handlePresetSelect = (preset: number) => {
     onChange(preset);
@@ -31,13 +21,8 @@ export function SlippageControl({ value, onChange, presets = [0.1, 0.5, 1.0] }: 
 
   const handleCustomChange = (text: string) => {
     setCustomValue(text);
-    setIsCustom(true);
-    const numValue = parseFloat(text.replace(',', '.'));
-    if (
-      !isNaN(numValue) &&
-      numValue >= MIN_SLIPPAGE_PERCENT &&
-      numValue <= MAX_SLIPPAGE_PERCENT
-    ) {
+    const numValue = parseFloat(text);
+    if (!isNaN(numValue) && numValue >= 0 && numValue <= 50) {
       onChange(numValue);
     }
   };
@@ -137,7 +122,7 @@ export function SlippageControl({ value, onChange, presets = [0.1, 0.5, 1.0] }: 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>{t('trading.slippageTolerance')}</Text>
+        <Text style={styles.title}>Slippage Tolerance</Text>
         <Text style={styles.valueText}>{value.toFixed(2)}%</Text>
       </View>
 
@@ -166,7 +151,7 @@ export function SlippageControl({ value, onChange, presets = [0.1, 0.5, 1.0] }: 
       <View style={styles.customContainer}>
         <TextInput
           style={styles.customInput}
-          placeholder={t('trading.customSlippage')}
+          placeholder="Custom %"
           placeholderTextColor={colors.muted}
           value={customValue}
           onChangeText={handleCustomChange}
@@ -178,7 +163,7 @@ export function SlippageControl({ value, onChange, presets = [0.1, 0.5, 1.0] }: 
 
       {isHighSlippage && (
         <View style={styles.warningContainer}>
-          <Text style={styles.warningText}>{t('trading.highSlippageWarning')}</Text>
+          <Text style={styles.warningText}>⚠️ High slippage tolerance. You may receive significantly less tokens.</Text>
         </View>
       )}
     </View>

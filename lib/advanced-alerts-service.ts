@@ -49,12 +49,8 @@ export interface AlertTemplate {
   condition: PriceAlert['condition'];
   targetPrice?: number;
   percentageChange?: number;
-  /** Technical indicator used by `type: 'technical'` templates. */
-  indicator?: PriceAlert['indicator'];
-  /** Threshold value associated with `indicator` (e.g. RSI 70). */
+  indicator?: 'RSI' | 'MACD' | 'SMA' | 'EMA';
   indicatorValue?: number;
-  /** Volume threshold used by `type: 'volume'` templates. */
-  volumeThreshold?: number;
   notificationChannels: ('push' | 'email' | 'sms')[];
 }
 
@@ -133,22 +129,18 @@ class AdvancedAlertsService {
     condition: PriceAlert['condition'],
     targetPrice?: number,
     percentageChange?: number,
-    indicator?: PriceAlert['indicator'],
-    notificationChannels: ('push' | 'email' | 'sms')[] = ['push'],
-    indicatorValue?: number,
-    volumeThreshold?: number
+    indicator?: string,
+    notificationChannels: ('push' | 'email' | 'sms')[] = ['push']
   ): PriceAlert {
     const alert: PriceAlert = {
-      id: `alert_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      id: `alert_${Date.now()}`,
       userId,
       symbol,
       type,
       condition,
       targetPrice,
       percentageChange,
-      indicator,
-      indicatorValue,
-      volumeThreshold,
+      indicator: indicator as any,
       isActive: true,
       notificationChannels,
       frequency: 'always',
@@ -291,12 +283,10 @@ class AdvancedAlertsService {
       symbol,
       template.type,
       template.condition,
-      targetPrice ?? template.targetPrice,
+      targetPrice || template.targetPrice,
       template.percentageChange,
       template.indicator,
-      template.notificationChannels,
-      template.indicatorValue,
-      template.volumeThreshold
+      template.notificationChannels
     );
   }
 

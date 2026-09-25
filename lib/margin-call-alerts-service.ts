@@ -209,17 +209,14 @@ class MarginCallAlertsService {
   private triggerNotifications(alert: MarginAlert, preference: AlertPreference): void {
     if (preference.enablePush) {
       // Push notification
-      console.log(`[PUSH] ${alert.message}`);
     }
 
     if (preference.enableSMS && preference.phoneNumber) {
       // SMS notification
-      console.log(`[SMS to ${preference.phoneNumber}] ${alert.message}`);
     }
 
     if (preference.enableEmail && preference.emailAddress) {
       // Email notification
-      console.log(`[EMAIL to ${preference.emailAddress}] ${alert.message}`);
     }
   }
 

@@ -157,8 +157,12 @@ export function calculateSwapStatistics(swaps: SwapRecord[]): SwapStatistics {
   const averageFee = completedSwaps.length > 0 ? totalFees / completedSwaps.length : 0;
   const averagePriceImpact = completedSwaps.length > 0 ? completedSwaps.reduce((sum, s) => sum + s.priceImpact, 0) / completedSwaps.length : 0;
 
-  const bestSwap = completedSwaps.reduce((best, current) => (current.priceImpact < best.priceImpact ? current : best), completedSwaps[0]);
-  const worstSwap = completedSwaps.reduce((worst, current) => (current.priceImpact > worst.priceImpact ? current : worst), completedSwaps[0]);
+  const bestSwap = completedSwaps.length > 0
+    ? completedSwaps.reduce((best, current) => (current.priceImpact < best.priceImpact ? current : best), completedSwaps[0])
+    : undefined;
+  const worstSwap = completedSwaps.length > 0
+    ? completedSwaps.reduce((worst, current) => (current.priceImpact > worst.priceImpact ? current : worst), completedSwaps[0])
+    : undefined;
 
   return {
     totalSwaps: swaps.length,

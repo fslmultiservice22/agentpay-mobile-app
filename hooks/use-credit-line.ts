@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface CreditLineData {
@@ -12,6 +12,10 @@ export interface CreditLineData {
   status: 'active' | 'inactive' | 'suspended';
   approvalDate: string;
   expiryDate: string;
+  collateralSource: 'wlfi_usd1' | 'crypto' | 'demo';
+  usd1CollateralAmount: number;
+  ltvRatio: number;
+  healthFactor: number;
 }
 
 export interface CreditRequest {
@@ -39,6 +43,9 @@ export interface CreditRepayment {
 const STORAGE_KEY = 'credit_line_data';
 const REQUESTS_KEY = 'credit_requests';
 const REPAYMENTS_KEY = 'credit_repayments';
+const USD1_BALANCES_KEY = 'wlfi_usd1_balances';
+
+const LTV_CONFIG = { maxLTV: 70, warningLTV: 75, criticalLTV: 85, liquidationLTV: 90, interestRateBase: 5.5, interestRateHighLTV: 8.5 };
 
 export function useCreditLine() {
   const [creditLine, setCreditLine] = useState<CreditLineData | null>(null);
@@ -47,182 +54,104 @@ export function useCreditLine() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize credit line data
   useEffect(() => {
-    const initializeCreditLine = async () => {
+    (async () => {
       try {
         setLoading(true);
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
-        
         if (stored) {
-          setCreditLine(JSON.parse(stored));
+          const parsed = JSON.parse(stored);
+          // Sanitize: JSON.stringify(Infinity) -> null, restore to Infinity
+          if (parsed.healthFactor === null || parsed.healthFactor === undefined) parsed.healthFactor = Infinity;
+          const refreshed = await refreshFromUSD1(parsed);
+          setCreditLine(refreshed);
         } else {
-          // Initialize with default credit line
-          const defaultCreditLine: CreditLineData = {
-            id: 'cl_' + Date.now(),
-            totalLimit: 10000,
-            availableCredit: 10000,
-            usedCredit: 0,
-            interestRate: 8.5, // 8.5% annual
-            monthlyPayment: 0,
-            nextPaymentDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'active',
-            approvalDate: new Date().toISOString(),
-            expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-          };
-          setCreditLine(defaultCreditLine);
-          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(defaultCreditLine));
+          const fresh = await buildFromUSD1();
+          setCreditLine(fresh);
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
         }
-
-        // Load requests
-        const storedRequests = await AsyncStorage.getItem(REQUESTS_KEY);
-        if (storedRequests) {
-          setRequests(JSON.parse(storedRequests));
-        }
-
-        // Load repayments
-        const storedRepayments = await AsyncStorage.getItem(REPAYMENTS_KEY);
-        if (storedRepayments) {
-          setRepayments(JSON.parse(storedRepayments));
-        }
-
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load credit line');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeCreditLine();
+        const sr = await AsyncStorage.getItem(REQUESTS_KEY);
+        if (sr) setRequests(JSON.parse(sr));
+        const sp = await AsyncStorage.getItem(REPAYMENTS_KEY);
+        if (sp) setRepayments(JSON.parse(sp));
+      } catch (err) { setError(err instanceof Error ? err.message : 'Error'); } finally { setLoading(false); }
+    })();
   }, []);
 
-  // Request credit
-  const requestCredit = useCallback(
-    async (amount: number, bankAccount: string) => {
-      if (!creditLine) return null;
+  const requestCredit = useCallback(async (amount: number, bankAccount: string) => {
+    if (!creditLine) return null;
+    if (amount > creditLine.availableCredit) throw new Error('Importo supera credito disponibile (collaterale USD1)');
+    const monthlyRate = creditLine.interestRate / 12 / 100;
+    const interestAmount = amount * monthlyRate;
+    const request: CreditRequest = { id: 'req_' + Date.now(), amount, status: 'approved', requestDate: new Date().toISOString(), approvalDate: new Date().toISOString(), bankAccount, interestAmount, totalAmount: amount + interestAmount };
+    const updReq = [...requests, request];
+    await AsyncStorage.setItem(REQUESTS_KEY, JSON.stringify(updReq));
+    setRequests(updReq);
+    const newUsed = creditLine.usedCredit + amount;
+    const newLTV = creditLine.usd1CollateralAmount > 0 ? (newUsed / creditLine.usd1CollateralAmount) * 100 : 0;
+    const newHF = newUsed > 0 ? creditLine.usd1CollateralAmount / newUsed : Infinity;
+    const upd: CreditLineData = { ...creditLine, availableCredit: creditLine.availableCredit - amount, usedCredit: newUsed, monthlyPayment: creditLine.monthlyPayment + ((amount + interestAmount) / 12), ltvRatio: newLTV, healthFactor: newHF, interestRate: newLTV > LTV_CONFIG.warningLTV ? LTV_CONFIG.interestRateHighLTV : LTV_CONFIG.interestRateBase, status: newLTV >= LTV_CONFIG.criticalLTV ? 'suspended' : 'active' };
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(upd));
+    setCreditLine(upd);
+    return request;
+  }, [creditLine, requests]);
 
-      try {
-        if (amount > creditLine.availableCredit) {
-          throw new Error('Requested amount exceeds available credit');
-        }
+  const makeRepayment = useCallback(async (amount: number) => {
+    if (!creditLine) return null;
+    if (amount > creditLine.usedCredit) throw new Error('Importo rimborso supera debito');
+    const monthlyRate = creditLine.interestRate / 12 / 100;
+    const interestPaid = creditLine.usedCredit * monthlyRate;
+    const principalPaid = amount - interestPaid;
+    const repayment: CreditRepayment = { id: 'rep_' + Date.now(), amount, date: new Date().toISOString(), status: 'completed', dueDate: creditLine.nextPaymentDate, interestPaid, principalPaid };
+    const updRep = [...repayments, repayment];
+    await AsyncStorage.setItem(REPAYMENTS_KEY, JSON.stringify(updRep));
+    setRepayments(updRep);
+    const newUsed = Math.max(0, creditLine.usedCredit - principalPaid);
+    const newLTV = creditLine.usd1CollateralAmount > 0 ? (newUsed / creditLine.usd1CollateralAmount) * 100 : 0;
+    const newHF = newUsed > 0 ? creditLine.usd1CollateralAmount / newUsed : Infinity;
+    const upd: CreditLineData = { ...creditLine, availableCredit: creditLine.availableCredit + principalPaid, usedCredit: newUsed, monthlyPayment: Math.max(0, creditLine.monthlyPayment - (principalPaid / 12)), nextPaymentDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), ltvRatio: newLTV, healthFactor: newHF, interestRate: newLTV > LTV_CONFIG.warningLTV ? LTV_CONFIG.interestRateHighLTV : LTV_CONFIG.interestRateBase, status: newLTV < LTV_CONFIG.criticalLTV ? 'active' : 'suspended' };
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(upd));
+    setCreditLine(upd);
+    return repayment;
+  }, [creditLine, repayments]);
 
-        // Calculate interest (monthly interest = annual rate / 12)
-        const monthlyRate = creditLine.interestRate / 12 / 100;
-        const interestAmount = amount * monthlyRate;
-        const totalAmount = amount + interestAmount;
-
-        const request: CreditRequest = {
-          id: 'req_' + Date.now(),
-          amount,
-          status: 'approved', // Auto-approve for demo
-          requestDate: new Date().toISOString(),
-          approvalDate: new Date().toISOString(),
-          transferDate: new Date(Date.now() + 1000 * 60 * 5).toISOString(), // 5 minutes later
-          bankAccount,
-          interestAmount,
-          totalAmount,
-        };
-
-        const updatedRequests = [...requests, request];
-        await AsyncStorage.setItem(REQUESTS_KEY, JSON.stringify(updatedRequests));
-        setRequests(updatedRequests);
-
-        // Update credit line
-        const updatedCreditLine = {
-          ...creditLine,
-          availableCredit: creditLine.availableCredit - amount,
-          usedCredit: creditLine.usedCredit + amount,
-          monthlyPayment: creditLine.monthlyPayment + (totalAmount / 12), // 12-month repayment
-        };
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCreditLine));
-        setCreditLine(updatedCreditLine);
-
-        return request;
-      } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : 'Failed to request credit';
-        setError(errorMsg);
-        throw err;
-      }
-    },
-    [creditLine, requests]
-  );
-
-  // Make repayment
-  const makeRepayment = useCallback(
-    async (amount: number) => {
-      if (!creditLine) return null;
-
-      try {
-        if (amount > creditLine.usedCredit) {
-          throw new Error('Repayment amount exceeds used credit');
-        }
-
-        const monthlyRate = creditLine.interestRate / 12 / 100;
-        const interestPaid = creditLine.usedCredit * monthlyRate;
-        const principalPaid = amount - interestPaid;
-
-        const repayment: CreditRepayment = {
-          id: 'rep_' + Date.now(),
-          amount,
-          date: new Date().toISOString(),
-          status: 'completed',
-          dueDate: creditLine.nextPaymentDate,
-          interestPaid,
-          principalPaid,
-        };
-
-        const updatedRepayments = [...repayments, repayment];
-        await AsyncStorage.setItem(REPAYMENTS_KEY, JSON.stringify(updatedRepayments));
-        setRepayments(updatedRepayments);
-
-        // Update credit line
-        const updatedCreditLine = {
-          ...creditLine,
-          availableCredit: creditLine.availableCredit + principalPaid,
-          usedCredit: creditLine.usedCredit - principalPaid,
-          monthlyPayment: Math.max(0, creditLine.monthlyPayment - (principalPaid / 12)),
-          nextPaymentDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        };
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCreditLine));
-        setCreditLine(updatedCreditLine);
-
-        return repayment;
-      } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : 'Failed to make repayment';
-        setError(errorMsg);
-        throw err;
-      }
-    },
-    [creditLine, repayments]
-  );
-
-  // Get credit utilization percentage
   const getCreditUtilization = useCallback(() => {
-    if (!creditLine) return 0;
+    if (!creditLine || creditLine.totalLimit === 0) return 0;
     return (creditLine.usedCredit / creditLine.totalLimit) * 100;
   }, [creditLine]);
 
-  // Get pending requests
-  const getPendingRequests = useCallback(() => {
-    return requests.filter(r => r.status === 'pending');
-  }, [requests]);
+  const getPendingRequests = useCallback(() => requests.filter(r => r.status === 'pending'), [requests]);
+  const getUpcomingPayments = useCallback(() => repayments.filter(r => r.status === 'pending'), [repayments]);
 
-  // Get upcoming payments
-  const getUpcomingPayments = useCallback(() => {
-    return repayments.filter(r => r.status === 'pending');
-  }, [repayments]);
+  const refreshCollateral = useCallback(async () => {
+    if (!creditLine) return;
+    const refreshed = await refreshFromUSD1(creditLine);
+    setCreditLine(refreshed);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(refreshed));
+  }, [creditLine]);
 
-  return {
-    creditLine,
-    requests,
-    repayments,
-    loading,
-    error,
-    requestCredit,
-    makeRepayment,
-    getCreditUtilization,
-    getPendingRequests,
-    getUpcomingPayments,
-  };
+  return { creditLine, requests, repayments, loading, error, requestCredit, makeRepayment, getCreditUtilization, getPendingRequests, getUpcomingPayments, refreshCollateral };
+}
+
+async function buildFromUSD1(): Promise<CreditLineData> {
+  const usd1 = await getUSD1Amount();
+  const totalLimit = usd1 * (LTV_CONFIG.maxLTV / 100);
+  return { id: 'cl_wlfi_' + Date.now(), totalLimit, availableCredit: totalLimit, usedCredit: 0, interestRate: LTV_CONFIG.interestRateBase, monthlyPayment: 0, nextPaymentDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), status: usd1 > 0 ? 'active' : 'inactive', approvalDate: new Date().toISOString(), expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), collateralSource: 'wlfi_usd1', usd1CollateralAmount: usd1, ltvRatio: 0, healthFactor: Infinity };
+}
+
+async function refreshFromUSD1(current: CreditLineData): Promise<CreditLineData> {
+  const usd1 = await getUSD1Amount();
+  const totalLimit = usd1 * (LTV_CONFIG.maxLTV / 100);
+  const available = Math.max(0, totalLimit - current.usedCredit);
+  const ltv = usd1 > 0 && current.usedCredit > 0 ? (current.usedCredit / usd1) * 100 : 0;
+  const hf = current.usedCredit > 0 ? usd1 / current.usedCredit : Infinity;
+  return { ...current, totalLimit, availableCredit: available, usd1CollateralAmount: usd1, ltvRatio: ltv, healthFactor: hf, collateralSource: 'wlfi_usd1', interestRate: ltv > LTV_CONFIG.warningLTV ? LTV_CONFIG.interestRateHighLTV : LTV_CONFIG.interestRateBase, status: usd1 === 0 ? 'inactive' : ltv >= LTV_CONFIG.criticalLTV ? 'suspended' : 'active' };
+}
+
+async function getUSD1Amount(): Promise<number> {
+  try {
+    const raw = await AsyncStorage.getItem(USD1_BALANCES_KEY);
+    if (!raw) return 0;
+    return JSON.parse(raw).totalUSD1 || 0;
+  } catch { return 0; }
 }

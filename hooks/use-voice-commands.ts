@@ -111,7 +111,6 @@ export function useVoiceCommands() {
       setRecognizedText('');
       // Note: Actual speech recognition would require expo-speech or similar
       // This is a placeholder implementation
-      console.log('Voice listening started');
     } catch (error) {
       console.error('Failed to start listening:', error);
       setIsListening(false);
@@ -122,7 +121,6 @@ export function useVoiceCommands() {
   const stopListening = useCallback(async () => {
     try {
       setIsListening(false);
-      console.log('Voice listening stopped');
     } catch (error) {
       console.error('Failed to stop listening:', error);
     }

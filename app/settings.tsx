@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Text, View, TouchableOpacity, Switch, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/screen-container';
@@ -10,18 +10,15 @@ export default function SettingsScreen() {
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [biometric, setBiometric] = useState(false);
-  const [biometricEnabled, setBiometricEnabled] = useState(false);
 
   const handleBiometricToggle = async (value: boolean) => {
     if (value && isBiometricAvailable) {
       const authenticated = await authenticate();
       if (authenticated) {
         setBiometric(true);
-        setBiometricEnabled(true);
       }
     } else {
       setBiometric(false);
-      setBiometricEnabled(false);
     }
   };
 
@@ -29,7 +26,7 @@ export default function SettingsScreen() {
     <ScreenContainer className="p-4">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="gap-6">
         <View className="gap-2">
-          <Text className="text-3xl font-bold text-foreground">Settings</Text>
+          <Text className="text-3xl font-bold text-foreground">Impostazioni</Text>
           <Text className="text-base text-muted">Customize your wallet experience</Text>
         </View>
 
@@ -99,7 +96,7 @@ export default function SettingsScreen() {
           className="rounded-lg p-4 items-center justify-center border border-border"
           onPress={() => router.back()}
         >
-          <Text className="text-foreground font-semibold text-base">Back</Text>
+          <Text className="text-foreground font-semibold text-base">Indietro</Text>
         </TouchableOpacity>
       </ScrollView>
     </ScreenContainer>

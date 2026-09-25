@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { ScreenContainer } from './screen-container';
 import { useColors } from '@/hooks/use-colors';
 
@@ -21,8 +21,6 @@ export function QRCodeScanner({
   description = 'Point your camera at the QR code',
 }: QRCodeScannerProps) {
   const colors = useColors();
-  const [isScanning, setIsScanning] = useState(true);
-  const [scannedData, setScannedData] = useState<string | null>(null);
 
   // On web, show a mock scanner
   if (Platform.OS === 'web') {
@@ -145,52 +143,3 @@ export function QRCodeScanner({
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  description: {
-    fontSize: 14,
-    marginTop: 4,
-  },
-  cameraArea: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  qrFrame: {
-    width: '80%',
-    aspectRatio: 1,
-    borderWidth: 2,
-    borderRadius: 12,
-  },
-  cameraText: {
-    marginTop: 16,
-    fontSize: 14,
-  },
-  controls: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-  },
-  button: {
-    paddingVertical: 12,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});

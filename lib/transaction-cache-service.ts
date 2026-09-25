@@ -60,7 +60,6 @@ class TransactionCacheService {
     try {
       await this.loadFromCache();
       this.initialized = true;
-      console.log('Transaction cache initialized');
     } catch (error) {
       console.error('Failed to initialize transaction cache:', error);
     }

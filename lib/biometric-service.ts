@@ -97,7 +97,6 @@ export async function authenticateWithBiometric(
 
     const result = await LocalAuthentication.authenticateAsync({
       disableDeviceFallback: false,
-      // `promptMessage` is the option actually supported by expo-local-authentication
       promptMessage: reason,
       fallbackLabel: 'Use passcode',
     });
@@ -108,18 +107,12 @@ export async function authenticateWithBiometric(
         success: true,
         biometricType: biometricType as BiometricType,
       };
+    } else {
+      return {
+        success: false,
+        error: 'Authentication failed',
+      };
     }
-
-    // `error` only exists on the failure branch of LocalAuthenticationResult
-    const failure = result as Extract<
-      LocalAuthentication.LocalAuthenticationResult,
-      { success: false }
-    >;
-
-    return {
-      success: false,
-      error: failure.error || 'Authentication failed',
-    };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Authentication error';
     return {

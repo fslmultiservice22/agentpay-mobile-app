@@ -8,10 +8,8 @@ import {
   FlatList,
   ListRenderItem,
   ActivityIndicator,
-  ScrollView,
 } from 'react-native';
 import { useColors } from '@/hooks/use-colors';
-import { IconSymbol } from './ui/icon-symbol';
 import { copyTradingService, Trader, CopyTrade } from '@/lib/copy-trading';
 
 interface CopyTradingDashboardProps {
@@ -24,7 +22,6 @@ export function CopyTradingDashboard({ onTradeCreated }: CopyTradingDashboardPro
   const [copiedTrades, setCopiedTrades] = useState<CopyTrade[]>([]);
   const [selectedTrader, setSelectedTrader] = useState<Trader | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [showTraderModal, setShowTraderModal] = useState(false);
   const [showTraderDetailsModal, setShowTraderDetailsModal] = useState(false);
   const [stats, setStats] = useState({
     totalTraders: 0,
@@ -65,7 +62,6 @@ export function CopyTradingDashboard({ onTradeCreated }: CopyTradingDashboardPro
 
   const handleSelectTrader = (trader: Trader) => {
     setSelectedTrader(trader);
-    setShowTraderModal(false);
     setShowTraderDetailsModal(true);
   };
 
@@ -92,16 +88,6 @@ export function CopyTradingDashboard({ onTradeCreated }: CopyTradingDashboardPro
           updateStats();
         }
       }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleStopCopying = async (traderId: string) => {
-    setIsLoading(true);
-    try {
-      await copyTradingService.stopCopyingTrader(traderId);
-      updateStats();
     } finally {
       setIsLoading(false);
     }

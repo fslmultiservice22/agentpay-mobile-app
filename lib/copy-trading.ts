@@ -65,7 +65,6 @@ class CopyTradingService {
    */
   public async init(): Promise<void> {
     this.initializeTraders();
-    console.log('[CopyTrading] Service initialized');
   }
 
   /**
@@ -150,7 +149,6 @@ class CopyTradingService {
       this.activeCopies.set(trader.id, []);
     });
 
-    console.log('[CopyTrading] Traders initialized:', traders.length);
   }
 
   /**
@@ -196,7 +194,6 @@ class CopyTradingService {
         throw new Error(`Maximum copies (${this.config.maxCopies}) reached for this trader`);
       }
 
-      console.log('[CopyTrading] Started copying trader:', traderId);
       return true;
     } catch (error) {
       console.error('[CopyTrading] Error starting copy:', error);
@@ -220,7 +217,6 @@ class CopyTradingService {
       }
 
       this.activeCopies.set(traderId, []);
-      console.log('[CopyTrading] Stopped copying trader:', traderId);
       return true;
     } catch (error) {
       console.error('[CopyTrading] Error stopping copy:', error);
@@ -271,7 +267,6 @@ class CopyTradingService {
 
       this.notifyListeners(copyTrade);
 
-      console.log('[CopyTrading] Trade copied:', copyTrade);
       return copyTrade;
     } catch (error) {
       console.error('[CopyTrading] Error copying trade:', error);
@@ -304,7 +299,6 @@ class CopyTradingService {
 
       this.notifyListeners(trade);
 
-      console.log('[CopyTrading] Trade closed:', copyTradeId, 'P&L:', trade.profitLoss);
       return trade;
     } catch (error) {
       console.error('[CopyTrading] Error closing trade:', error);
@@ -355,7 +349,6 @@ class CopyTradingService {
    */
   public updateConfig(config: Partial<CopyTradingConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log('[CopyTrading] Config updated:', this.config);
   }
 
   /**
@@ -448,7 +441,6 @@ class CopyTradingService {
     for (const traderId of this.activeCopies.keys()) {
       this.activeCopies.set(traderId, []);
     }
-    console.log('[CopyTrading] All trades cleared');
   }
 
   /**
@@ -456,7 +448,6 @@ class CopyTradingService {
    */
   public cleanup(): void {
     this.listeners = [];
-    console.log('[CopyTrading] Service cleaned up');
   }
 
   /**

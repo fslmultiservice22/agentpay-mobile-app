@@ -1,283 +1,151 @@
-import { ScrollView, Text, View, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useState, useEffect } from 'react';
-import { ScreenContainer } from '@/components/screen-container';
-import { DrawerMenu } from '@/components/drawer-menu';
-import { useColors } from '@/hooks/use-colors';
-import { useI18n } from '@/hooks/use-i18n';
-import { useEthereumWallet } from '@/hooks/use-ethereum-wallet';
-import { useBankAccounts } from '@/hooks/use-bank-accounts';
-import { maskEthereumAddress } from '@/lib/ethereum-validator';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useState } from "react";
+import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useRouter } from "expo-router";
+import { MaterialIcons } from "@expo/vector-icons";
 
+import { ScreenContainer } from "@/components/screen-container";
+import { useColors } from "@/hooks/use-colors";
+import { getMockStatementContent, type MockStatementFormat } from "@/lib/mock-statement";
+
+/**
+ * Percorso tecnico principale. Le precedenti dashboard di saldi, trasferimenti,
+ * wallet e quotazioni sono rimosse da questa route e non vengono importate.
+ */
 export default function HomeScreen() {
   const router = useRouter();
   const colors = useColors();
-  const { t } = useI18n();
-  const { wallet, loading: walletLoading, refreshWallet, disconnectWallet } = useEthereumWallet();
-  const { accounts, loading: bankLoading } = useBankAccounts();
-  const [refreshing, setRefreshing] = useState(false);
-  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [downloadStatus, setDownloadStatus] = useState("Nessun file mock preparato.");
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    if (wallet) {
-      await refreshWallet();
+  function handleMockDownload(format: MockStatementFormat) {
+    const file = getMockStatementContent(format);
+    if (Platform.OS !== "web") {
+      setDownloadStatus("Il mock PDF/CSV è disponibile solo nella web preview.");
+      return;
     }
-    setRefreshing(false);
-  };
 
-  const handleConnectWallet = () => {
-    // TODO: Implement wallet connection flow
-    // For now, navigate to settings
-    router.push('/(tabs)/settings');
-  };
-
-  const handleConnectBank = () => {
-    router.push('/bank-account-connect');
-  };
-
-  const handleViewPortfolio = () => {
-    router.push('/(tabs)/portfolio');
-  };
-
-  const handleTransferCredit = () => {
-    router.push('/credit-transfer');
-  };
-
-  const handleManageBank = () => {
-    router.push('/bank-accounts-manage');
-  };
-
-  const handleTransferHistory = () => {
-    router.push('/transfer-history');
-  };
-
-  const handleImportWallet = () => {
-    router.push('/wallet-import');
-  };
-
-  const handleExportWallet = () => {
-    router.push('/wallet-export');
-  };
+    const blob = new Blob([file.content], { type: file.mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file.fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+    setDownloadStatus(`File mock preparato: ${file.fileName}`);
+  }
 
   return (
-    <ScreenContainer className="flex-1 bg-background">
-      {/* Drawer Menu */}
-      <DrawerMenu visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
-      
+    <ScreenContainer className="flex-1">
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Header with Drawer Button */}
-        <View className="bg-gradient-to-b from-primary to-primary/80 px-6 py-8 gap-4 flex-row justify-between items-start">
-          <View className="flex-1">
-            <Text className="text-4xl font-bold text-white">{t('home.title')}</Text>
-            <Text className="text-base text-white/80">{t('home.subtitle')}</Text>
+        <View style={styles.intro}>
+          <Text style={[styles.title, { color: colors.foreground }]}>Dashboard tecnica</Text>
+          <Text style={[styles.lead, { color: colors.muted }]}>AgentPay è in revisione controllata. Sono disponibili esclusivamente controlli locali e informazioni sullo stato tecnico.</Text>
+        </View>
+
+        <View
+          accessibilityRole="text"
+          accessibilityLabel="Connessione finanziaria non disponibile. Provider esterni, pagamenti e consensi sono disattivati."
+          accessibilityLiveRegion="polite"
+          style={[styles.status, { backgroundColor: `${colors.warning}12`, borderColor: `${colors.warning}55` }]}
+        >
+          <MaterialIcons name="portable-wifi-off" size={24} color={colors.warning} />
+          <View style={styles.statusText}>
+            <Text style={[styles.statusTitle, { color: colors.warning }]}>Connessione finanziaria non disponibile</Text>
+            <Text style={[styles.statusDescription, { color: colors.foreground }]}>Provider esterni, pagamenti e consensi restano disattivati. Dati di conto disattivati.</Text>
           </View>
-          <TouchableOpacity
-            onPress={() => setDrawerVisible(true)}
-            className="bg-white/20 rounded-lg p-2"
-          >
-            <IconSymbol size={24} name="line.3.horizontal" color="white" />
-          </TouchableOpacity>
         </View>
 
-        {/* Wallet Status Card */}
-        <View className="px-6 py-6 gap-4">
-          {wallet ? (
-            <View className="bg-surface rounded-2xl p-6 border border-border gap-4">
-              <View className="flex-row justify-between items-center">
-                <Text className="text-lg font-semibold text-foreground">Connected Wallet</Text>
-                <TouchableOpacity onPress={() => wallet?.address && disconnectWallet(wallet.address)}>
-                  <Text className="text-sm text-error font-semibold">Disconnect</Text>
-                </TouchableOpacity>
-              </View>
-              <Text className="text-sm text-muted">{maskEthereumAddress(wallet.address)}</Text>
-              <View className="bg-background rounded-lg p-4 gap-2">
-                <Text className="text-xs text-muted">Total Value</Text>
-                <Text className="text-2xl font-bold text-foreground">
-                  ${wallet.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </Text>
-                <Text className={`text-sm font-semibold ${wallet.totalChange >= 0 ? 'text-success' : 'text-error'}`}>
-                  {wallet.totalChange >= 0 ? '↑' : '↓'} ${Math.abs(wallet.totalChange).toLocaleString('en-US', { minimumFractionDigits: 2 })} ({wallet.totalChangePercent.toFixed(2)}%)
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={handleViewPortfolio}
-                className="bg-primary rounded-lg py-3 items-center"
-              >
-                <Text className="text-white font-semibold">View Portfolio</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View className="bg-surface rounded-2xl p-6 border border-border gap-4">
-              <Text className="text-lg font-semibold text-foreground">Connect Your Wallet</Text>
-              <Text className="text-sm text-muted">
-                Connect your Ethereum wallet to view your assets and manage your portfolio across multiple chains.
-              </Text>
-              <TouchableOpacity
-                onPress={handleConnectWallet}
-                className="bg-primary rounded-lg py-3 items-center"
-              >
-                {walletLoading ? (
-                  <ActivityIndicator color={colors.background} size="small" />
-                ) : (
-                  <Text className="text-white font-semibold">{t('wallet.connect')}</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Controlli disponibili</Text>
+          <Text style={[styles.cardLine, { color: colors.muted }]}>Monitor tecnico locale e registro non finanziario.</Text>
+          <Text style={[styles.cardLine, { color: colors.muted }]}>Stato policy e disponibilità dei servizi senza richieste a provider.</Text>
+          <Text style={[styles.cardLine, { color: colors.muted }]}>Esportazione locale del solo registro tecnico.</Text>
         </View>
 
-        {/* Bank Account Status Card */}
-        <View className="px-6 pb-6 gap-4">
-          {accounts && accounts.length > 0 ? (
-            <View className="bg-surface rounded-2xl p-6 border border-border gap-4">
-              <View className="flex-row justify-between items-center">
-                <Text className="text-lg font-semibold text-foreground">Bank Accounts</Text>
-                <Text className="text-sm text-primary font-semibold">{accounts.length}</Text>
-              </View>
-              {accounts.slice(0, 2).map((account) => (
-                <View key={account.id} className="bg-background rounded-lg p-3 gap-1">
-                <Text className="text-sm font-semibold text-foreground">{account.accountHolder}</Text>
-                <Text className="text-xs text-muted">{account.maskedIBAN}</Text>
-                  {account.isDefault && (
-                    <Text className="text-xs text-success font-semibold">Default Account</Text>
-                  )}
-                </View>
-              ))}
-              <View className="flex-row gap-2">
-                <TouchableOpacity
-                  onPress={handleTransferCredit}
-                  className="flex-1 bg-primary rounded-lg py-2 items-center"
-                >
-                  <Text className="text-white font-semibold text-sm">Transfer Credit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleManageBank}
-                  className="flex-1 bg-border rounded-lg py-2 items-center"
-                >
-                  <Text className="text-foreground font-semibold text-sm">Manage</Text>
-                </TouchableOpacity>
-              </View>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="description" size={22} color={colors.primary} />
+            <View style={styles.statusText}>
+              <Text style={[styles.cardTitle, { color: colors.foreground }]}>Estratto conto — prototipo mock</Text>
+              <Text style={[styles.cardLine, { color: colors.muted }]}>Simula un download locale PDF o CSV. Non contiene conti, saldi, carte, transazioni o dati Wallester.</Text>
             </View>
-          ) : (
-            <View className="bg-surface rounded-2xl p-6 border border-border gap-4">
-              <Text className="text-lg font-semibold text-foreground">Connect Bank Account</Text>
-              <Text className="text-sm text-muted">
-                Add your bank account to transfer credit directly to your IBAN.
-              </Text>
-              <TouchableOpacity
-                onPress={handleConnectBank}
-                className="bg-primary rounded-lg py-3 items-center"
-              >
-                <Text className="text-white font-semibold">{t('bank.connect')}</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        {/* Import/Export Section */}
-        <View className="px-6 pb-6 gap-4">
-          <Text className="text-lg font-semibold text-foreground mb-2">Wallet Configuration</Text>
-          <View className="flex-row gap-3">
+          </View>
+          <View style={styles.downloadRow}>
             <TouchableOpacity
-              onPress={handleImportWallet}
-              className="flex-1 bg-surface rounded-lg p-4 border border-border items-center"
+              accessibilityRole="button"
+              accessibilityLabel="Scarica estratto mock PDF"
+              accessibilityHint="Prepara un file PDF sintetico locale senza chiamare API"
+              activeOpacity={0.82}
+              onPress={() => handleMockDownload("pdf")}
+              style={[styles.downloadAction, { backgroundColor: colors.primary }]}
             >
-              <Text className="text-sm text-primary font-semibold">📥 Import JSON</Text>
+              <MaterialIcons name="picture-as-pdf" size={19} color="#FFFFFF" />
+              <Text style={styles.downloadActionText}>Mock PDF</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={handleExportWallet}
-              className="flex-1 bg-surface rounded-lg p-4 border border-border items-center"
+              accessibilityRole="button"
+              accessibilityLabel="Scarica estratto mock CSV"
+              accessibilityHint="Prepara un file CSV sintetico locale senza chiamare API"
+              activeOpacity={0.82}
+              onPress={() => handleMockDownload("csv")}
+              style={[styles.downloadAction, { backgroundColor: colors.foreground }]}
             >
-              <Text className="text-sm text-primary font-semibold">📤 Export JSON</Text>
+              <MaterialIcons name="table-view" size={19} color={colors.background} />
+              <Text style={[styles.downloadActionText, { color: colors.background }]}>Mock CSV</Text>
             </TouchableOpacity>
           </View>
+          <Text accessibilityLiveRegion="polite" style={[styles.downloadStatus, { color: colors.muted }]}>{downloadStatus}</Text>
         </View>
 
-        {/* Quick Actions */}
-        <View className="px-6 pb-6 gap-4">
-          <Text className="text-lg font-semibold text-foreground">Quick Actions</Text>
-          <View className="gap-3">
-            {wallet && (
-              <TouchableOpacity
-                onPress={handleViewPortfolio}
-                className="bg-surface rounded-lg p-4 border border-border flex-row items-center justify-between"
-              >
-                <View className="flex-row items-center gap-3">
-                  <Text className="text-2xl">📊</Text>
-                  <View>
-                    <Text className="font-semibold text-foreground">Portfolio</Text>
-                    <Text className="text-xs text-muted">View your assets</Text>
-                  </View>
-                </View>
-                <Text className="text-lg">→</Text>
-              </TouchableOpacity>
-            )}
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Apri monitor tecnico"
+          accessibilityHint="Mostra gli stati locali di app e backend senza contattare provider finanziari"
+          activeOpacity={0.82}
+          onPress={() => router.push("/dashboard")}
+          style={[styles.primaryAction, { backgroundColor: colors.primary }]}
+        >
+          <MaterialIcons name="analytics" size={21} color="#FFFFFF" />
+          <Text style={styles.primaryActionText}>Apri monitor tecnico</Text>
+        </TouchableOpacity>
 
-            {accounts && accounts.length > 0 && (
-              <TouchableOpacity
-                onPress={handleTransferHistory}
-                className="bg-surface rounded-lg p-4 border border-border flex-row items-center justify-between"
-              >
-                <View className="flex-row items-center gap-3">
-                  <Text className="text-2xl">📋</Text>
-                  <View>
-                    <Text className="font-semibold text-foreground">Transfer History</Text>
-                    <Text className="text-xs text-muted">View your transfers</Text>
-                  </View>
-                </View>
-                <Text className="text-lg">→</Text>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity
-              onPress={() => router.push('/(tabs)/settings')}
-              className="bg-surface rounded-lg p-4 border border-border flex-row items-center justify-between"
-            >
-              <View className="flex-row items-center gap-3">
-                <Text className="text-2xl">⚙️</Text>
-                <View>
-                  <Text className="font-semibold text-foreground">Settings</Text>
-                  <Text className="text-xs text-muted">Manage your account</Text>
-                </View>
-              </View>
-              <Text className="text-lg">→</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Features Section */}
-        <View className="px-6 pb-6 gap-4">
-          <Text className="text-lg font-semibold text-foreground">Features</Text>
-          <View className="gap-3">
-            <View className="bg-surface rounded-lg p-4 border border-border flex-row gap-3">
-              <Text className="text-2xl">🔒</Text>
-              <View className="flex-1">
-                <Text className="font-semibold text-foreground">Secure & Private</Text>
-                <Text className="text-xs text-muted">Your keys, your funds</Text>
-              </View>
-            </View>
-            <View className="bg-surface rounded-lg p-4 border border-border flex-row gap-3">
-              <Text className="text-2xl">⚡</Text>
-              <View className="flex-1">
-                <Text className="font-semibold text-foreground">Multi-Chain Support</Text>
-                <Text className="text-xs text-muted">Ethereum, Polygon, Arbitrum, Optimism</Text>
-              </View>
-            </View>
-            <View className="bg-surface rounded-lg p-4 border border-border flex-row gap-3">
-              <Text className="text-2xl">💳</Text>
-              <View className="flex-1">
-                <Text className="font-semibold text-foreground">Bank Integration</Text>
-                <Text className="text-xs text-muted">Transfer to your IBAN</Text>
-              </View>
-            </View>
-          </View>
-        </View>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Apri registro tecnico"
+          accessibilityHint="Consulta la cronologia locale non finanziaria dei controlli"
+          activeOpacity={0.82}
+          onPress={() => router.push("/monitor-log")}
+          style={[styles.secondaryAction, { borderColor: colors.border }]}
+        >
+          <MaterialIcons name="format-list-bulleted" size={21} color={colors.foreground} />
+          <Text style={[styles.secondaryActionText, { color: colors.foreground }]}>Apri registro tecnico</Text>
+        </TouchableOpacity>
       </ScrollView>
     </ScreenContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  content: { flexGrow: 1, gap: 18, justifyContent: "center", padding: 24, paddingBottom: 40 },
+  intro: { gap: 8 },
+  title: { fontSize: 30, fontWeight: "800", letterSpacing: -0.4 },
+  lead: { fontSize: 16, lineHeight: 24 },
+  status: { alignItems: "center", borderRadius: 16, borderWidth: 1, flexDirection: "row", gap: 12, padding: 16 },
+  statusText: { flex: 1, gap: 3 },
+  statusTitle: { fontSize: 14, fontWeight: "800" },
+  statusDescription: { fontSize: 12, lineHeight: 18 },
+  card: { borderRadius: 16, borderWidth: 1, gap: 10, padding: 18 },
+  cardTitle: { fontSize: 16, fontWeight: "700" },
+  cardLine: { fontSize: 14, lineHeight: 21 },
+  sectionHeader: { alignItems: "flex-start", flexDirection: "row", gap: 10 },
+  downloadRow: { flexDirection: "row", gap: 10 },
+  downloadAction: { alignItems: "center", borderRadius: 12, flex: 1, flexDirection: "row", gap: 8, justifyContent: "center", minHeight: 46, paddingHorizontal: 12, paddingVertical: 12 },
+  downloadActionText: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
+  downloadStatus: { fontSize: 12, lineHeight: 18 },
+  primaryAction: { alignItems: "center", borderRadius: 14, flexDirection: "row", gap: 10, justifyContent: "center", minHeight: 52, paddingHorizontal: 16, paddingVertical: 14 },
+  primaryActionText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  secondaryAction: { alignItems: "center", borderRadius: 14, borderWidth: 1, flexDirection: "row", gap: 10, justifyContent: "center", minHeight: 52, paddingHorizontal: 16, paddingVertical: 14 },
+  secondaryActionText: { fontSize: 16, fontWeight: "700" },
+});

@@ -44,14 +44,13 @@ class PortfolioAnalyticsService {
 
   private snapshots: PortfolioSnapshot[] = [];
   private currentPortfolio: Record<string, number> = {};
-  private snapshotTimer: NodeJS.Timeout | null = null;
+  private snapshotTimer: ReturnType<typeof setTimeout> | null = null;
   private listeners: ((stats: PortfolioStats) => void)[] = [];
 
   /**
    * Initialize analytics service
    */
   public init(): void {
-    console.log('[Analytics] Service initialized');
   }
 
   /**
@@ -102,7 +101,6 @@ class PortfolioAnalyticsService {
       this.snapshots.shift();
     }
 
-    console.log('[Analytics] Snapshot added:', snapshot);
   }
 
   /**
@@ -267,7 +265,6 @@ class PortfolioAnalyticsService {
    */
   public updateConfig(config: Partial<AnalyticsConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log('[Analytics] Config updated:', this.config);
   }
 
   /**
@@ -282,7 +279,6 @@ class PortfolioAnalyticsService {
    */
   public clearHistory(): void {
     this.snapshots = [];
-    console.log('[Analytics] History cleared');
   }
 
   /**
@@ -310,7 +306,6 @@ class PortfolioAnalyticsService {
     }
     this.snapshots = [];
     this.listeners = [];
-    console.log('[Analytics] Service cleaned up');
   }
 
   /**

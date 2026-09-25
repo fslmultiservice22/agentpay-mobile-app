@@ -43,6 +43,9 @@ class PushNotificationsService {
   };
 
   constructor() {
+    if (Platform.OS === 'web' && typeof window === 'undefined') {
+      return;
+    }
     this.loadNotifications();
     this.loadSettings();
     this.setupNotificationHandlers();
@@ -63,8 +66,6 @@ class PushNotificationsService {
       // Set notification handler
       Notifications.setNotificationHandler({
         handleNotification: async () => ({
-          // `shouldShowAlert` is deprecated in expo-notifications >= 0.29,
-          // replaced by the banner/list pair. Both are kept for compatibility.
           shouldShowAlert: true,
           shouldShowBanner: true,
           shouldShowList: true,
@@ -75,7 +76,6 @@ class PushNotificationsService {
 
       // Get push token
       const token = await this.getPushToken();
-      console.log('Push token:', token);
     } catch (error) {
       console.error('Failed to initialize push notifications:', error);
     }
@@ -304,12 +304,10 @@ class PushNotificationsService {
   private setupNotificationHandlers(): void {
     // Handle notification received while app is in foreground
     this.notificationSubscription = Notifications.addNotificationReceivedListener(notification => {
-      console.log('Notification received:', notification);
     });
 
     // Handle notification tapped
     this.notificationResponseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('Notification tapped:', response.notification);
     });
   }
 

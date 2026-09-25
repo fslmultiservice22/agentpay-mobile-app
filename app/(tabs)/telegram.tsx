@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, View, Text, TouchableOpacity, Switch, Linking, ActivityIndicator } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
@@ -9,7 +9,7 @@ export default function TelegramScreen() {
   const {
     config,
     loading,
-    connectTelegram,
+    enableTelegramOptIn,
     disconnectTelegram,
     setNotificationsEnabled,
     setPriceAlertsEnabled,
@@ -19,10 +19,11 @@ export default function TelegramScreen() {
 
   const [localNotifications, setLocalNotifications] = useState(config?.notificationsEnabled ?? false);
   const [localPriceAlerts, setLocalPriceAlerts] = useState(config?.priceAlertsEnabled ?? false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    loadConfig();
-  }, []);
+    void loadConfig();
+  }, [loadConfig]);
 
   useEffect(() => {
     if (config) {
@@ -31,24 +32,22 @@ export default function TelegramScreen() {
     }
   }, [config]);
 
-  const handleConnectTelegram = async () => {
+  const handleEnableTelegramOptIn = async () => {
     try {
-      // Apri il bot Telegram
-      Linking.openURL(getBotUrl());
-      // Dopo che l'utente ha avviato il bot, salva la configurazione
-      setTimeout(async () => {
-        const chatId = 123456789; // In produzione, questo dovrebbe venire da Telegram
-        await connectTelegram(chatId);
-      }, 1000);
+      await enableTelegramOptIn();
+      setStatusMessage('Opt-in locale attivato. Nessun collegamento o invio automatico è stato eseguito.');
     } catch (error) {
-      console.error('Error connecting Telegram:', error);
+      setStatusMessage('Non è stato possibile salvare l’opt-in locale. Riprova.');
+      console.error('Error enabling Telegram opt-in:', error);
     }
   };
 
   const handleDisconnectTelegram = async () => {
     try {
       await disconnectTelegram();
+      setStatusMessage('Opt-in Telegram revocato.');
     } catch (error) {
+      setStatusMessage('Non è stato possibile revocare l’opt-in. Riprova.');
       console.error('Error disconnecting Telegram:', error);
     }
   };
@@ -74,7 +73,7 @@ export default function TelegramScreen() {
         <View className="mb-6">
           <Text className="text-3xl font-bold text-foreground mb-2">📱 Telegram Bot</Text>
           <Text className="text-base text-muted">
-            Ricevi notifiche in tempo reale su Telegram per transazioni, swap e alert di prezzo.
+            Telegram è separato dal flusso principale. L’attivazione è locale e non invia dati automaticamente.
           </Text>
         </View>
 
@@ -86,6 +85,19 @@ export default function TelegramScreen() {
 
         {!loading && (
           <>
+            {statusMessage ? (
+              <View accessibilityLiveRegion="polite" className="bg-surface rounded-xl p-4 mb-6 border" style={{ borderColor: colors.primary }}>
+                <Text className="text-sm text-foreground">{statusMessage}</Text>
+              </View>
+            ) : null}
+
+            {!config?.optInGranted ? (
+              <View accessibilityLiveRegion="polite" className="bg-surface rounded-xl p-4 mb-6 border" style={{ borderColor: colors.warning }}>
+                <Text className="text-sm font-semibold text-foreground">Opt-in richiesto per le funzioni Telegram</Text>
+                <Text className="text-sm text-muted mt-1">Attiva l’opt-in locale prima di usare notifiche o alert. Il consenso non collega il provider e non invia dati.</Text>
+              </View>
+            ) : null}
+
             {/* Connection Status Card */}
             <View
               className="bg-surface rounded-2xl p-6 mb-6 border"
@@ -93,22 +105,17 @@ export default function TelegramScreen() {
             >
               <Text className="text-lg font-semibold text-foreground mb-4">Stato Connessione</Text>
 
-              {config?.isConnected ? (
-                <>
-                  <View className="flex-row items-center mb-4">
-                    <Text className="text-2xl mr-3">✅</Text>
-                    <View>
-                      <Text className="text-base font-semibold text-success">Connesso</Text>
-                      <Text className="text-sm text-muted">Chat ID: {config.chatId}</Text>
-                    </View>
-                  </View>
-                </>
-              ) : (
-                <View className="flex-row items-center mb-4">
-                  <Text className="text-2xl mr-3">❌</Text>
-                  <Text className="text-base font-semibold text-muted">Non Connesso</Text>
+              <View className="flex-row items-center mb-4">
+                <Text className="text-2xl mr-3">{config?.optInGranted ? '🟡' : '⚪'}</Text>
+                <View>
+                  <Text className="text-base font-semibold" style={{ color: config?.optInGranted ? colors.warning : colors.muted }}>
+                    {config?.optInGranted ? 'Opt-in locale attivo' : 'Provider separato'}
+                  </Text>
+                  <Text className="text-sm text-muted">
+                    Nessun collegamento o invio automatico
+                  </Text>
                 </View>
-              )}
+              </View>
             </View>
 
             {/* Notifications Settings */}
@@ -151,60 +158,15 @@ export default function TelegramScreen() {
               </View>
             )}
 
-            {/* Bot Commands */}
-            <View
-              className="bg-surface rounded-2xl p-6 mb-6 border"
-              style={{ borderColor: colors.border }}
-            >
-              <Text className="text-lg font-semibold text-foreground mb-4">Comandi Bot</Text>
-
-              <View className="space-y-3">
-                <View className="flex-row items-start mb-3">
-                  <Text className="text-base font-mono text-primary mr-3">/start</Text>
-                  <Text className="text-sm text-muted flex-1">Menu principale</Text>
-                </View>
-
-                <View className="flex-row items-start mb-3">
-                  <Text className="text-base font-mono text-primary mr-3">/balance</Text>
-                  <Text className="text-sm text-muted flex-1">Visualizza saldo wallet</Text>
-                </View>
-
-                <View className="flex-row items-start mb-3">
-                  <Text className="text-base font-mono text-primary mr-3">/history</Text>
-                  <Text className="text-sm text-muted flex-1">Cronologia transazioni</Text>
-                </View>
-
-                <View className="flex-row items-start mb-3">
-                  <Text className="text-base font-mono text-primary mr-3">/swap</Text>
-                  <Text className="text-sm text-muted flex-1">Effettua uno swap</Text>
-                </View>
-
-                <View className="flex-row items-start mb-3">
-                  <Text className="text-base font-mono text-primary mr-3">/transfer</Text>
-                  <Text className="text-sm text-muted flex-1">Trasferimento bancario</Text>
-                </View>
-
-                <View className="flex-row items-start mb-3">
-                  <Text className="text-base font-mono text-primary mr-3">/settings</Text>
-                  <Text className="text-sm text-muted flex-1">Impostazioni bot</Text>
-                </View>
-
-                <View className="flex-row items-start">
-                  <Text className="text-base font-mono text-primary mr-3">/help</Text>
-                  <Text className="text-sm text-muted flex-1">Aiuto e supporto</Text>
-                </View>
-              </View>
-            </View>
-
             {/* Action Buttons */}
             <View className="gap-3 mb-6">
-              {!config?.isConnected ? (
+              {!config?.optInGranted ? (
                 <TouchableOpacity
                   className="bg-primary rounded-xl py-4 items-center"
-                  onPress={handleConnectTelegram}
+                  onPress={handleEnableTelegramOptIn}
                 >
                   <Text className="text-base font-semibold text-background">
-                    🔗 Collega Telegram Bot
+                    Attiva opt-in locale e apri Telegram
                   </Text>
                 </TouchableOpacity>
               ) : (
@@ -214,7 +176,7 @@ export default function TelegramScreen() {
                     onPress={handleOpenBot}
                   >
                     <Text className="text-base font-semibold text-background">
-                      💬 Apri Chat Telegram
+                      Apri Telegram (senza collegamento automatico)
                     </Text>
                   </TouchableOpacity>
 
@@ -224,7 +186,7 @@ export default function TelegramScreen() {
                     onPress={handleDisconnectTelegram}
                   >
                     <Text className="text-base font-semibold" style={{ color: colors.error }}>
-                      🔌 Disconnetti Telegram
+                      Revoca opt-in Telegram
                     </Text>
                   </TouchableOpacity>
                 </>
@@ -246,7 +208,7 @@ export default function TelegramScreen() {
 
                 <View className="flex-row items-center justify-between">
                   <Text className="text-sm text-muted">Stato</Text>
-                  <Text className="text-sm font-semibold text-success">✅ Attivo</Text>
+                  <Text className="text-sm font-semibold text-warning">Separato / non attivo</Text>
                 </View>
 
                 <View className="flex-row items-center justify-between">

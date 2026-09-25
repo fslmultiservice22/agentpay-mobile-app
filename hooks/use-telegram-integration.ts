@@ -1,16 +1,26 @@
 import { useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  grantIntegrationOptIn,
+  isIntegrationOptedIn,
+  revokeIntegrationOptIn,
+} from '@/lib/integration-opt-in';
 
 export interface TelegramConfig {
   chatId: number;
   username: string;
   isConnected: boolean;
+  optInGranted: boolean;
   notificationsEnabled: boolean;
   priceAlertsEnabled: boolean;
 }
 
 const TELEGRAM_CONFIG_KEY = 'agentpay_telegram_config';
 const TELEGRAM_BOT_USERNAME = 'tradingT23_bot';
+
+function telegramOptInState(config: TelegramConfig | null) {
+  return { telegram: config?.optInGranted === true, wallester: false };
+}
 
 /**
  * Hook per gestire l'integrazione Telegram
@@ -28,7 +38,12 @@ export function useTelegramIntegration() {
       const stored = await AsyncStorage.getItem(TELEGRAM_CONFIG_KEY);
       if (stored) {
         const parsedConfig = JSON.parse(stored);
-        setConfig(parsedConfig);
+        setConfig({
+          ...parsedConfig,
+          optInGranted: isIntegrationOptedIn(parsedConfig, 'telegram'),
+          isConnected:
+            isIntegrationOptedIn(parsedConfig, 'telegram') && parsedConfig.isConnected === true,
+        });
       }
     } catch (err) {
       console.error('Error loading Telegram config:', err);
@@ -49,9 +64,37 @@ export function useTelegramIntegration() {
   }, []);
 
   /**
-   * Collega il bot Telegram
+   * Concede soltanto l’opt-in locale. Non abilita rete o provider.
+   */
+  const enableTelegramOptIn = useCallback(async () => {
+    const nextState = grantIntegrationOptIn(telegramOptInState(config), 'telegram');
+    await AsyncStorage.setItem(TELEGRAM_CONFIG_KEY, JSON.stringify({
+      ...(config ?? {}),
+      optInGranted: nextState.telegram,
+      isConnected: false,
+      notificationsEnabled: false,
+      priceAlertsEnabled: false,
+    }));
+    setConfig({
+      chatId: 0,
+      username: TELEGRAM_BOT_USERNAME,
+      optInGranted: nextState.telegram,
+      isConnected: false,
+      notificationsEnabled: false,
+      priceAlertsEnabled: false,
+    });
+  }, [config]);
+
+  /**
+   * Collega il bot Telegram solo dopo un opt-in esplicito.
    */
   const connectTelegram = useCallback(async (chatId: number) => {
+    if (!isIntegrationOptedIn(telegramOptInState(config), 'telegram')) {
+      throw new Error('Telegram opt-in required before connecting');
+    }
+    if (!Number.isSafeInteger(chatId) || chatId === 0) {
+      throw new Error('A verified Telegram chat ID is required');
+    }
     setLoading(true);
     setError(null);
 
@@ -60,25 +103,12 @@ export function useTelegramIntegration() {
         chatId,
         username: TELEGRAM_BOT_USERNAME,
         isConnected: true,
-        notificationsEnabled: true,
+        optInGranted: true,
+        notificationsEnabled: false,
         priceAlertsEnabled: false,
       };
 
       await saveConfig(newConfig);
-
-      // Invia un messaggio di benvenuto
-      await fetch('/api/telegram/send/balance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chatId,
-          walletData: {
-            totalValue: 0,
-            totalChangePercent: 0,
-            assets: [],
-          },
-        }),
-      });
 
       return newConfig;
     } catch (err) {
@@ -88,7 +118,7 @@ export function useTelegramIntegration() {
     } finally {
       setLoading(false);
     }
-  }, [saveConfig]);
+  }, [config, saveConfig]);
 
   /**
    * Disconnette il bot Telegram
@@ -96,19 +126,20 @@ export function useTelegramIntegration() {
   const disconnectTelegram = useCallback(async () => {
     try {
       await AsyncStorage.removeItem(TELEGRAM_CONFIG_KEY);
+      revokeIntegrationOptIn(telegramOptInState(config), 'telegram');
       setConfig(null);
     } catch (err) {
       console.error('Error disconnecting Telegram:', err);
       throw err;
     }
-  }, []);
+  }, [config]);
 
   /**
    * Abilita/disabilita le notifiche
    */
   const setNotificationsEnabled = useCallback(
     async (enabled: boolean) => {
-      if (!config) return;
+      if (!config || !config.optInGranted) return;
 
       const updatedConfig = { ...config, notificationsEnabled: enabled };
       await saveConfig(updatedConfig);
@@ -121,7 +152,7 @@ export function useTelegramIntegration() {
    */
   const setPriceAlertsEnabled = useCallback(
     async (enabled: boolean) => {
-      if (!config) return;
+      if (!config || !config.optInGranted) return;
 
       const updatedConfig = { ...config, priceAlertsEnabled: enabled };
       await saveConfig(updatedConfig);
@@ -134,7 +165,7 @@ export function useTelegramIntegration() {
    */
   const sendTransactionNotification = useCallback(
     async (type: 'swap' | 'transfer' | 'deposit', data: any) => {
-      if (!config || !config.isConnected || !config.notificationsEnabled) {
+      if (!config || !config.optInGranted || !config.isConnected || !config.notificationsEnabled) {
         return;
       }
 
@@ -160,7 +191,7 @@ export function useTelegramIntegration() {
    */
   const sendPriceAlert = useCallback(
     async (token: string, price: number, change: number) => {
-      if (!config || !config.isConnected || !config.priceAlertsEnabled) {
+      if (!config || !config.optInGranted || !config.isConnected || !config.priceAlertsEnabled) {
         return;
       }
 
@@ -201,5 +232,6 @@ export function useTelegramIntegration() {
     sendTransactionNotification,
     sendPriceAlert,
     getBotUrl,
+    enableTelegramOptIn,
   };
 }

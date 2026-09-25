@@ -27,7 +27,6 @@ class NotificationsCenterService {
    * Initialize notifications center service
    */
   public async init(): Promise<void> {
-    console.log('[NotificationsCenter] Service initialized');
   }
 
   /**
@@ -57,7 +56,6 @@ class NotificationsCenterService {
     this.notifications.set(notification.id, notification);
     this.notifyListeners();
 
-    console.log('[NotificationsCenter] Notification added:', notification);
     return notification;
   }
 
@@ -99,7 +97,6 @@ class NotificationsCenterService {
     notification.read = true;
     this.notifyListeners();
 
-    console.log('[NotificationsCenter] Notification marked as read:', notificationId);
     return notification;
   }
 
@@ -112,7 +109,6 @@ class NotificationsCenterService {
     });
     this.notifyListeners();
 
-    console.log('[NotificationsCenter] All notifications marked as read');
   }
 
   /**
@@ -122,7 +118,6 @@ class NotificationsCenterService {
     const result = this.notifications.delete(notificationId);
     if (result) {
       this.notifyListeners();
-      console.log('[NotificationsCenter] Notification deleted:', notificationId);
     }
     return result;
   }
@@ -143,7 +138,6 @@ class NotificationsCenterService {
 
     if (count > 0) {
       this.notifyListeners();
-      console.log('[NotificationsCenter] Cleared', count, 'expired notifications');
     }
   }
 
@@ -261,7 +255,6 @@ class NotificationsCenterService {
   public clearAll(): void {
     this.notifications.clear();
     this.notifyListeners();
-    console.log('[NotificationsCenter] All notifications cleared');
   }
 
   /**
@@ -269,7 +262,6 @@ class NotificationsCenterService {
    */
   public cleanup(): void {
     this.listeners = [];
-    console.log('[NotificationsCenter] Service cleaned up');
   }
 }
 

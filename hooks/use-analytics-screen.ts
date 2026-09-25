@@ -42,20 +42,6 @@ export function useAnalyticsScreen() {
 
   const [events, setEvents] = useState<AnalyticsEvent[]>([]);
 
-  // Load analytics from storage
-  const loadAnalytics = useCallback(async () => {
-    try {
-      const stored = await AsyncStorage.getItem('agentpay_analytics_events');
-      if (stored) {
-        const loadedEvents = JSON.parse(stored);
-        setEvents(loadedEvents);
-        calculateMetrics(loadedEvents);
-      }
-    } catch (error) {
-      console.error('Failed to load analytics:', error);
-    }
-  }, []);
-
   // Calculate metrics from events
   const calculateMetrics = useCallback((eventList: AnalyticsEvent[]) => {
     const now = Date.now();
@@ -115,6 +101,20 @@ export function useAnalyticsScreen() {
     });
   }, []);
 
+  // Load analytics from storage
+  const loadAnalytics = useCallback(async () => {
+    try {
+      const stored = await AsyncStorage.getItem('agentpay_analytics_events');
+      if (stored) {
+        const loadedEvents = JSON.parse(stored);
+        setEvents(loadedEvents);
+        calculateMetrics(loadedEvents);
+      }
+    } catch (error) {
+      console.error('Failed to load analytics:', error);
+    }
+  }, [calculateMetrics]);
+
   // Track event
   const trackEvent = useCallback(
     async (eventType: string, userId?: string, metadata?: Record<string, any>) => {
@@ -169,7 +169,7 @@ export function useAnalyticsScreen() {
 
   // Initialize on mount
   useEffect(() => {
-    loadAnalytics();
+    void loadAnalytics();
   }, [loadAnalytics]);
 
   return {

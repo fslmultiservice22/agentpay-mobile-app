@@ -298,3 +298,117 @@ class CoinGeckoService {
 }
 
 export const coinGeckoService = new CoinGeckoService();
+
+// === Funzioni aggiuntive per portafoglio multi-chain ===
+
+// Mapping chain ID → CoinGecko platform ID
+const CHAIN_PLATFORM_MAP: Record<number, string> = {
+  250: 'fantom',
+  324: 'zksync',
+  43114: 'avalanche',
+  1101: 'polygon-zkevm',
+};
+
+export interface TokenPriceByContract {
+  contract: string;
+  usdPrice: number;
+  usd24hChange: number;
+}
+
+/**
+ * Ottieni prezzi per una lista di contract address su una specifica chain
+ */
+export async function getTokenPricesByContract(
+  chainId: number,
+  contracts: string[]
+): Promise<TokenPriceByContract[]> {
+  const platform = CHAIN_PLATFORM_MAP[chainId];
+  if (!platform) return [];
+
+  const batchSize = 50;
+  const results: TokenPriceByContract[] = [];
+
+  for (let i = 0; i < contracts.length; i += batchSize) {
+    const batch = contracts.slice(i, i + batchSize);
+    const addressList = batch.join(',');
+
+    try {
+      const res = await fetch(
+        `${COINGECKO_API_BASE}/simple/token_price/${platform}?contract_addresses=${addressList}&vs_currencies=usd&include_24hr_change=true`
+      );
+
+      if (!res.ok) continue;
+      const data = await res.json();
+
+      for (const contract of batch) {
+        const priceData = data[contract.toLowerCase()];
+        if (priceData) {
+          results.push({
+            contract: contract.toLowerCase(),
+            usdPrice: priceData.usd ?? 0,
+            usd24hChange: priceData.usd_24h_change ?? 0,
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('CoinGecko contract price fetch error:', err);
+    }
+
+    if (i + batchSize < contracts.length) {
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+  }
+
+  return results;
+}
+
+// CoinGecko IDs per i token nativi delle chain supportate
+export const NATIVE_TOKEN_IDS: Record<number, string> = {
+  250: 'fantom',
+  324: 'ethereum',
+  43114: 'avalanche-2',
+  1101: 'ethereum',
+};
+
+/**
+ * Ottieni prezzi nativi per tutte le chain
+ */
+export async function getAllNativePrices(): Promise<Record<number, { usd: number; change24h: number }>> {
+  const ids = [...new Set(Object.values(NATIVE_TOKEN_IDS))].join(',');
+  try {
+    const res = await fetch(
+      `${COINGECKO_API_BASE}/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`
+    );
+    if (!res.ok) return {};
+    const data = await res.json();
+
+    const result: Record<number, { usd: number; change24h: number }> = {};
+    for (const [chainId, coinId] of Object.entries(NATIVE_TOKEN_IDS)) {
+      const coin = data[coinId];
+      result[Number(chainId)] = { usd: coin?.usd ?? 0, change24h: coin?.usd_24h_change ?? 0 };
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Aggiorna i prezzi per tutti i token nel portafoglio (top token per chain)
+ */
+export async function refreshPortfolioPrices(
+  tokensByChain: Record<number, string[]>
+): Promise<Record<string, TokenPriceByContract>> {
+  const allPrices: Record<string, TokenPriceByContract> = {};
+
+  for (const [chainIdStr, contracts] of Object.entries(tokensByChain)) {
+    const chainId = Number(chainIdStr);
+    const prices = await getTokenPricesByContract(chainId, contracts);
+    for (const p of prices) {
+      allPrices[`${chainId}:${p.contract}`] = p;
+    }
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+
+  return allPrices;
+}

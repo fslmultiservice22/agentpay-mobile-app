@@ -1,16 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Switch, Linking, StyleSheet, ActivityIndicator } from 'react-native';
 import { useTelegramIntegration } from '@/hooks/use-telegram-integration';
 import { useColors } from '@/hooks/use-colors';
-import { useI18n } from '@/hooks/use-i18n';
 
 export function TelegramSettings() {
   const colors = useColors();
-  const { t } = useI18n();
   const {
     config,
     loading,
-    connectTelegram,
     disconnectTelegram,
     setNotificationsEnabled,
     setPriceAlertsEnabled,
@@ -22,8 +19,8 @@ export function TelegramSettings() {
   const [localPriceAlerts, setLocalPriceAlerts] = useState(config?.priceAlertsEnabled ?? false);
 
   useEffect(() => {
-    loadConfig();
-  }, []);
+    void loadConfig();
+  }, [loadConfig]);
 
   useEffect(() => {
     if (config) {
@@ -32,16 +29,6 @@ export function TelegramSettings() {
     }
   }, [config]);
 
-  const handleConnectTelegram = async () => {
-    try {
-      // In produzione, questo dovrebbe ottenere il chatId dall'utente
-      // Per ora, usiamo un placeholder
-      const chatId = 123456789; // Questo dovrebbe venire da Telegram
-      await connectTelegram(chatId);
-    } catch (error) {
-      console.error('Error connecting Telegram:', error);
-    }
-  };
 
   const handleDisconnectTelegram = async () => {
     try {
@@ -180,7 +167,7 @@ export function TelegramSettings() {
       </View>
 
       <Text style={styles.description}>
-        Ricevi notifiche in tempo reale su Telegram per transazioni, swap e alert di prezzo.
+        Gestisci un consenso locale separato per eventuali notifiche tecniche. Nessun dato viene inviato automaticamente.
       </Text>
 
       {loading && (
@@ -207,7 +194,7 @@ export function TelegramSettings() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Connessione Telegram</Text>
               <Text style={styles.description}>
-                Clicca il pulsante qui sotto per aprire il bot Telegram e collegare il tuo account.
+                Attiva prima l’opt-in locale nelle impostazioni, quindi apri il bot solo se desideri proseguire manualmente.
               </Text>
             </View>
           )}
@@ -220,9 +207,9 @@ export function TelegramSettings() {
 
                 <View style={styles.row}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.rowLabel}>Notifiche Transazioni</Text>
+                    <Text style={styles.rowLabel}>Notifiche tecniche</Text>
                     <Text style={styles.rowDescription}>
-                      Ricevi notifiche per swap e trasferimenti
+                      Ricevi aggiornamenti tecnici autorizzati
                     </Text>
                   </View>
                   <Switch
@@ -234,9 +221,9 @@ export function TelegramSettings() {
 
                 <View style={styles.row}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.rowLabel}>Alert di Prezzo</Text>
+                    <Text style={styles.rowLabel}>Avvisi di stato tecnico</Text>
                     <Text style={styles.rowDescription}>
-                      Ricevi notifiche per variazioni di prezzo
+                      Ricevi aggiornamenti tecnici autorizzati
                     </Text>
                   </View>
                   <Switch

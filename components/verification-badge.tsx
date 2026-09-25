@@ -1,5 +1,4 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { useColors } from '@/hooks/use-colors';
 import { VerificationLevel } from '@/hooks/use-trader-verification';
 
 interface VerificationBadgeProps {
@@ -17,7 +16,6 @@ const BADGE_CONFIG = {
 };
 
 export function VerificationBadge({ level, size = 'medium', showLabel = true }: VerificationBadgeProps) {
-  const colors = useColors();
   const config = BADGE_CONFIG[level];
 
   const sizeMap = {

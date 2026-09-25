@@ -333,7 +333,6 @@ export class SecurityService {
         }
       }
 
-      console.log('All sensitive data wiped');
     } catch (error) {
       console.error('Error wiping data:', error);
       throw error;
