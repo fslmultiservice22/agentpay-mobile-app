@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SocialPlatform, SocialAccount } from '@/lib/social/social-config';
+import { SocialPlatform } from '@/lib/social/social-config';
 import { useSocialAuth } from './use-social-auth';
 
 interface SocialProfile {
@@ -34,11 +34,6 @@ export function useSocialSync() {
 
   const { accounts, getAccessToken } = useSocialAuth();
 
-  // Load saved profile on mount
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
   const loadProfile = useCallback(async () => {
     try {
       const saved = await AsyncStorage.getItem('social_profile');
@@ -49,6 +44,11 @@ export function useSocialSync() {
       console.error('Error loading social profile:', error);
     }
   }, []);
+
+  // Load saved profile on mount
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
 
   const syncProfile = useCallback(async () => {
     setState(prev => ({ ...prev, syncing: true, error: null }));

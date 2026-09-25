@@ -311,7 +311,7 @@ export function useSupportChat() {
   useEffect(() => {
     setAgents(MOCK_AGENTS);
     setFAQItems(MOCK_FAQ);
-  }, []);
+  }, [MOCK_AGENTS, MOCK_FAQ]);
 
   return {
     conversations,

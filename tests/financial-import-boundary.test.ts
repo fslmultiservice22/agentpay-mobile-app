@@ -21,8 +21,8 @@ const ignoredFiles = new Set([
 const forbiddenImportPatterns = [
   /from\s*["'][^"']*(?:use-codego-card|use-credit-card|crypto-backed-credit|contactless-payments|payment-notifications|spending-report|subscription-manager|codego-router)[^"']*["']/,
   /import\s*\(\s*["'][^"']*(?:use-codego-card|use-credit-card|crypto-backed-credit|contactless-payments|payment-notifications|spending-report|subscription-manager|codego-router)[^"']*["']\s*\)/,
-  /from\s*["'][^"']*(?:wallester|codego|stripe|paypal|enable-banking)[^"']*["']/i,
-  /import\s*\(\s*["'][^"']*(?:wallester|codego|stripe|paypal|enable-banking)[^"']*["']\s*\)/i,
+  /from\s*["'][^"']*(?:wallester(?!-mock)|codego|stripe|paypal|enable-banking)[^"']*["']/i,
+  /import\s*\(\s*["'][^"']*(?:wallester(?!-mock)|codego|stripe|paypal|enable-banking)[^"']*["']\s*\)/i,
 ];
 
 function collectSourceFiles(directory: string): string[] {

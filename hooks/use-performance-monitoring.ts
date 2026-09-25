@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
 
 export interface PerformanceMetrics {
@@ -31,7 +31,7 @@ export function usePerformanceMonitoring() {
 
   const alertsRef = useRef<PerformanceAlert[]>([]);
 
-  const thresholds = {
+  const thresholds = useMemo(() => ({
     fps: 30,
     memoryUsage: 500, // MB
     cpuUsage: 80, // %
@@ -39,7 +39,25 @@ export function usePerformanceMonitoring() {
     apiResponseTime: 2000, // ms
     bundleSize: 5, // MB
     loadTime: 3000, // ms
-  };
+  }), []);
+
+  const checkThresholds = useCallback(() => {
+    const newAlerts: PerformanceAlert[] = [];
+
+    Object.entries(thresholds).forEach(([metric, threshold]) => {
+      const value = metricsRef.current[metric as keyof PerformanceMetrics];
+      if (value > threshold) {
+        newAlerts.push({
+          metric: metric as keyof PerformanceMetrics,
+          value,
+          threshold,
+          severity: value > threshold * 1.5 ? 'critical' : 'warning',
+        });
+      }
+    });
+
+    alertsRef.current = newAlerts;
+  }, [thresholds]);
 
   useEffect(() => {
     // Monitor FPS
@@ -73,25 +91,7 @@ export function usePerformanceMonitoring() {
     return () => {
       clearInterval(memoryInterval);
     };
-  }, []);
-
-  const checkThresholds = () => {
-    const newAlerts: PerformanceAlert[] = [];
-
-    Object.entries(thresholds).forEach(([metric, threshold]) => {
-      const value = metricsRef.current[metric as keyof PerformanceMetrics];
-      if (value > threshold) {
-        newAlerts.push({
-          metric: metric as keyof PerformanceMetrics,
-          value,
-          threshold,
-          severity: value > threshold * 1.5 ? 'critical' : 'warning',
-        });
-      }
-    });
-
-    alertsRef.current = newAlerts;
-  };
+  }, [checkThresholds]);
 
   const getMetrics = (): PerformanceMetrics => metricsRef.current;
 

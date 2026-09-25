@@ -62,7 +62,6 @@ class PushNotificationService {
       // Load notifications
       await this.loadNotifications();
 
-      console.log('✅ Push notifications initialized');
     } catch (error) {
       console.error('❌ Failed to initialize push notifications:', error);
     }

@@ -7,26 +7,10 @@
 // import * as Clipboard from 'expo-clipboard';
 // import { Platform, Alert } from 'react-native';
 
-// Lightweight stand-ins for `expo-sharing` / `expo-clipboard`, kept so that the
-// service stays importable in tests and on web without the native modules.
-// The signatures mirror the real APIs so call sites type-check correctly.
-interface ShareOptions {
-  mimeType?: string;
-  dialogTitle?: string;
-  UTI?: string;
-}
-
-const Sharing = {
-  isAvailableAsync: (): Promise<boolean> => Promise.resolve(false),
-  shareAsync: (_url: string, _options?: ShareOptions): Promise<void> => Promise.resolve(),
-};
-
-const Clipboard = {
-  setStringAsync: (_text: string): Promise<boolean> => Promise.resolve(true),
-  getStringAsync: (): Promise<string> => Promise.resolve(''),
-};
-
-const Platform: { OS: string } = { OS: 'ios' };
+// Mock for testing
+const Sharing = { isAvailableAsync: () => Promise.resolve(false), shareAsync: (_url: string, _opts?: Record<string, unknown>) => Promise.resolve() };
+const Clipboard = { setStringAsync: (_text: string) => Promise.resolve(), getStringAsync: () => Promise.resolve('') };
+const Platform = { OS: 'ios' };
 
 export interface ShareContent {
   title: string;
@@ -69,7 +53,6 @@ class SocialSharingService {
         UTI: 'public.plain-text',
       });
 
-      console.log('[Sharing] Content shared:', content.title);
       return true;
     } catch (error) {
       console.error('[Sharing] Error sharing content:', error);
@@ -190,7 +173,6 @@ AgentPay is the all-in-one crypto wallet & trading platform with:
   public async copyToClipboard(text: string): Promise<boolean> {
     try {
       await Clipboard.setStringAsync(text);
-      console.log('[Sharing] Text copied to clipboard');
       return true;
     } catch (error) {
       console.error('[Sharing] Error copying to clipboard:', error);
@@ -204,7 +186,6 @@ AgentPay is the all-in-one crypto wallet & trading platform with:
   public async getFromClipboard(): Promise<string | null> {
     try {
       const text = await Clipboard.getStringAsync();
-      console.log('[Sharing] Text retrieved from clipboard');
       return text;
     } catch (error) {
       console.error('[Sharing] Error getting clipboard text:', error);

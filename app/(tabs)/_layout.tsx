@@ -1,41 +1,18 @@
 import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Platform, View, Text, ScrollView } from "react-native";
+import { Platform, View, Text } from "react-native";
 
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
-
-/**
- * Custom Tab Bar Label Component
- * Shows icon + label with proper sizing and spacing
- */
-function TabBarLabel({
-  focused,
-  color,
-  label,
-}: {
-  focused: boolean;
-  color: string;
-  label: string;
-}) {
-  return (
-    <View className="items-center gap-1">
-      <Text
-        className={`text-xs font-semibold ${
-          focused ? "text-primary" : "text-muted"
-        }`}
-        numberOfLines={1}
-      >
-        {label}
-      </Text>
-    </View>
-  );
-}
+import { useUnreadNotificationsCount } from "@/hooks/use-unread-notifications";
+import { MaterialIcons } from '@expo/vector-icons';
 
 export default function TabLayout() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const unreadCount = useUnreadNotificationsCount();
+
   const bottomPadding = Platform.OS === "web" ? 12 : Math.max(insets.bottom, 8);
   const tabBarHeight = 70 + bottomPadding;
 
@@ -104,7 +81,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="portfolio"
         options={{
-          title: "Portfolio",
+          title: "Portafoglio",
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
               <IconSymbol size={28} name="briefcase.fill" color={color} />
@@ -117,7 +94,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: "Dashboard",
+          title: "Pannello",
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
               <IconSymbol
@@ -134,10 +111,30 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Settings",
+          title: "Impostazioni",
           tabBarIcon: ({ color, focused }) => (
-            <View className={focused ? "scale-110" : ""}>
+            <View className={focused ? "scale-110" : ""} style={{ position: 'relative' }}>
               <IconSymbol size={28} name="gear" color={color} />
+              {unreadCount > 0 && (
+                <View style={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -6,
+                  minWidth: 16,
+                  height: 16,
+                  borderRadius: 8,
+                  backgroundColor: '#EF4444',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 3,
+                  borderWidth: 1.5,
+                  borderColor: colors.background,
+                }}>
+                  <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800', lineHeight: 12 }}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Text>
+                </View>
+              )}
             </View>
           ),
         }}
@@ -162,7 +159,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="leaderboard"
         options={{
-          title: "Leaderboard",
+          title: "Classifica",
           href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
@@ -180,7 +177,7 @@ export default function TabLayout() {
           href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
-              <Text style={{ fontSize: 28 }}>📱</Text>
+              <MaterialIcons name="smartphone" size={28} color={colors.foreground} />
             </View>
           ),
         }}
@@ -190,7 +187,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="price-alerts"
         options={{
-          title: "Alerts",
+          title: "Avvisi",
           href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
@@ -236,7 +233,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="rebalancing-dashboard"
         options={{
-          title: "Rebalance",
+          title: "Ribilanciamento",
           href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
@@ -250,7 +247,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="portfolio-multi"
         options={{
-          title: "Multi Portfolio",
+          title: "Multi Portafoglio",
           href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
@@ -264,7 +261,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="swap-analytics"
         options={{
-          title: "Swap Analytics",
+          title: "Analisi Swap",
           href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
@@ -278,7 +275,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="credit-line"
         options={{
-          title: "Credit",
+          title: "Credito",
           href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
@@ -288,11 +285,23 @@ export default function TabLayout() {
         }}
       />
 
+      {/* Portfolio Dashboard (hidden) */}
+      <Tabs.Screen
+        name="portfolio-dashboard"
+        options={{
+          title: "Dashboard Portafoglio",
+          href: null,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="chart.bar.fill" color={color} />
+          ),
+        }}
+      />
+
       {/* Social Trading */}
       <Tabs.Screen
         name="social-trading"
         options={{
-          title: "Social Trading",
+          title: "Trading Sociale",
           href: null,
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? "scale-110" : ""}>
@@ -302,19 +311,7 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Transfer Funds */}
-      <Tabs.Screen
-        name="transfer-funds"
-        options={{
-          title: "Transfer",
-          href: null,
-          tabBarIcon: ({ color, focused }) => (
-            <View className={focused ? "scale-110" : ""}>
-              <IconSymbol size={28} name="paperplane.fill" color={color} />
-            </View>
-          ),
-        }}
-      />
+
     </Tabs>
   );
 }

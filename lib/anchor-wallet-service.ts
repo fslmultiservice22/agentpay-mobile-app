@@ -63,7 +63,6 @@ class AnchorWalletService {
         this.networks.set(network._id, network);
       });
 
-      console.log(`Initialized ${this.networks.size} blockchain networks`);
     } catch (error) {
       console.error('Failed to initialize networks:', error);
     }
@@ -165,7 +164,6 @@ class AnchorWalletService {
         pubkey: '', // Would be populated from wallet
       };
 
-      console.log(`Connected to ${network.name} with account ${account}`);
       return true;
     } catch (error) {
       console.error('Failed to connect to network:', error);

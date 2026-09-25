@@ -30,14 +30,13 @@ class WidgetService {
     colorScheme: 'auto',
   };
 
-  private refreshTimer: NodeJS.Timeout | number | null = null;
+  private refreshTimer: ReturnType<typeof setTimeout> | null = null;
   private listeners: ((data: WidgetData) => void)[] = [];
 
   /**
    * Initialize widget service
    */
   public init(): void {
-    console.log('[Widget] Service initialized');
     this.startAutoRefresh();
   }
 
@@ -49,7 +48,6 @@ class WidgetService {
       ...data,
       lastUpdated: Date.now(),
     };
-    console.log('[Widget] Data updated:', data);
     this.notifyListeners();
   }
 
@@ -72,7 +70,6 @@ class WidgetService {
    */
   public updateConfig(config: Partial<WidgetConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log('[Widget] Config updated:', this.config);
 
     // Restart auto-refresh if interval changed
     if (config.refreshInterval) {
@@ -157,7 +154,6 @@ Assets: ${holdingCount}
     if (!this.config.enabled) return;
 
     this.refreshTimer = setInterval(() => {
-      console.log('[Widget] Auto-refresh triggered');
       // In real app, this would fetch data from API
       // For now, just notify listeners
       if (this.widgetData) {
@@ -191,7 +187,6 @@ Assets: ${holdingCount}
   public cleanup(): void {
     this.stopAutoRefresh();
     this.listeners = [];
-    console.log('[Widget] Service cleaned up');
   }
 
   /**

@@ -21,6 +21,15 @@ export function PieChart({ data, radius = 80, strokeWidth = 15 }: PieChartProps)
   const total = data.reduce((sum, item) => sum + item.value, 0);
   const circumference = 2 * Math.PI * radius;
 
+  // Guard: if total is 0 or data is empty, show empty state
+  if (!data.length || total === 0) {
+    return (
+      <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 24 }}>
+        <Text style={{ fontSize: 14, color: colors.muted }}>Nessun dato disponibile</Text>
+      </View>
+    );
+  }
+
   // Calculate stroke dashoffset for each segment
   let currentOffset = 0;
   const segments = data.map((item) => {

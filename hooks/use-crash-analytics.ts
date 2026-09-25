@@ -69,7 +69,6 @@ export function useCrashAnalytics() {
   const captureMessage = useCallback(
     (message: string, level: any = 'info', context?: Record<string, any>) => {
       if (!Sentry) {
-        console.log('Crash analytics message:', message);
         return;
       }
       try {

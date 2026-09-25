@@ -1,11 +1,10 @@
-import { ScrollView, View, Text, Image, Pressable, FlatList } from 'react-native';
+import { ScrollView, View, Text, Image, Pressable, FlatList , Animated } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { ScreenContainer } from '@/components/screen-container';
 import { useTraderProfile } from '@/hooks/use-trader-profile';
 import { useI18n } from '@/hooks/use-i18n';
 import { useColors } from '@/hooks/use-colors';
 import * as Haptics from 'expo-haptics';
-import { Animated } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 
 export default function TraderProfileScreen() {

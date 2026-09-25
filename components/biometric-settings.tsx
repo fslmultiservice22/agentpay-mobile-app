@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   Switch,
   ActivityIndicator,

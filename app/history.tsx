@@ -57,7 +57,7 @@ export default function HistoryScreen() {
       <View className="gap-4 flex-1">
         <View className="gap-2">
           <Text className="text-3xl font-bold text-foreground">Transaction History</Text>
-          <Text className="text-base text-muted">View all your transactions</Text>
+          <Text className="text-base text-muted">Visualizza tutte le transazioni</Text>
         </View>
 
         <View className="flex-row gap-2">
@@ -77,7 +77,7 @@ export default function HistoryScreen() {
         <FlatList data={filteredTransactions} renderItem={renderTransaction} keyExtractor={item => item.id} scrollEnabled={false} />
 
         <TouchableOpacity className="rounded-lg p-4 items-center justify-center border border-border" onPress={() => router.back()}>
-          <Text className="text-foreground font-semibold text-base">Back</Text>
+          <Text className="text-foreground font-semibold text-base">Indietro</Text>
         </TouchableOpacity>
       </View>
     </ScreenContainer>

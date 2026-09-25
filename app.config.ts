@@ -2,6 +2,8 @@
 import "./scripts/load-env.js";
 import type { ExpoConfig } from "expo/config";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 // Bundle ID format: space.manus.<project_name_dots>.<timestamp>
 // e.g., "my-app" created at 2024-01-15 10:30:45 -> "space.manus.my.app.t20240115103045"
 // Bundle ID can only contain letters, numbers, and dots
@@ -30,7 +32,7 @@ const env = {
   appSlug: "agentpay-mobile-app",
   // S3 URL of the app logo - set this to the URL returned by generate_image when creating custom logo
   // Leave empty to use the default icon from assets/images/icon.png
-  logoUrl: "",
+  logoUrl: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663692213404/MMYywMlPdGhygMJN.png",
   scheme: schemeFromBundleId,
   iosBundleId: bundleId,
   androidPackage: bundleId,
@@ -39,12 +41,12 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.0.0",
+  owner: "trading23",
+  version: "1.1.1",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
   userInterfaceStyle: "automatic",
-  newArchEnabled: true,
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,
@@ -59,7 +61,6 @@ const config: ExpoConfig = {
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
-    edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
     permissions: ["POST_NOTIFICATIONS"],
@@ -79,17 +80,24 @@ const config: ExpoConfig = {
   },
   web: {
     bundler: "metro",
-    output: "static",
+    output: isProduction ? "static" : "single",
     favicon: "./assets/images/favicon.png",
   },
   plugins: [
     "expo-router",
+    "expo-asset",
+    "expo-audio",
+    "expo-font",
+    "expo-image",
+    "expo-secure-store",
+    "expo-sharing",
+    "expo-status-bar",
+    "expo-web-browser",
     [
-      "expo-audio",
+      "expo-local-authentication",
       {
-        microphonePermission:
-          "Allow $(PRODUCT_NAME) to access your microphone.",
-      },
+        "faceIDPermission": "Allow $(PRODUCT_NAME) to use Face ID for secure access."
+      }
     ],
     [
       "expo-video",
@@ -120,6 +128,11 @@ const config: ExpoConfig = {
       },
     ],
   ],
+  extra: {
+    eas: {
+      projectId: "c929c360-26c3-44a6-87de-eac438bab003",
+    },
+  },
   experiments: {
     typedRoutes: true,
     reactCompiler: true,

@@ -38,13 +38,12 @@ class LimitOrdersService {
 
   private listeners: ((order: LimitOrder) => void)[] = [];
   private priceListeners: Map<string, (price: number) => void> = new Map();
-  private checkInterval: NodeJS.Timeout | null = null;
+  private checkInterval: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Initialize limit orders service
    */
   public async init(): Promise<void> {
-    console.log('[LimitOrders] Service initialized');
     this.startPriceMonitoring();
   }
 
@@ -85,7 +84,6 @@ class LimitOrdersService {
       this.orders.set(order.id, order);
       this.notifyListeners(order);
 
-      console.log('[LimitOrders] Order created:', order);
       return order;
     } catch (error) {
       console.error('[LimitOrders] Error creating order:', error);
@@ -103,7 +101,6 @@ class LimitOrdersService {
     if (order.status === 'active') {
       order.status = 'cancelled';
       this.notifyListeners(order);
-      console.log('[LimitOrders] Order cancelled:', orderId);
       return true;
     }
 
@@ -171,7 +168,6 @@ class LimitOrdersService {
       this.sendNotification(order);
     }
 
-    console.log('[LimitOrders] Order executed:', order);
   }
 
   /**
@@ -179,7 +175,6 @@ class LimitOrdersService {
    */
   private sendNotification(order: LimitOrder): void {
     const message = `Limit order executed: ${order.amount} ${order.fromToken} → ${order.toToken} at ${order.executionPrice}`;
-    console.log('[LimitOrders] Notification:', message);
     // In a real app, this would send a push notification
   }
 
@@ -195,7 +190,6 @@ class LimitOrdersService {
    */
   public updateConfig(config: Partial<LimitOrderConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log('[LimitOrders] Config updated:', this.config);
   }
 
   /**
@@ -231,7 +225,6 @@ class LimitOrdersService {
       this.checkExpiredOrders();
     }, this.config.checkInterval);
 
-    console.log('[LimitOrders] Price monitoring started');
   }
 
   /**
@@ -244,7 +237,6 @@ class LimitOrdersService {
       if (order.status === 'active' && order.expiresAt < now) {
         order.status = 'expired';
         this.notifyListeners(order);
-        console.log('[LimitOrders] Order expired:', order.id);
       }
     }
   }
@@ -299,7 +291,6 @@ class LimitOrdersService {
    */
   public clearAllOrders(): void {
     this.orders.clear();
-    console.log('[LimitOrders] All orders cleared');
   }
 
   /**
@@ -312,7 +303,6 @@ class LimitOrdersService {
     }
     this.listeners = [];
     this.priceListeners.clear();
-    console.log('[LimitOrders] Service cleaned up');
   }
 
   /**

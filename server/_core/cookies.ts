@@ -14,9 +14,7 @@ function isSecureRequest(req: Request) {
   const forwardedProto = req.headers["x-forwarded-proto"];
   if (!forwardedProto) return false;
 
-  const protoList = Array.isArray(forwardedProto)
-    ? forwardedProto
-    : forwardedProto.split(",");
+  const protoList = Array.isArray(forwardedProto) ? forwardedProto : forwardedProto.split(",");
 
   return protoList.some((proto) => proto.trim().toLowerCase() === "https");
 }
@@ -32,18 +30,11 @@ function getParentDomain(hostname: string): string | undefined {
     return undefined;
   }
 
-  // Split hostname into parts
-  const parts = hostname.split(".");
+  // Condivisione necessaria solo tra API 3000-* e preview 8081-* gestite.
+  if (hostname.endsWith(".manus.computer")) return ".manus.computer";
 
-  // Need at least 3 parts for a subdomain (e.g., "3000-xxx.manuspre.computer")
-  // For "manuspre.computer", we can't set a parent domain
-  if (parts.length < 3) {
-    return undefined;
-  }
-
-  // Return parent domain with leading dot (e.g., ".manuspre.computer")
-  // This allows cookie to be shared across all subdomains
-  return "." + parts.slice(-2).join(".");
+  // Sui domini pubblici il cookie resta host-only.
+  return undefined;
 }
 
 export function getSessionCookieOptions(
@@ -51,12 +42,13 @@ export function getSessionCookieOptions(
 ): Pick<CookieOptions, "domain" | "httpOnly" | "path" | "sameSite" | "secure"> {
   const hostname = req.hostname;
   const domain = getParentDomain(hostname);
+  const secure = isSecureRequest(req) || process.env.NODE_ENV === "production";
 
   return {
     domain,
     httpOnly: true,
     path: "/",
-    sameSite: "none",
-    secure: isSecureRequest(req),
+    sameSite: secure ? "none" : "lax",
+    secure,
   };
 }

@@ -1,15 +1,11 @@
 // Fallback for using MaterialIcons on Android and web.
 
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { SymbolWeight, SymbolViewProps } from "expo-symbols";
+import { SymbolWeight } from "expo-symbols";
 import { ComponentProps } from "react";
 import { OpaqueColorValue, type StyleProp, type TextStyle } from "react-native";
 
-type IconMapping = Record<
-  SymbolViewProps["name"],
-  ComponentProps<typeof MaterialIcons>["name"]
->;
-type IconSymbolName = keyof typeof MAPPING;
+type MaterialIconName = ComponentProps<typeof MaterialIcons>["name"];
 
 /**
  * Add your SF Symbols to Material Icons mappings here.
@@ -47,11 +43,27 @@ const MAPPING = {
   "creditcard.fill": "credit-card",
   // Social Trading
   "network": "group",
+  // Search
+  "magnifyingglass": "search",
+  // Browser
+  "globe": "public",
+  // Vertical swap
+  "arrow.up.arrow.down": "swap-vert",
+  // Refresh
+  "arrow.clockwise": "refresh",
+  // Hamburger menu
+  "line.3.horizontal": "menu",
+  // Wallet
+  "wallet.pass.fill": "account-balance-wallet",
+  // Key
+  "key.fill": "vpn-key",
   // Fallback icons
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",
   "chevron.right": "chevron-right",
-} as IconMapping;
+} satisfies Record<string, MaterialIconName>;
+
+type IconSymbolName = keyof typeof MAPPING;
 
 /**
  * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.
@@ -70,26 +82,11 @@ export function IconSymbol({
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
-  const mappedName = MAPPING[name];
-  
-  // Fallback to a default icon if the name is not in the mapping
-  if (!mappedName) {
-    console.warn(`IconSymbol: "${name}" not found in MAPPING, using fallback icon`);
-    return (
-      <MaterialIcons
-        color={color}
-        size={size}
-        name="help-outline"
-        style={style}
-      />
-    );
-  }
-  
   return (
     <MaterialIcons
       color={color}
       size={size}
-      name={mappedName}
+      name={MAPPING[name]}
       style={style}
     />
   );

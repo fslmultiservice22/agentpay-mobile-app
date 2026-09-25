@@ -250,7 +250,6 @@ export function useKYC() {
           if (rule.enabled && rule.type === 'transaction' && rule.threshold) {
             if (amount > rule.threshold) {
               // Large transaction - would trigger alert in production
-              console.log(`Large transaction alert: $${amount}`);
             }
           }
         }

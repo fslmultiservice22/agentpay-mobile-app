@@ -3,6 +3,7 @@
 // Downloads return /manus-storage/{key} paths served via 307 redirect.
 
 import { ENV } from "./_core/env";
+import { normalizeAgentPayStorageKey } from "./_core/storage-policy";
 
 function getForgeConfig() {
   const forgeUrl = ENV.forgeApiUrl;
@@ -18,7 +19,7 @@ function getForgeConfig() {
 }
 
 function normalizeKey(relKey: string): string {
-  return relKey.replace(/^\/+/, "");
+  return normalizeAgentPayStorageKey(relKey);
 }
 
 function appendHashSuffix(relKey: string): string {

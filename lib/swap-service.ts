@@ -51,9 +51,6 @@ class SwapService {
    * Initialize swap service
    */
   public async init(): Promise<void> {
-    console.log('[Swap] Service initialized');
-    console.log('[Swap] DEX:', this.config.dex);
-    console.log('[Swap] Chain ID:', this.config.chainId);
   }
 
   /**
@@ -65,11 +62,9 @@ class SwapService {
     fromAmount: number
   ): Promise<SwapQuote | null> {
     try {
-      console.log('[Swap] Getting quote:', fromToken, '→', toToken, fromAmount);
 
       // For demo, generate mock quote
       const quote = this.generateMockQuote(fromToken, toToken, fromAmount);
-      console.log('[Swap] Quote received:', quote);
       return quote;
     } catch (error) {
       console.error('[Swap] Error getting quote:', error);
@@ -82,7 +77,6 @@ class SwapService {
    */
   public async executeSwap(quote: SwapQuote): Promise<SwapTransaction | null> {
     try {
-      console.log('[Swap] Executing swap:', quote);
 
       // Validate quote
       if (quote.priceImpact > this.config.maxPriceImpact) {
@@ -109,7 +103,6 @@ class SwapService {
         tx.status = 'completed';
         tx.hash = this.generateTransactionHash();
         this.notifyListeners(tx);
-        console.log('[Swap] Transaction completed:', tx);
       }, 2000);
 
       return tx;
@@ -147,7 +140,6 @@ class SwapService {
    */
   public updateConfig(config: Partial<SwapConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log('[Swap] Config updated:', this.config);
   }
 
   /**
@@ -282,7 +274,6 @@ class SwapService {
    */
   public clearHistory(): void {
     this.swapHistory = [];
-    console.log('[Swap] History cleared');
   }
 
   /**
@@ -290,7 +281,6 @@ class SwapService {
    */
   public cleanup(): void {
     this.listeners = [];
-    console.log('[Swap] Service cleaned up');
   }
 
   /**

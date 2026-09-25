@@ -86,12 +86,12 @@ class OnboardingService {
     {
       id: 'bank-connection',
       name: 'Connect Your Bank',
-      description: 'Link your Qonto bank account',
+      description: 'Link your bank account',
       steps: [
         {
           id: 'bank-intro',
           title: 'Connect Bank Account',
-          description: 'Link your Qonto account for transfers',
+          description: 'Link your bank account for transfers',
           action: 'Tap "Connect Bank"',
           icon: 'bank',
           order: 1,

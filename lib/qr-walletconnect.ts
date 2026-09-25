@@ -149,7 +149,6 @@ class QRWalletConnectService {
         },
       };
 
-      console.log('✅ Wallet connected via WalletConnect');
       this.emit('session_connected', this.session);
 
       return this.session;
@@ -167,7 +166,6 @@ class QRWalletConnectService {
   async disconnectWallet(): Promise<void> {
     try {
       if (this.session) {
-        console.log('✅ Wallet disconnected');
         this.emit('session_disconnected', { topic: this.session.topic });
         this.session = null;
       }
@@ -209,7 +207,6 @@ class QRWalletConnectService {
 
       // Mock transaction
       const txHash = '0x' + Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
-      console.log('✅ Transaction sent:', txHash);
       this.emit('transaction_sent', { hash: txHash, tx });
 
       return txHash;
@@ -232,7 +229,6 @@ class QRWalletConnectService {
 
       // Mock signature
       const signature = '0x' + Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
-      console.log('✅ Message signed:', signature);
       this.emit('message_signed', { signature, message, address });
 
       return signature;

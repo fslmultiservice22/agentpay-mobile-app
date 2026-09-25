@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { ScreenContainer } from './screen-container';
 import { useColors } from '@/hooks/use-colors';
 import { useAnchorWallet } from '@/hooks/use-anchor-wallet';
@@ -16,7 +16,7 @@ export interface MultiChainTransferProps {
  */
 export function MultiChainTransfer({ onTransfer, onCancel }: MultiChainTransferProps) {
   const colors = useColors();
-  const { currentNetwork, getNetworkInfo } = useAnchorWallet();
+  useAnchorWallet();
   const [selectedNetworkId, setSelectedNetworkId] = useState<string | null>(null);
   const [recipientAddress, setRecipientAddress] = useState('');
   const [amount, setAmount] = useState('');
@@ -224,71 +224,3 @@ export function MultiChainTransfer({ onTransfer, onCancel }: MultiChainTransferP
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  header: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    marginTop: 8,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  input: {
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 14,
-  },
-  networkButton: {
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  networkButtonText: {
-    fontSize: 16,
-  },
-  errorContainer: {
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  errorText: {
-    fontSize: 14,
-  },
-  actions: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    gap: 12,
-  },
-  button: {
-    borderRadius: 8,
-    paddingVertical: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});

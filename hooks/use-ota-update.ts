@@ -119,8 +119,8 @@ export function useOTAUpdate() {
    * Controlla automaticamente gli aggiornamenti al mount
    */
   useEffect(() => {
-    checkForUpdates();
-  }, []);
+    void checkForUpdates();
+  }, [checkForUpdates]);
 
   return {
     ...state,

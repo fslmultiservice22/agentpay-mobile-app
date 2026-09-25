@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ScrollView, View, Text, Pressable, Switch, Modal, FlatList } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useAutoRebalancing } from '@/hooks/use-auto-rebalancing';
 import { useColors } from '@/hooks/use-colors';
-import { cn } from '@/lib/utils';
 import { translations } from '@/lib/i18n/translations';
 import type { Language } from '@/lib/i18n/translations';
 import * as Haptics from 'expo-haptics';
@@ -13,7 +12,7 @@ const DEFAULT_LANGUAGE: Language = 'en';
 export default function RebalancingDashboardScreen() {
   const colors = useColors();
   const t = translations[DEFAULT_LANGUAGE];
-  const { config, events, stats, loading, updateConfig, getRebalancingHistory, getSuccessRate } =
+  const { config, stats, updateConfig, getRebalancingHistory, getSuccessRate } =
     useAutoRebalancing('default_copy_trade');
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'overview' | 'history' | 'settings'>('overview');
@@ -103,13 +102,13 @@ export default function RebalancingDashboardScreen() {
           }}
         >
           <View className="flex-1">
-            <Text className="text-sm text-muted mb-1">Successful</Text>
+            <Text className="text-sm text-muted mb-1">Riusciti</Text>
             <Text className="text-2xl font-bold" style={{ color: '#22C55E' }}>
               {stats.successfulRebalances}
             </Text>
           </View>
           <View className="flex-1 items-end">
-            <Text className="text-sm text-muted mb-1">Failed</Text>
+            <Text className="text-sm text-muted mb-1">Falliti</Text>
             <Text className="text-2xl font-bold" style={{ color: '#EF4444' }}>
               {stats.failedRebalances}
             </Text>
@@ -227,7 +226,7 @@ export default function RebalancingDashboardScreen() {
         ]}
         className="rounded-2xl p-4 border"
       >
-        <Text className="text-white font-semibold text-center">Edit Configuration</Text>
+        <Text className="text-white font-semibold text-center">Modifica Configurazione</Text>
       </Pressable>
 
       <View
@@ -237,7 +236,7 @@ export default function RebalancingDashboardScreen() {
           borderColor: colors.border,
         }}
       >
-        <Text className="text-sm font-semibold text-foreground mb-3">Current Settings</Text>
+        <Text className="text-sm font-semibold text-foreground mb-3">Impostazioni Attuali</Text>
         <View className="gap-3">
           <View>
             <Text className="text-xs text-muted mb-1">{t['rebalancing.threshold']}</Text>
@@ -268,7 +267,7 @@ export default function RebalancingDashboardScreen() {
           <Text className="text-3xl font-bold text-foreground mb-2">
             {t['rebalancing.title']}
           </Text>
-          <Text className="text-sm text-muted">Manage automatic portfolio rebalancing</Text>
+          <Text className="text-sm text-muted">Gestisci il ribilanciamento automatico del portafoglio</Text>
         </View>
 
         {/* Tab Navigation */}
@@ -321,7 +320,7 @@ export default function RebalancingDashboardScreen() {
               backgroundColor: colors.background,
             }}
           >
-            <Text className="text-2xl font-bold text-foreground mb-4">Edit Configuration</Text>
+            <Text className="text-2xl font-bold text-foreground mb-4">Modifica Configurazione</Text>
 
             <View className="gap-3">
               <View>
@@ -423,7 +422,7 @@ export default function RebalancingDashboardScreen() {
                 ]}
                 className="flex-1 py-3 rounded-lg border"
               >
-                <Text className="text-center font-semibold text-foreground">Cancel</Text>
+                <Text className="text-center font-semibold text-foreground">Annulla</Text>
               </Pressable>
               <Pressable
                 onPress={handleSaveConfig}
@@ -435,7 +434,7 @@ export default function RebalancingDashboardScreen() {
                 ]}
                 className="flex-1 py-3 rounded-lg"
               >
-                <Text className="text-center font-semibold text-white">Save</Text>
+                <Text className="text-center font-semibold text-white">Salva</Text>
               </Pressable>
             </View>
           </View>

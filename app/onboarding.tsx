@@ -1,36 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { useState, useRef } from "react";
+import { View, Text, TouchableOpacity, Animated, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { analytics } from '@/lib/analytics';
+import * as Haptics from 'expo-haptics';
+import * as Notifications from 'expo-notifications';
+
 
 const ONBOARDING_STEPS = [
   {
-    title: 'Welcome to AgentPay',
-    description: 'Your all-in-one crypto wallet and trading platform',
-    icon: 'wallet.pass.fill',
+    emoji: '🛡️',
+    title: 'Benvenuto in AgentPay',
+    description: 'Uno spazio personale per esplorare dashboard, impostazioni e controlli tecnici. Le funzioni finanziarie restano disattivate.',
     color: '#0a7ea4',
+    bg: '#E6F4FE',
+    features: ['Dashboard tecnica', 'Controlli locali', 'Storico tecnico'],
   },
   {
-    title: 'Explore Features',
-    description: 'Tap the menu icon to access 12+ advanced features',
-    icon: 'line.3.horizontal',
+    emoji: '📊',
+    title: 'Organizzazione locale',
+    description: 'Configura preferenze e promemoria locali. I dati di esempio o le informazioni finanziarie non vengono presentati come operazioni reali.',
     color: '#22C55E',
+    bg: '#F0FDF4',
+    features: ['Preferenze locali', 'Promemoria tecnici', 'Riepiloghi disponibili'],
   },
   {
-    title: 'Manage Your Wallet',
-    description: 'Connect your wallet and manage multiple chains',
-    icon: 'key.fill',
+    emoji: '⭐',
+    title: 'Accessibilità & preferenze',
+    description: 'Personalizza il percorso iniziale, consulta i controlli tecnici e scegli impostazioni che restano disponibili sul dispositivo.',
     color: '#F59E0B',
+    bg: '#FFFBEB',
+    features: ['Ricerca locale', 'Riduci movimento', 'Preferenze applicazione'],
   },
   {
-    title: 'Trade & Analyze',
-    description: 'Access trading tools, analytics, and copy trading',
-    icon: 'chart.line.uptrend.xyaxis',
+    emoji: '🔐',
+    title: 'Sicurezza & Privacy',
+    description: 'Le credenziali restano separate dal codice. Il monitor tecnico e l’export CSV non includono saldi, indirizzi, carte o segreti.',
     color: '#8B5CF6',
+    bg: '#F5F3FF',
+    features: ['Monitor tecnico', 'Export locale', 'Provider disattivati'],
   },
 ];
 
@@ -40,199 +49,215 @@ export default function OnboardingScreen() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Track onboarding started
-  useEffect(() => {
-    analytics.trackOnboardingStarted();
-  }, []);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+
+  const animateTransition = (nextStep: number) => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: -30, duration: 150, useNativeDriver: true }),
+    ]).start(() => {
+      setCurrentStep(nextStep);
+      slideAnim.setValue(30);
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+      ]).start();
+    });
+  };
 
   const handleNext = () => {
+    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (currentStep < ONBOARDING_STEPS.length - 1) {
-      setCurrentStep(currentStep + 1);
+      animateTransition(currentStep + 1);
     } else {
       handleComplete();
     }
   };
 
+  const handleBack = () => {
+    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (currentStep > 0) {
+      animateTransition(currentStep - 1);
+    }
+  };
+
   const handleSkip = () => {
-    analytics.trackOnboardingSkipped();
+    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     handleComplete();
   };
 
   const handleComplete = async () => {
     setIsLoading(true);
     try {
-      // Track onboarding completed
-      analytics.trackOnboardingCompleted();
-      // Mark onboarding as completed
       await AsyncStorage.setItem('onboarding_completed', 'true');
-      // Navigate to home
+      if (Platform.OS !== 'web') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        if (status === 'granted') {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: '👋 Benvenuto in AgentPay!',
+              body: 'Il monitor tecnico è pronto. Le funzioni finanziarie restano disattivate.',
+              sound: true,
+            },
+            trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 2 },
+          });
+        }
+      }
       router.replace('/(tabs)');
-    } catch (error) {
-      console.error('Error completing onboarding:', error);
+    } catch {
+      router.replace('/(tabs)');
     } finally {
       setIsLoading(false);
     }
   };
 
   const step = ONBOARDING_STEPS[currentStep];
-  const progress = ((currentStep + 1) / ONBOARDING_STEPS.length) * 100;
-
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    content: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingHorizontal: 24,
-      paddingVertical: 40,
-    },
-    progressBar: {
-      height: 4,
-      backgroundColor: colors.border,
-      width: '100%',
-    },
-    progressFill: {
-      height: 4,
-      backgroundColor: colors.primary,
-      width: `${progress}%`,
-    },
-    iconContainer: {
-      width: 120,
-      height: 120,
-      borderRadius: 60,
-      backgroundColor: `${step.color}20`,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: 40,
-    },
-    title: {
-      fontSize: 28,
-      fontWeight: 'bold',
-      color: colors.foreground,
-      textAlign: 'center',
-      marginBottom: 16,
-    },
-    description: {
-      fontSize: 16,
-      color: colors.muted,
-      textAlign: 'center',
-      marginBottom: 40,
-      lineHeight: 24,
-    },
-    buttonContainer: {
-      flexDirection: 'row',
-      gap: 12,
-      paddingHorizontal: 24,
-      paddingBottom: 40,
-    },
-    skipButton: {
-      flex: 1,
-      paddingVertical: 14,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    skipButtonText: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: colors.foreground,
-    },
-    nextButton: {
-      flex: 1,
-      paddingVertical: 14,
-      borderRadius: 12,
-      backgroundColor: colors.primary,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    nextButtonText: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: colors.background,
-    },
-    dots: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      gap: 8,
-      marginBottom: 40,
-    },
-    dot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: colors.border,
-    },
-    activeDot: {
-      width: 24,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: colors.primary,
-    },
-  });
+  const isLastStep = currentStep === ONBOARDING_STEPS.length - 1;
+  const isFirstStep = currentStep === 0;
 
   return (
-    <ScreenContainer className="flex-1">
-      {/* Progress Bar */}
-      <View style={styles.progressBar}>
-        <View style={styles.progressFill} />
+    <ScreenContainer containerClassName="flex-1" style={{ backgroundColor: step.bg }}>
+      {/* Skip button */}
+      {!isLastStep && (
+        <TouchableOpacity
+          onPress={handleSkip}
+          style={{ position: 'absolute', top: 16, right: 24, zIndex: 10, paddingVertical: 8, paddingHorizontal: 16 }}
+        >
+          <Text style={{ color: colors.muted, fontSize: 15, fontWeight: '600' }}>Salta</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Main content */}
+      <Animated.View style={{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 32,
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }}>
+        {/* Emoji icon */}
+        <View style={{
+          width: 130,
+          height: 130,
+          borderRadius: 65,
+          backgroundColor: step.color + '20',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 32,
+          borderWidth: 2,
+          borderColor: step.color + '30',
+        }}>
+          <Text style={{ fontSize: 60 }}>{step.emoji}</Text>
+        </View>
+
+        {/* Step counter */}
+        <Text style={{ fontSize: 12, fontWeight: '700', color: step.color, letterSpacing: 2, marginBottom: 14, textTransform: 'uppercase' }}>
+          {currentStep + 1} / {ONBOARDING_STEPS.length}
+        </Text>
+
+        {/* Title */}
+        <Text style={{
+          fontSize: 26,
+          fontWeight: '800',
+          color: colors.foreground,
+          textAlign: 'center',
+          marginBottom: 14,
+          lineHeight: 34,
+        }}>{step.title}</Text>
+
+        {/* Description */}
+        <Text style={{
+          fontSize: 15,
+          color: colors.muted,
+          textAlign: 'center',
+          lineHeight: 24,
+          maxWidth: 300,
+          marginBottom: 28,
+        }}>
+          {step.description}
+        </Text>
+
+        {currentStep === 0 && (
+          <View
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+            style={{ width: '100%', maxWidth: 320, flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 12, marginBottom: 20, borderRadius: 14, backgroundColor: '#FFF7ED', borderWidth: 1, borderColor: '#FDBA74' }}
+          >
+            <Text accessibilityLabel="Attenzione" style={{ fontSize: 18 }}>⚠️</Text>
+            <Text style={{ flex: 1, color: '#9A3412', fontSize: 12, lineHeight: 18, fontWeight: '600' }}>
+              Beta tecnica: carte, credito, pagamenti, saldi e trasferimenti sono inattivi. Non inserire dati bancari.
+            </Text>
+          </View>
+        )}
+
+        {/* Feature pills */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 320 }}>
+          {step.features.map((feat, i) => (
+            <View key={i} style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 20,
+              backgroundColor: step.color + '18',
+              borderWidth: 1,
+              borderColor: step.color + '35',
+            }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: step.color }}>✓ {feat}</Text>
+            </View>
+          ))}
+        </View>
+      </Animated.View>
+
+      {/* Dots indicator */}
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 28 }}>
+        {ONBOARDING_STEPS.map((_, index) => (
+          <TouchableOpacity key={index} onPress={() => { if (index !== currentStep) animateTransition(index); }}>
+            <View style={{
+              height: 8,
+              width: index === currentStep ? 28 : 8,
+              borderRadius: 4,
+              backgroundColor: index === currentStep ? step.color : colors.border,
+            }} />
+          </TouchableOpacity>
+        ))}
       </View>
 
-      {/* Content */}
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        scrollEnabled={false}
-      >
-        <View style={styles.content}>
-          {/* Icon */}
-          <View style={styles.iconContainer}>
-            <IconSymbol
-              size={60}
-              name={step.icon as any}
-              color={step.color}
-            />
-          </View>
-
-          {/* Title */}
-          <Text style={styles.title}>{step.title}</Text>
-
-          {/* Description */}
-          <Text style={styles.description}>{step.description}</Text>
-
-          {/* Dots */}
-          <View style={styles.dots}>
-            {ONBOARDING_STEPS.map((_, index) => (
-              <View
-                key={index}
-                style={index === currentStep ? styles.activeDot : styles.dot}
-              />
-            ))}
-          </View>
-        </View>
-      </ScrollView>
-
       {/* Buttons */}
-      <View style={styles.buttonContainer}>
+      <View style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 24, paddingBottom: 32 }}>
+        {!isFirstStep ? (
+          <TouchableOpacity
+            onPress={handleBack}
+            style={{
+              flex: 1,
+              paddingVertical: 16,
+              borderRadius: 16,
+              borderWidth: 1.5,
+              borderColor: step.color + '60',
+              alignItems: 'center',
+              backgroundColor: 'transparent',
+            }}
+          >
+            <Text style={{ fontSize: 16, fontWeight: '700', color: step.color }}>← Indietro</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={{ flex: 1 }} />
+        )}
+
         <TouchableOpacity
-          style={styles.skipButton}
-          onPress={handleSkip}
-          disabled={isLoading}
-        >
-          <Text style={styles.skipButtonText}>
-            {currentStep === ONBOARDING_STEPS.length - 1 ? 'Back' : 'Skip'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.nextButton}
           onPress={handleNext}
           disabled={isLoading}
+          style={{
+            flex: 2,
+            paddingVertical: 16,
+            borderRadius: 16,
+            backgroundColor: step.color,
+            alignItems: 'center',
+            opacity: isLoading ? 0.7 : 1,
+          }}
         >
-          <Text style={styles.nextButtonText}>
-            {currentStep === ONBOARDING_STEPS.length - 1 ? 'Get Started' : 'Next'}
+          <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>
+            {isLoading ? 'Caricamento...' : isLastStep ? 'Inizia ora →' : 'Avanti →'}
           </Text>
         </TouchableOpacity>
       </View>

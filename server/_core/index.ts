@@ -4,9 +4,18 @@ import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
-import { registerStorageProxy } from "./storageProxy";
+import { registerEnableBankingRoutes } from "../routes/enable-banking";
+import { registerCodegoRoutes } from "../routes/codego";
+import { createTechnicalMonitor } from "../operational-monitor";
+import { registerOperationalMonitorRoutes } from "../routes/operational-monitor";
+import { registerReadOnlyProviderRoutes } from "../routes/read-only-providers";
+import { registerPublicCallbackMonitorRoute } from "../routes/public-callback-monitor";
+import { registerRootRoute } from "../routes/root";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
+import { createAgentPayCorsMiddleware } from "../cors-policy";
+import { API_BODY_LIMIT, apiErrorHandler, applyApiSafetyHeaders } from "./api-safety";
+import { createApiRateLimitMiddleware } from "./rate-limit";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -31,35 +40,27 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // Enable CORS for all routes - reflect the request origin to support credentials
-  app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (origin) {
-      res.header("Access-Control-Allow-Origin", origin);
-    }
-    res.header(
-      "Access-Control-Allow-Methods",
-      "GET, POST, PUT, DELETE, OPTIONS",
-    );
-    res.header(
-      "Access-Control-Allow-Headers",
-      "Origin, X-Requested-With, Content-Type, Accept, Authorization",
-    );
-    res.header("Access-Control-Allow-Credentials", "true");
-
-    // Handle preflight requests
-    if (req.method === "OPTIONS") {
-      res.sendStatus(200);
-      return;
-    }
+  app.set("trust proxy", 1);
+  app.disable("x-powered-by");
+  app.use((_req, res, next) => {
+    applyApiSafetyHeaders(res);
     next();
   });
+  app.use(createAgentPayCorsMiddleware());
+  app.use(createApiRateLimitMiddleware());
 
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  app.use(express.json({ limit: API_BODY_LIMIT }));
+  app.use(express.urlencoded({ limit: API_BODY_LIMIT, extended: true }));
 
-  registerStorageProxy(app);
+  registerRootRoute(app);
   registerOAuthRoutes(app);
+  registerEnableBankingRoutes(app);
+  registerCodegoRoutes(app);
+  const technicalMonitor = createTechnicalMonitor();
+  technicalMonitor.run();
+  registerOperationalMonitorRoutes(app, technicalMonitor);
+  registerReadOnlyProviderRoutes(app);
+  registerPublicCallbackMonitorRoute(app);
 
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, timestamp: Date.now() });
@@ -72,6 +73,8 @@ async function startServer() {
       createContext,
     }),
   );
+
+  app.use(apiErrorHandler);
 
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);

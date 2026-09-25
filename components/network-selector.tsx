@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList } from 'react-native';
 import { ScreenContainer } from './screen-container';
 import { useColors } from '@/hooks/use-colors';
 import { useAnchorWallet, type AnchorNetwork } from '@/hooks/use-anchor-wallet';
@@ -147,92 +147,3 @@ export function NetworkSelector({ onNetworkSelect, onCancel }: NetworkSelectorPr
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  toggleButton: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  toggleText: {
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  networkItem: {
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-  },
-  networkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  networkInfo: {
-    flex: 1,
-  },
-  networkName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  networkSymbol: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  networkNode: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  testnetBadge: {
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  testnetText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'white',
-  },
-  actions: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-  },
-  button: {
-    borderRadius: 8,
-    paddingVertical: 12,
-    borderWidth: 1,
-  },
-  buttonText: {
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-});

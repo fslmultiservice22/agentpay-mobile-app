@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Modal,
   ScrollView,
-  Platform,
 } from 'react-native';
 import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from './ui/icon-symbol';

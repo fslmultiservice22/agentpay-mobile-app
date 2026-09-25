@@ -9,7 +9,6 @@ import {
   FlatList,
   ListRenderItem,
   ActivityIndicator,
-  ScrollView,
 } from 'react-native';
 import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from './ui/icon-symbol';

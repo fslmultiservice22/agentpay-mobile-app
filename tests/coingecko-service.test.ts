@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { coinGeckoService } from '../lib/coingecko-service';
 
 // Disable network requests for tests
@@ -7,6 +7,10 @@ vi.stubGlobal('fetch', vi.fn());
 describe('CoinGecko Service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterAll(() => {
+    vi.unstubAllGlobals();
   });
 
   describe('getTokenPrice', () => {

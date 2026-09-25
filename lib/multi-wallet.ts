@@ -33,7 +33,6 @@ class MultiWalletService {
    * Initialize multi-wallet service
    */
   public async init(): Promise<void> {
-    console.log('[MultiWallet] Service initialized');
   }
 
   /**
@@ -64,7 +63,6 @@ class MultiWalletService {
     }
 
     this.notifyListeners();
-    console.log('[MultiWallet] Wallet added:', name, address);
     return wallet;
   }
 
@@ -110,7 +108,6 @@ class MultiWalletService {
     this.activeWalletId = walletId;
 
     this.notifyListeners();
-    console.log('[MultiWallet] Switched to wallet:', wallet.name);
     return wallet;
   }
 
@@ -126,7 +123,6 @@ class MultiWalletService {
     wallet.lastUpdatedAt = Date.now();
 
     this.notifyListeners();
-    console.log('[MultiWallet] Wallet balance updated:', walletId, balance);
     return wallet;
   }
 
@@ -141,7 +137,6 @@ class MultiWalletService {
     wallet.lastUpdatedAt = Date.now();
 
     this.notifyListeners();
-    console.log('[MultiWallet] Wallet assets updated:', walletId);
     return wallet;
   }
 
@@ -167,7 +162,6 @@ class MultiWalletService {
     }
 
     this.notifyListeners();
-    console.log('[MultiWallet] Wallet removed:', walletId);
     return true;
   }
 
@@ -181,7 +175,6 @@ class MultiWalletService {
     wallet.name = newName;
     this.notifyListeners();
 
-    console.log('[MultiWallet] Wallet renamed:', walletId, newName);
     return wallet;
   }
 
@@ -309,7 +302,6 @@ class MultiWalletService {
         imported.push(wallet);
       });
 
-      console.log('[MultiWallet] Imported', imported.length, 'wallets');
       return imported;
     } catch (error) {
       console.error('[MultiWallet] Error importing wallets:', error);
@@ -325,7 +317,6 @@ class MultiWalletService {
     this.activeWalletId = null;
     this.notifyListeners();
 
-    console.log('[MultiWallet] All wallets cleared');
   }
 
   /**
@@ -333,7 +324,6 @@ class MultiWalletService {
    */
   public cleanup(): void {
     this.listeners = [];
-    console.log('[MultiWallet] Service cleaned up');
   }
 }
 

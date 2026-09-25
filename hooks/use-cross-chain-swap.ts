@@ -46,7 +46,7 @@ const STARGATE_API = 'https://api.stargate.finance';
  * Handles quote generation, swap execution, and transaction tracking
  */
 export function useCrossChainSwap() {
-  const { address } = useWallet();
+  const _w = useWallet(); const address = _w.activeWallet?.address;
   const { selectedBlockchain } = useBlockchain();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

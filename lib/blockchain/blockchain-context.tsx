@@ -14,9 +14,8 @@ const BlockchainContext = createContext<BlockchainContextType | undefined>(undef
 
 export function BlockchainProvider({ children }: { children: React.ReactNode }) {
   const [selectedBlockchain, setSelectedBlockchainState] = useState<BlockchainId>('ethereum');
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Load saved blockchain from AsyncStorage on mount
+  // Load saved blockchain from AsyncStorage on mount (non-blocking)
   useEffect(() => {
     const loadBlockchain = async () => {
       try {
@@ -26,8 +25,6 @@ export function BlockchainProvider({ children }: { children: React.ReactNode }) 
         }
       } catch (error) {
         console.error('Error loading blockchain preference:', error);
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -61,10 +58,6 @@ export function BlockchainProvider({ children }: { children: React.ReactNode }) 
     availableBlockchains: AVAILABLE_BLOCKCHAINS,
     switchNetwork,
   };
-
-  if (isLoading) {
-    return null; // or a loading screen
-  }
 
   return (
     <BlockchainContext.Provider value={value}>

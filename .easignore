@@ -1,0 +1,82 @@
+# Dipendenze
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+/android
+/ios
+
+# Metro e cache
+.metro-health-check*
+.cache/
+
+# Debug e log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+logs
+*.log
+
+# File locali e sensibili
+.env*
+
+# TypeScript
+*.tsbuildinfo
+
+# Template e cartelle generate
+app-example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivi e binari
+*.apk
+*.aab
+*.tgz
+*.tar.gz
+
+# Stato Manus/WebDev locale
+.manus/
+.manus-logs/
+.webdev/
+.project-config.json
+
+# Metadati repository non richiesti dalla build no-VCS
+.git/
+.github/
+
+# Evidenze, documentazione e output storici non necessari al bundle mobile
+artifacts/
+docs/
+reports/
+presentation_phase_a/
+dist-expo*/
+site-mobile-*.png
+archive_inventory.txt
+expo-build-audit.md
+phase_a_presentation_content.md
+restoration-analysis.md
+site-audit.md
+todo.md

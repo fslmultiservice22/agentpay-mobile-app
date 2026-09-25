@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList } from 'react-native';
 import { ScreenContainer } from './screen-container';
 import { useColors } from '@/hooks/use-colors';
 import { useTransactionCache } from '@/hooks/use-transaction-cache';
@@ -19,7 +19,7 @@ export function TransactionHistoryUI({
   onTransactionPress,
 }: TransactionHistoryUIProps) {
   const colors = useColors();
-  const { transactions, stats, getTransactions, exportTransactions } = useTransactionCache();
+  const { transactions, stats, exportTransactions } = useTransactionCache();
   const [filter, setFilter] = useState<'all' | 'send' | 'receive' | 'swap'>('all');
   const [showStats, setShowStats] = useState(false);
 
@@ -242,130 +242,3 @@ export function TransactionHistoryUI({
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  statsCard: {
-    borderRadius: 8,
-    padding: 12,
-    marginHorizontal: 16,
-    marginVertical: 12,
-    borderWidth: 1,
-  },
-  statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  statLabel: {
-    fontSize: 12,
-  },
-  statValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  filterTabs: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  filterButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  filterText: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'capitalize',
-  },
-  transactionItem: {
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-  },
-  transactionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  transactionLeft: {
-    flex: 1,
-  },
-  transactionType: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  transactionStatus: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  transactionAddress: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  transactionRight: {
-    alignItems: 'flex-end',
-  },
-  transactionAmount: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  transactionGas: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  actions: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    gap: 8,
-  },
-  actionButton: {
-    borderRadius: 8,
-    paddingVertical: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  actionButtonText: {
-    fontWeight: '600',
-    fontSize: 14,
-  },
-});

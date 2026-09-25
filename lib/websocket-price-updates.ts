@@ -34,7 +34,6 @@ class PriceWebSocketService {
         this.ws = new WebSocket(this.config.url);
 
         this.ws.onopen = () => {
-          console.log('✅ WebSocket connected');
           this.reconnectCount = 0;
           resolve();
         };
@@ -54,7 +53,6 @@ class PriceWebSocketService {
         };
 
         this.ws.onclose = () => {
-          console.log('⚠️ WebSocket disconnected');
           if (this.shouldReconnect) {
             this.attemptReconnect();
           }
@@ -69,7 +67,6 @@ class PriceWebSocketService {
     if (this.reconnectCount < this.config.reconnectAttempts) {
       this.reconnectCount++;
       const delay = this.config.reconnectDelay * Math.pow(2, this.reconnectCount - 1);
-      console.log(`🔄 Reconnecting in ${delay}ms... (attempt ${this.reconnectCount})`);
       
       setTimeout(() => {
         this.connect().catch((error) => {

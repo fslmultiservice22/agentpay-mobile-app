@@ -48,7 +48,6 @@ export class OTAUpdateService {
       if (lastCheck) {
         const lastCheckTime = parseInt(lastCheck, 10);
         if (now - lastCheckTime < CHECK_INTERVAL_MS) {
-          console.log('OTA: Skipping check, already checked recently');
           return {
             updateAvailable: false,
             currentVersion: this.currentVersion,
@@ -96,7 +95,6 @@ export class OTAUpdateService {
    */
   async downloadUpdate(versionInfo: AppVersion): Promise<boolean> {
     try {
-      console.log(`OTA: Downloading update to version ${versionInfo.version}`);
 
       // Salva le informazioni di aggiornamento nel storage
       await AsyncStorage.setItem(OTA_CONFIG_KEY, JSON.stringify(versionInfo));
@@ -122,7 +120,6 @@ export class OTAUpdateService {
 
       const versionInfo: AppVersion = JSON.parse(updateData);
 
-      console.log(`OTA: Installing update to version ${versionInfo.version}`);
 
       // In una app reale, qui installeremmo l'aggiornamento
       // Per ora, simuliamo l'installazione

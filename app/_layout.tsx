@@ -1,6 +1,6 @@
 import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack, useRouter } from "expo-router";
+import { Stack, usePathname, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -22,7 +22,13 @@ import {
   subscribeSafeAreaInsets,
 } from "@/lib/_core/manus-runtime";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BlockchainProvider } from "@/lib/blockchain/blockchain-context";
+import * as Notifications from 'expo-notifications';
+import { setupNotificationHandler, getNotificationTargetScreen } from '@/lib/notifications/recurring-reminders';
+import { shouldRequireAuth, getBiometricEnabledStatus } from '@/lib/biometric-auth';
+import { OfflineBanner } from '@/components/offline-banner';
+import { ErrorBoundary } from '@/components/error-boundary';
+import { FinancialRouteGuard } from "@/components/financial-route-guard";
+import { shouldUseGlobalFinancialRouteGuard } from "@/lib/financial-route-policy";
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -40,11 +46,35 @@ export default function RootLayout() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
 
   // Initialize Manus runtime for cookie injection from parent container
   useEffect(() => {
     initManusRuntime();
+    // Setup notification handler (must be called before any notification is shown)
+    if (Platform.OS !== 'web') {
+      setupNotificationHandler();
+    }
   }, []);
+
+  // Handle notification tap → navigate to target screen
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    // Handle notification tapped while app was closed/background
+    const lastResponse = Notifications.getLastNotificationResponse();
+    if (lastResponse?.notification) {
+      const screen = getNotificationTargetScreen(lastResponse.notification);
+      if (screen) {
+        setTimeout(() => router.push(screen as any), 500);
+      }
+    }
+    // Handle notification tapped while app is open
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const screen = getNotificationTargetScreen(response.notification);
+      if (screen) router.push(screen as any);
+    });
+    return () => sub.remove();
+  }, [router]);
 
   // Check if onboarding has been completed
   useEffect(() => {
@@ -64,32 +94,45 @@ export default function RootLayout() {
     checkOnboarding();
   }, []);
 
+  // Redirect to onboarding or biometric lock
+  useEffect(() => {
+    if (isCheckingOnboarding) return;
+    if (showOnboarding) {
+      router.replace('/onboarding');
+      return;
+    }
+    // Check biometric lock on second+ launch
+    if (Platform.OS !== 'web') {
+      shouldRequireAuth().then(async (required) => {
+        if (required) {
+          const status = await getBiometricEnabledStatus();
+          if (status.available && status.enrolled) {
+            router.replace('/biometric-lock');
+          }
+        }
+      }).catch(() => {});
+    }
+  }, [isCheckingOnboarding, router, showOnboarding]);
+
   // Handle deep links from MetaMask and app startup
   useEffect(() => {
     const handleDeepLink = ({ url }: { url: string }) => {
-      console.log('=== DEEP LINK DEBUG ===');
-      console.log('Raw URL:', url);
-      console.log('URL length:', url?.length);
-      console.log('URL is empty:', !url || url === '' || url === 'agentpay://' || url === 'agentpay:///');
       
       try {
-        // If URL is empty or just the scheme, navigate to home
+        // If URL is empty or just the scheme, do nothing — Expo Router handles initial navigation
         if (!url || url === '' || url === 'agentpay://' || url === 'agentpay:///' || url.trim() === '') {
-          console.log('Empty URL detected, navigating to home');
-          router.push('/(tabs)');
           return;
         }
         
         const route = url.replace(/.*?:\/\//g, '');
-        console.log('Parsed route:', route);
         
         // Handle MetaMask and WalletConnect responses
         if (route.includes('wallet-connect') || route.includes('wc')) {
-          console.log('WalletConnect detected, navigating to trading');
           router.push('/(tabs)/trading');
           return;
         }
-        
+
+
         // Handle agentpay scheme with specific routes
         if (url.includes('agentpay://')) {
           if (route.includes('trading')) {
@@ -106,32 +149,28 @@ export default function RootLayout() {
           }
         }
         
-        // Fallback: always go to home if route is not recognized
-        console.log('Route not recognized, falling back to home');
-        router.push('/(tabs)');
+        // Fallback: route not recognized, do nothing
       } catch (error) {
         console.error('Error handling deep link:', error);
-        // Safety fallback
-        router.push('/(tabs)');
+        // Do NOT navigate on error — let Expo Router handle it
       }
-      console.log('====================');
     };
 
     const subscription = Linking.addEventListener('url', handleDeepLink);
 
     // Check for initial URL when app starts
+    // NOTE: Do NOT call router.push when there is no URL — Expo Router handles
+    // initial navigation automatically via unstable_settings.anchor.
+    // Calling router.push here conflicts with onboarding/biometric redirects.
     Linking.getInitialURL().then((url) => {
-      console.log('Initial URL on app start:', url);
-      if (url != null) {
+      // Only handle real deep links (not empty scheme, not null)
+      if (url != null && url !== '' && url !== 'agentpay://' && url !== 'agentpay:///' && url.trim() !== '') {
         handleDeepLink({ url });
-      } else {
-        // No initial URL, navigate to home
-        console.log('No initial URL, navigating to home');
-        router.push('/(tabs)');
       }
+      // If null or empty scheme: do nothing — let Expo Router handle initial navigation
     }).catch((error) => {
       console.error('Error getting initial URL:', error);
-      router.push('/(tabs)');
+      // Do NOT navigate on error
     });
 
     return () => {
@@ -184,23 +223,138 @@ export default function RootLayout() {
 
   const content = (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <BlockchainProvider>
-        <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <trpc.Provider client={trpcClient} queryClient={queryClient}>
           <QueryClientProvider client={queryClient}>
             {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
             {/* If a screen needs the native header, explicitly enable it and set a human title via Stack.Screen options. */}
             {/* in order for ios apps tab switching to work properly, use presentation: "fullScreenModal" for login page, whenever you decide to use presentation: "modal*/}
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="monitor-log" options={{ animation: "slide_from_right" }} />
               <Stack.Screen name="oauth/callback" />
+              <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
+              <Stack.Screen name="biometric-lock" options={{ animation: 'fade', gestureEnabled: false }} />
+              <Stack.Screen name="add-bank-account" options={{ animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="bank-accounts-manage" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="security-settings" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="user-profile" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="notification-settings" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="virtual-account" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="transfer-history" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="transfer-detail" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="credit-transfer" options={{ animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="global-search" options={{ animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="monthly-summary" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="spending-analysis" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="spending-goal" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="category-budget" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="budget-history" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="month-comparison" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="frequent-contacts" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="recurring-transfer" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="currency-converter" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="notification-history" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="advanced-settings" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="pin-setup" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="yearly-stats" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="favorites" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="widget-order" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="incoming-transfers" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="frequent-senders" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="sender-detail" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="favorite-senders" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="reminders" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="income-stats" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="export-data" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="balance-history" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="tax-report" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="budget-vs-actual" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="recurring-calendar" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="balance-sweep" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="annual-summary" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="savings-goal" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="savings-goals" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="financial-planner" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="social-login" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="social-settings" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="social-feed" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="social-profile" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="spending-insights" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="category-detail" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="budget-planner" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="expense-report" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="financial-calendar" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="financial-report" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="recurring-payments" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="investment-tracker" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="expense-split" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="loan-simulator" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="fuel-tracker" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="warranty-tracker" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="price-compare" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="net-worth" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="tip-calculator" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="history" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="kyc-process" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="qr-scanner" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="send" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="settings" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="trader-chat" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="trader-profile" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="wallet-export" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="wallet-import" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="shopping-list" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="debt-tracker" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="savings-challenge" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="carbon-footprint" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="subscription-budget" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="financial-goals" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="goal-contributions-history" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="expense-categories-editor" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="subscription-history" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="savings-plan" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="expense-trends" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="cash-flow-forecast" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="net-worth-history" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="bill-splitter" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="loyalty-points" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="financial-health-score" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="tax-estimator" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="pdf-reports" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="spending-forecast" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="recurring-optimizer" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="subscription-tracker" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="eosio-transfer" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="price-alerts" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="transaction-history" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="payment-queue" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="monthly-comparison" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="crypto-tutorial" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="wallet-tx-history" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="credit-card" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="wallet-detail" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="wallet-receive" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="emergency-fund" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="ob-connect" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="weekly-digest" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="crypto-collateral" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="card-subscriptions" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="add-to-wallet" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="spending-report" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="wlfi-dashboard" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="wlfi-transfer" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="wlfi-policy" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="wlfi-markets" options={{ headerShown: false, animation: 'slide_from_right' }} />
+              <Stack.Screen name="wlfi-swap" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
             </Stack>
+            <OfflineBanner />
             <StatusBar style="auto" />
           </QueryClientProvider>
-        </trpc.Provider>
-      </BlockchainProvider>
+      </trpc.Provider>
     </GestureHandlerRootView>
   );
 
+  const guardedContent = shouldUseGlobalFinancialRouteGuard(pathname) ? <FinancialRouteGuard pathname={pathname} /> : content;
   const shouldOverrideSafeArea = Platform.OS === "web";
 
   if (shouldOverrideSafeArea) {
@@ -209,7 +363,7 @@ export default function RootLayout() {
         <SafeAreaProvider initialMetrics={providerInitialMetrics}>
           <SafeAreaFrameContext.Provider value={frame}>
             <SafeAreaInsetsContext.Provider value={insets}>
-              {content}
+              {guardedContent}
             </SafeAreaInsetsContext.Provider>
           </SafeAreaFrameContext.Provider>
         </SafeAreaProvider>
@@ -218,10 +372,12 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider>
-      <SafeAreaProvider initialMetrics={providerInitialMetrics}>
-        {content}
-      </SafeAreaProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <SafeAreaProvider initialMetrics={providerInitialMetrics}>
+          {guardedContent}
+        </SafeAreaProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

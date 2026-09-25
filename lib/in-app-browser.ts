@@ -54,7 +54,6 @@ class InAppBrowserService {
       if (Platform.OS !== 'web') {
         await this.warmUpBrowser();
       }
-      console.log('[Browser] Service initialized');
     } catch (error) {
       console.error('[Browser] Initialization error:', error);
     }
@@ -69,7 +68,6 @@ class InAppBrowserService {
     try {
       this.isWarmingUp = true;
       await WebBrowser.warmUpAsync();
-      console.log('[Browser] Browser warmed up');
     } catch (error) {
       console.error('[Browser] Error warming up browser:', error);
     } finally {
@@ -84,7 +82,6 @@ class InAppBrowserService {
     try {
       const type = browserType || this.config.preferredBrowserType;
 
-      console.log('[Browser] Opening URL:', url, 'Type:', type);
 
       if (type === BrowserType.IN_APP && Platform.OS !== 'web') {
         return await this.openInAppBrowser(url);
@@ -115,8 +112,7 @@ class InAppBrowserService {
         showTitle: this.config.showTitle,
         toolbarColor: this.config.toolbarColor,
         secondaryToolbarColor: this.config.secondaryToolbarColor,
-        readerMode: this.config.enableReadingList,
-        dismissButtonStyle: this.config.dismissButtonStyle,
+        dismissButtonStyle: this.config.dismissButtonStyle as any,
       });
 
       this.openedUrls.push(url);
@@ -147,8 +143,6 @@ class InAppBrowserService {
       const result = await WebBrowser.openBrowserAsync(url, {
         toolbarColor: this.config.toolbarColor,
         secondaryToolbarColor: this.config.secondaryToolbarColor,
-        controlsColor: this.config.navigationBarColor,
-        showTitle: this.config.showTitle,
       });
 
       this.openedUrls.push(url);
@@ -201,7 +195,6 @@ class InAppBrowserService {
    * Open DeFi dApp
    */
   public async openDeFiApp(dappName: string, dappUrl: string): Promise<BrowserResult> {
-    console.log('[Browser] Opening DeFi dApp:', dappName);
     return this.openURL(dappUrl, BrowserType.IN_APP);
   }
 
@@ -210,7 +203,6 @@ class InAppBrowserService {
    */
   public async openDEX(dexName: string, dexUrl: string, chainId?: number): Promise<BrowserResult> {
     const url = chainId ? `${dexUrl}?chainId=${chainId}` : dexUrl;
-    console.log('[Browser] Opening DEX:', dexName);
     return this.openURL(url, BrowserType.IN_APP);
   }
 
@@ -226,7 +218,6 @@ class InAppBrowserService {
    */
   public updateConfig(config: Partial<BrowserConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log('[Browser] Config updated:', this.config);
   }
 
   /**
@@ -241,7 +232,6 @@ class InAppBrowserService {
    */
   public clearHistory(): void {
     this.openedUrls = [];
-    console.log('[Browser] History cleared');
   }
 
   /**
@@ -273,7 +263,6 @@ class InAppBrowserService {
     try {
       if (Platform.OS !== 'web') {
         await WebBrowser.dismissBrowser();
-        console.log('[Browser] Browser closed');
       }
     } catch (error) {
       console.error('[Browser] Error closing browser:', error);
@@ -287,7 +276,6 @@ class InAppBrowserService {
     try {
       await this.closeBrowser();
       this.clearHistory();
-      console.log('[Browser] Service cleaned up');
     } catch (error) {
       console.error('[Browser] Error during cleanup:', error);
     }

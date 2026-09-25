@@ -162,7 +162,6 @@ class FirebaseCrashlyticsService {
       });
     }
 
-    console.log(`[Crashlytics] ${message}`, data);
   }
 
   /**
@@ -290,7 +289,6 @@ class FirebaseCrashlyticsService {
   async sendCrashReport(crash: CrashReport): Promise<{ success: boolean; message: string }> {
     try {
       // In production, this would send to Firebase Crashlytics
-      console.log('Sending crash report to Firebase Crashlytics:', crash);
 
       // Simulate network request
       return new Promise(resolve => {

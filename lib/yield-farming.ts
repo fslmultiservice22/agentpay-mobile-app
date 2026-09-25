@@ -43,7 +43,7 @@ class YieldFarmingService {
   };
 
   private listeners: ((position: YieldPosition) => void)[] = [];
-  private compoundInterval: NodeJS.Timeout | number | null = null;
+  private compoundInterval: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Initialize yield farming service
@@ -51,7 +51,6 @@ class YieldFarmingService {
   public async init(): Promise<void> {
     this.initializePools();
     this.startAutoCompound();
-    console.log('[YieldFarming] Service initialized');
   }
 
   /**
@@ -153,7 +152,6 @@ class YieldFarmingService {
       this.pools.set(pool.id, pool);
     });
 
-    console.log('[YieldFarming] Pools initialized:', pools.length);
   }
 
   /**
@@ -207,7 +205,6 @@ class YieldFarmingService {
       this.positions.set(position.id, position);
       this.notifyListeners(position);
 
-      console.log('[YieldFarming] Position created:', position);
       return position;
     } catch (error) {
       console.error('[YieldFarming] Error depositing:', error);
@@ -230,7 +227,6 @@ class YieldFarmingService {
       position.status = 'withdrawn';
       this.notifyListeners(position);
 
-      console.log('[YieldFarming] Position withdrawn:', positionId);
       return position;
     } catch (error) {
       console.error('[YieldFarming] Error withdrawing:', error);
@@ -291,7 +287,6 @@ class YieldFarmingService {
 
       this.notifyListeners(position);
 
-      console.log('[YieldFarming] Rewards compounded:', positionId, 'Rewards:', rewards);
       return position;
     } catch (error) {
       console.error('[YieldFarming] Error compounding:', error);
@@ -342,7 +337,6 @@ class YieldFarmingService {
    */
   public updateConfig(config: Partial<YieldConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log('[YieldFarming] Config updated:', this.config);
   }
 
   /**
@@ -380,7 +374,6 @@ class YieldFarmingService {
       });
     }, this.config.compoundInterval);
 
-    console.log('[YieldFarming] Auto compound started');
   }
 
   /**
@@ -414,7 +407,6 @@ class YieldFarmingService {
    */
   public clearAllPositions(): void {
     this.positions.clear();
-    console.log('[YieldFarming] All positions cleared');
   }
 
   /**
@@ -426,7 +418,6 @@ class YieldFarmingService {
       this.compoundInterval = null;
     }
     this.listeners = [];
-    console.log('[YieldFarming] Service cleaned up');
   }
 
   /**

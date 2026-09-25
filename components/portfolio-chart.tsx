@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useColors } from '@/hooks/use-colors';
 import { portfolioAnalytics, PortfolioStats } from '@/lib/portfolio-analytics';
 

@@ -1,10 +1,10 @@
-import { View, Text, ScrollView, TouchableOpacity, FlatList, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useState } from 'react';
 import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import { useI18n } from '@/hooks/use-i18n';
 import { useTraderLeaderboard } from '@/hooks/use-trader-leaderboard';
-import Animated, { FadeIn, SlideInRight } from 'react-native-reanimated';
+import Animated, { SlideInRight } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
 type MetricType = 'roi' | 'winRate' | 'profit' | 'followers' | 'trades';
@@ -12,8 +12,8 @@ type TimeframeType = '24h' | '7d' | '30d' | 'all';
 
 export default function LeaderboardScreen() {
   const colors = useColors();
-  const { t } = useI18n();
-  const { entries, metric, timeframe, getLeaderboardByMetric, getLeaderboardByTimeframe, getTopTradersForMetric } = useTraderLeaderboard();
+  useI18n();
+  const { getLeaderboardByMetric, getLeaderboardByTimeframe, getTopTradersForMetric } = useTraderLeaderboard();
 
   const [selectedMetric, setSelectedMetric] = useState<MetricType>('roi');
   const [selectedTimeframe, setSelectedTimeframe] = useState<TimeframeType>('all');
@@ -105,9 +105,7 @@ export default function LeaderboardScreen() {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         {/* Header */}
         <View style={{ marginBottom: 20 }}>
-          <Text style={{ fontSize: 28, fontWeight: '700', color: colors.foreground }}>
-            Leaderboard
-          </Text>
+          <Text style={{ fontSize: 28, fontWeight: '700', color: colors.foreground }}>Leaderboard</Text>
           <Text style={{ fontSize: 14, color: colors.muted, marginTop: 4 }}>
             Top traders ranked by performance
           </Text>
@@ -191,7 +189,7 @@ export default function LeaderboardScreen() {
             topTraders.map((entry, index) => renderTraderRow(entry, index))
           ) : (
             <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-              <Text style={{ color: colors.muted }}>No traders available</Text>
+              <Text style={{ color: colors.muted }}>Nessun trader disponibile</Text>
             </View>
           )}
         </View>

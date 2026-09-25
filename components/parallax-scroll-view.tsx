@@ -33,25 +33,24 @@ export default function ParallaxScrollView({
 
   const headerHeight = HEADER_HEIGHT + insets.top;
 
-  const headerAnimatedStyle = useAnimatedStyle(() => {
-    const translateY = interpolate(
-      scrollOffset.value,
-      [-headerHeight, 0, headerHeight],
-      [-headerHeight / 2, 0, headerHeight * 0.75],
-    );
-    const scale = interpolate(
-      scrollOffset.value,
-      [-headerHeight, 0, headerHeight],
-      [2, 1, 1],
-    );
-
-    return {
-      transform: [{ translateY }, { scale }] as [
-        { translateY: number },
-        { scale: number },
-      ],
-    };
-  });
+  const headerAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: interpolate(
+          scrollOffset.value,
+          [-headerHeight, 0, headerHeight],
+          [-headerHeight / 2, 0, headerHeight * 0.75],
+        ) as number,
+      },
+      {
+        scale: interpolate(
+          scrollOffset.value,
+          [-headerHeight, 0, headerHeight],
+          [2, 1, 1],
+        ) as number,
+      },
+    ] as any,
+  }));
 
   return (
     <Animated.ScrollView
