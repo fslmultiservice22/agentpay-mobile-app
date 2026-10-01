@@ -10,7 +10,7 @@ import { useTelegramIntegration } from "@/hooks/use-telegram-integration";
 
 /**
  * Preserva il percorso /(tabs)/settings senza montare wallet, conti, backup,
- * simulazioni, import/export o collegamenti a provider esterni.
+ * import/export finanziario legacy o collegamenti a provider esterni.
  */
 export default function TechnicalSettingsScreen() {
   const colors = useColors();
@@ -103,8 +103,12 @@ export default function TechnicalSettingsScreen() {
             <View style={styles.rowLeading}><MaterialIcons name="analytics" size={21} color={colors.primary} /><Text style={[styles.rowText, { color: colors.foreground }]}>Monitor tecnico</Text></View>
             <MaterialIcons name="chevron-right" size={22} color={colors.muted} />
           </TouchableOpacity>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Apri registro tecnico" activeOpacity={0.82} onPress={() => router.push("/monitor-log")} style={styles.rowAction}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Apri registro tecnico" activeOpacity={0.82} onPress={() => router.push("/monitor-log")} style={[styles.rowAction, { borderBottomColor: colors.border }]}>
             <View style={styles.rowLeading}><MaterialIcons name="format-list-bulleted" size={21} color={colors.primary} /><Text style={[styles.rowText, { color: colors.foreground }]}>Registro tecnico</Text></View>
+            <MaterialIcons name="chevron-right" size={22} color={colors.muted} />
+          </TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Apri pilota CSV locale con dati anonimi" activeOpacity={0.82} onPress={() => router.push("/local-expense-pilot")} style={styles.rowAction}>
+            <View style={styles.rowLeading}><MaterialIcons name="description" size={21} color={colors.primary} /><Text style={[styles.rowText, { color: colors.foreground }]}>Pilota CSV locale</Text></View>
             <MaterialIcons name="chevron-right" size={22} color={colors.muted} />
           </TouchableOpacity>
         </View>
