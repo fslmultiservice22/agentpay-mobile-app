@@ -1,5 +1,4 @@
-import { useState, useCallback } from 'react';
-import { Share } from 'react-native';
+import { useCallback, useState } from 'react';
 
 export interface PaymentLink {
   id: string;
@@ -25,127 +24,29 @@ export interface UsePaymentLinksReturn {
   getActiveLinks: () => PaymentLink[];
 }
 
+const UNAVAILABLE = 'I link di pagamento non sono disponibili nella beta tecnica AgentPay.';
+const NO_LINKS: PaymentLink[] = [];
+
 /**
- * Hook per gestire payment links
- * Permette di creare link di pagamento condivisibili
+ * Interfaccia mantenuta per compatibilità: nessun link viene creato, condiviso o rivendicato.
+ * Non sostituire un endpoint di pagamento con la homepage informativa.
  */
 export function usePaymentLinks(): UsePaymentLinksReturn {
-  const [links, setLinks] = useState<PaymentLink[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const createPaymentLink = useCallback(
-    async (
-      address: string,
-      amount?: string,
-      token?: string,
-      memo?: string,
-      expiresIn?: number
-    ): Promise<PaymentLink> => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        // Validazione indirizzo
-        if (!address.match(/^0x[a-fA-F0-9]{40}$/)) {
-          throw new Error('Invalid address');
-        }
-
-        // Generazione link unico
-        const linkId = `link_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-        const baseUrl = 'https://agentpay.app/pay';
-        const params = new URLSearchParams({
-          id: linkId,
-          address,
-          ...(amount && { amount }),
-          ...(token && { token }),
-          ...(memo && { memo }),
-        });
-
-        const paymentLink: PaymentLink = {
-          id: linkId,
-          link: `${baseUrl}?${params.toString()}`,
-          address,
-          amount,
-          token,
-          memo,
-          expiresAt: expiresIn ? Date.now() + expiresIn : undefined,
-          status: 'active',
-          createdAt: Date.now(),
-        };
-
-        setLinks((prev) => [paymentLink, ...prev]);
-        return paymentLink;
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to create payment link';
-        setError(errorMessage);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
-
-  const sharePaymentLink = useCallback(async (link: PaymentLink) => {
-    try {
-      await Share.share({
-        message: `Pay me with AgentPay: ${link.link}${link.memo ? `\n\nMemo: ${link.memo}` : ''}`,
-        title: 'AgentPay Payment Link',
-        url: link.link,
-      });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to share link';
-      setError(errorMessage);
-    }
+  const [error, setError] = useState<string | null>(UNAVAILABLE);
+  const unavailable = useCallback(async (): Promise<never> => {
+    setError(UNAVAILABLE);
+    throw new Error(UNAVAILABLE);
   }, []);
-
-  const claimPaymentLink = useCallback(async (linkId: string) => {
-    try {
-      setLinks((prev) =>
-        prev.map((l) =>
-          l.id === linkId
-            ? {
-                ...l,
-                status: 'claimed',
-                claimedAt: Date.now(),
-              }
-            : l
-        )
-      );
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to claim link';
-      setError(errorMessage);
-    }
-  }, []);
-
-  const deletePaymentLink = useCallback(async (linkId: string) => {
-    try {
-      setLinks((prev) => prev.filter((l) => l.id !== linkId));
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete link';
-      setError(errorMessage);
-    }
-  }, []);
-
-  const getActiveLinks = useCallback(() => {
-    return links.filter((l) => {
-      if (l.status === 'claimed') return false;
-      if (l.expiresAt && l.expiresAt < Date.now()) {
-        return false;
-      }
-      return true;
-    });
-  }, [links]);
+  const getActiveLinks = useCallback((): PaymentLink[] => NO_LINKS, []);
 
   return {
-    links,
-    loading,
+    links: NO_LINKS,
+    loading: false,
     error,
-    createPaymentLink,
-    sharePaymentLink,
-    claimPaymentLink,
-    deletePaymentLink,
+    createPaymentLink: unavailable,
+    sharePaymentLink: unavailable,
+    claimPaymentLink: unavailable,
+    deletePaymentLink: unavailable,
     getActiveLinks,
   };
 }

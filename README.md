@@ -6,7 +6,7 @@ AgentPay Wallet è un progetto **Expo/React Native con backend Express/tRPC** ma
 
 Le funzioni di carta, credito, pagamento, saldo, trasferimento, Open Banking e integrazione Wallester reale sono disattivate. Le schermate Trading e Portafoglio espongono solo placeholder protetti; la dashboard Wallester usa esclusivamente dati mock locali.
 
-Il sito informativo ufficiale è [agentpay.fslditta.com](https://agentpay.fslditta.com/). I moduli legacy di referral, link di pagamento, notifiche e documentazione API contengono ancora riferimenti a domini non FSL: **non abilitarli né condividerne gli URL** finché non saranno sostituiti da destinazioni reali e approvate. Questa avvertenza non attiva alcuna funzione finanziaria.
+Il sito informativo ufficiale è [agentpay.fslditta.com](https://agentpay.fslditta.com/). Gli hook legacy di **link di pagamento** e **referral** non creano né condividono URL e non simulano più premi; i controlli **aggiornamento app/OTA** non contattano host non verificati né dichiarano installazioni riuscite. Gli altri moduli legacy di notifiche, streaming e documentazione API contengono ancora riferimenti a domini non FSL: **non abilitarli né condividerne gli URL** finché non saranno sostituiti da destinazioni reali e approvate. Nessuna salvaguardia attiva funzioni finanziarie o una release Android.
 
 ## Toolchain
 
@@ -36,7 +36,7 @@ pnpm build
 pnpm lint
 ```
 
-La verifica indipendente nel sandbox del 1 ottobre 2026, sul commit `bf5102d`, ha prodotto **930 test superati, 9 saltati** (70 file superati, 3 saltati) e TypeScript senza errori. Expo Doctor, build backend, lint ed export Android/web **non sono stati ripetuti in questa verifica**; i conteggi storici di altri ambienti non sono direttamente confrontabili senza riconciliare configurazione e credenziali.
+La [CI main del 1 ottobre 2026](https://github.com/fslmultiservice22/agentpay-mobile-app/actions/runs/36850238615), sul merge commit `856d5e1`, ha prodotto **930 test superati, 9 saltati** (70 file superati, 3 saltati) con esito complessivo riuscito. Il JSON pubblico delle metriche AgentPay riporta lo stesso 930/9 ma è uno **snapshot validato prima del merge** (`2026-10-01T08:36:21Z`), non un aggiornamento automatico della CI main. Expo Doctor, build backend, lint ed export Android/web **non sono stati ripetuti in questa verifica**; la CI non sostituisce il collaudo su dispositivo.
 
 ## Build interna Android
 
