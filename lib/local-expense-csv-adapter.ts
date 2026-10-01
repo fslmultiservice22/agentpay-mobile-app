@@ -1,6 +1,8 @@
 /** Pilota CSV locale: nessuna rete, provider, persistenza o operazione finanziaria. */
 export const MAX_LOCAL_CSV_BYTES = 100_000;
 export const MAX_LOCAL_CSV_ROWS = 100;
+export const MAX_LOCAL_DESCRIPTION_LENGTH = 160;
+export const MAX_LOCAL_CATEGORY_LENGTH = 60;
 
 export type ExpenseEntry = {
   id: string;
@@ -183,6 +185,8 @@ export function parseExpenseCsv(csv: string): ExpenseImportResult {
       fields.length !== headers.length ||
       !validDate(date) ||
       !description ||
+      description.length > MAX_LOCAL_DESCRIPTION_LENGTH ||
+      category.length > MAX_LOCAL_CATEGORY_LENGTH ||
       amount === null ||
       amount <= 0 ||
       !/^[A-Z]{3}$/.test(currency)
@@ -190,7 +194,7 @@ export function parseExpenseCsv(csv: string): ExpenseImportResult {
       issues.push({
         row,
         message:
-          "Riga ignorata: formato, data ISO, importo positivo o valuta non validi.",
+          "Riga ignorata: formato, data ISO, importo positivo, valuta o testo non validi.",
       });
       continue;
     }
@@ -207,32 +211,35 @@ export function parseExpenseCsv(csv: string): ExpenseImportResult {
 }
 
 export function summarizeExpenses(entries: ExpenseEntry[]): ExpenseSummary {
-  const totalsCents: Record<string, number> = {};
-  const categoriesCents: Record<string, Record<string, number>> = {};
+  // Le categorie sono input del CSV: Map evita proprietà ereditate come
+  // "__proto__" e "constructor" durante l'accumulo dei totali.
+  const totalsCents = new Map<string, number>();
+  const categoriesCents = new Map<string, Map<string, number>>();
   for (const entry of entries) {
     const cents = Math.round(entry.amount * 100);
     const category = entry.category || "Senza categoria";
-    totalsCents[entry.currency] = (totalsCents[entry.currency] ?? 0) + cents;
-    categoriesCents[category] ??= {};
-    categoriesCents[category][entry.currency] =
-      (categoriesCents[category][entry.currency] ?? 0) + cents;
+    totalsCents.set(
+      entry.currency,
+      (totalsCents.get(entry.currency) ?? 0) + cents,
+    );
+    const categoryTotals =
+      categoriesCents.get(category) ?? new Map<string, number>();
+    categoryTotals.set(
+      entry.currency,
+      (categoryTotals.get(entry.currency) ?? 0) + cents,
+    );
+    categoriesCents.set(category, categoryTotals);
   }
   return {
     entryCount: entries.length,
     totalsByCurrency: Object.fromEntries(
-      Object.entries(totalsCents).map(([currency, cents]) => [
-        currency,
-        cents / 100,
-      ]),
+      [...totalsCents].map(([currency, cents]) => [currency, cents / 100]),
     ),
     byCategory: Object.fromEntries(
-      Object.entries(categoriesCents).map(([category, totals]) => [
+      [...categoriesCents].map(([category, totals]) => [
         category,
         Object.fromEntries(
-          Object.entries(totals).map(([currency, cents]) => [
-            currency,
-            cents / 100,
-          ]),
+          [...totals].map(([currency, cents]) => [currency, cents / 100]),
         ),
       ]),
     ),
