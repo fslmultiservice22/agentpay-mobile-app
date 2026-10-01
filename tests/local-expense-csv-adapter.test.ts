@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   MAX_LOCAL_CSV_BYTES,
+  MAX_LOCAL_CATEGORY_LENGTH,
+  MAX_LOCAL_DESCRIPTION_LENGTH,
   parseExpenseCsv,
   summarizeExpenses,
 } from "../lib/local-expense-csv-adapter";
@@ -76,6 +78,23 @@ describe("pilota CSV locale (solo dati sintetici)", () => {
     ).toContain("100 KB");
   });
 
+  it("rifiuta descrizioni e categorie eccessive senza divulgarne il contenuto", () => {
+    const longDescription = "D".repeat(MAX_LOCAL_DESCRIPTION_LENGTH + 1);
+    const longCategory = "C".repeat(MAX_LOCAL_CATEGORY_LENGTH + 1);
+    for (const row of [
+      `2026-09-01;${longDescription};1,00;EUR;Categoria A`,
+      `2026-09-01;Descrizione A;1,00;EUR;${longCategory}`,
+    ]) {
+      const parsed = parseExpenseCsv(
+        `data;descrizione;importo;valuta;categoria\n${row}`,
+      );
+      expect(parsed.entries).toEqual([]);
+      expect(parsed.issues).toHaveLength(1);
+      expect(parsed.issues[0].message).not.toContain(longDescription);
+      expect(parsed.issues[0].message).not.toContain(longCategory);
+    }
+  });
+
   it("riepiloga centesimi e valute senza mescolarle", () => {
     const parsed = parseExpenseCsv(
       "data;descrizione;importo;valuta;categoria\n2026-09-01;A;0,10;EUR;Casa\n2026-09-02;B;0,20;EUR;Casa\n2026-09-03;C;1,00;USD;Casa",
@@ -85,5 +104,35 @@ describe("pilota CSV locale (solo dati sintetici)", () => {
       totalsByCurrency: { EUR: 0.3, USD: 1 },
       byCategory: { Casa: { EUR: 0.3, USD: 1 } },
     });
+  });
+
+  it("tratta __proto__ e constructor come categorie ordinarie senza modificare Object.prototype", () => {
+    const parsed = parseExpenseCsv(
+      "data;descrizione;importo;valuta;categoria\n2026-09-01;A;2,00;EUR;__proto__\n2026-09-02;B;3,00;EUR;constructor",
+    );
+    expect(parsed.issues).toEqual([]);
+    const previous = Object.getOwnPropertyDescriptor(Object.prototype, "EUR");
+    try {
+      const summary = summarizeExpenses(parsed.entries);
+      expect(summary.entryCount).toBe(2);
+      expect(summary.totalsByCurrency.EUR).toBe(5);
+      expect(
+        Object.prototype.hasOwnProperty.call(summary.byCategory, "__proto__"),
+      ).toBe(true);
+      expect(
+        Object.getOwnPropertyDescriptor(summary.byCategory, "__proto__")?.value
+          .EUR,
+      ).toBe(2);
+      expect(
+        Object.getOwnPropertyDescriptor(summary.byCategory, "constructor")
+          ?.value.EUR,
+      ).toBe(3);
+      expect(Object.getOwnPropertyDescriptor(Object.prototype, "EUR")).toEqual(
+        previous,
+      );
+    } finally {
+      if (previous) Reflect.defineProperty(Object.prototype, "EUR", previous);
+      else Reflect.deleteProperty(Object.prototype, "EUR");
+    }
   });
 });

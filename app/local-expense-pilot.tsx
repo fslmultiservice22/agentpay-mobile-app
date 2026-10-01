@@ -131,7 +131,8 @@ export default function LocalExpensePilot() {
             <Text style={[styles.copy, { color: colors.muted }]}>
               Formato: data ISO (AAAA-MM-GG), descrizione generica, importo
               positivo; facoltative valuta e categoria. Massimo 100 KB e 100
-              righe. I file non vengono sincronizzati.
+              righe; descrizione fino a 160 caratteri, categoria fino a 60. I
+              file non vengono sincronizzati.
             </Text>
             <Pressable
               accessibilityRole="checkbox"
