@@ -7,6 +7,8 @@
 // import * as Clipboard from 'expo-clipboard';
 // import { Platform, Alert } from 'react-native';
 
+const OFFICIAL_SITE_URL = 'https://agentpay.fslditta.com/';
+
 // Mock for testing
 const Sharing = { isAvailableAsync: () => Promise.resolve(false), shareAsync: (_url: string, _opts?: Record<string, unknown>) => Promise.resolve() };
 const Clipboard = { setStringAsync: (_text: string) => Promise.resolve(), getStringAsync: () => Promise.resolve('') };
@@ -76,10 +78,10 @@ ${data.topHolding ? `🏆 Top Holding: ${data.topHolding}` : ''}
 📦 Holdings: ${data.holdingCount} assets
 ⏱️ Timeframe: ${data.timeframe || '24h'}
 
-Join me on AgentPay - The all-in-one crypto wallet & trading platform!
-🔗 Download: https://agentpay.app
+Dati illustrativi: la beta AgentPay non gestisce wallet operativi, saldi o investimenti.
+🔗 Stato del progetto: ${OFFICIAL_SITE_URL}
 
-#AgentPay #Crypto #Trading #Portfolio #Web3
+#AgentPay #BetaTecnica
     `.trim();
 
     return this.shareContent({
@@ -94,19 +96,19 @@ Join me on AgentPay - The all-in-one crypto wallet & trading platform!
    */
   public async shareTrade(data: TradeShareData): Promise<boolean> {
     const emoji = data.action === 'buy' ? '🟢' : '🔴';
-    const actionText = data.action === 'buy' ? 'Bought' : 'Sold';
+    const actionText = data.action === 'buy' ? 'acquisto' : 'vendita';
     const profitText = data.profit ? `\n💰 Profit: $${data.profit.toFixed(2)}` : '';
 
     const message = `
-${emoji} Just ${actionText} ${data.amount} ${data.tokenSymbol}
+${emoji} Esempio di ${actionText}: ${data.amount} ${data.tokenSymbol}
 
 💵 Price: $${data.price.toFixed(2)}
 📍 Total: $${(data.amount * data.price).toFixed(2)}${profitText}
 
-Trading on AgentPay - Advanced crypto trading made simple!
-🔗 Download: https://agentpay.app
+Simulazione tecnica: nessun ordine è stato eseguito da AgentPay.
+🔗 Stato del progetto: ${OFFICIAL_SITE_URL}
 
-#${data.tokenSymbol} #Crypto #Trading #AgentPay #Web3
+#AgentPay #BetaTecnica
     `.trim();
 
     return this.shareContent({
@@ -119,52 +121,17 @@ Trading on AgentPay - Advanced crypto trading made simple!
   /**
    * Share achievement
    */
-  public async shareAchievement(achievement: string, description: string): Promise<boolean> {
-    const message = `
-🏆 Achievement Unlocked: ${achievement}
-
-${description}
-
-I'm crushing it on AgentPay! Join me for advanced crypto trading and portfolio management.
-🔗 Download: https://agentpay.app
-
-#AgentPay #Crypto #Achievement #Trading #Web3
-    `.trim();
-
-    return this.shareContent({
-      title: 'Share Achievement',
-      message,
-      url: message,
-    });
+  public async shareAchievement(_achievement: string, _description: string): Promise<boolean> {
+    // Traguardi e ricompense non sono funzioni pubbliche della beta tecnica.
+    return false;
   }
 
   /**
    * Share referral link
    */
-  public async shareReferral(referralCode: string): Promise<boolean> {
-    const message = `
-👋 Join me on AgentPay!
-
-Get exclusive benefits and rewards with my referral code:
-🔑 ${referralCode}
-
-AgentPay is the all-in-one crypto wallet & trading platform with:
-✅ Advanced trading tools
-✅ Portfolio management
-✅ Copy trading
-✅ Real-time alerts
-✅ Multi-chain support
-
-🔗 Sign up: https://agentpay.app?ref=${referralCode}
-
-#AgentPay #Crypto #Referral #Trading #Web3
-    `.trim();
-
-    return this.shareContent({
-      title: 'Share Referral',
-      message,
-      url: message,
-    });
+  public async shareReferral(_referralCode: string): Promise<boolean> {
+    // Il programma referral e gli inviti con ricompense non sono attivi.
+    return false;
   }
 
   /**
@@ -251,8 +218,8 @@ Total Assets: ${data.holdingCount}
 ${data.topHolding ? `Top Holding: ${data.topHolding}` : ''}
 
 ═══════════════════════════════════════
-Generated on AgentPay
-https://agentpay.app
+Dati illustrativi, nessun saldo custodito da AgentPay
+${OFFICIAL_SITE_URL}
 ═══════════════════════════════════════
     `.trim();
   }
@@ -278,8 +245,8 @@ Price: $${data.price.toFixed(2)}
 Total: $${(data.amount * data.price).toFixed(2)}${profitText}
 
 ═══════════════════════════════════════
-Executed on AgentPay
-https://agentpay.app
+Esempio tecnico, nessun trade eseguito da AgentPay
+${OFFICIAL_SITE_URL}
 ═══════════════════════════════════════
     `.trim();
   }

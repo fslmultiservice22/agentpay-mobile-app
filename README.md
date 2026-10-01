@@ -6,6 +6,8 @@ AgentPay Wallet è un progetto **Expo/React Native con backend Express/tRPC** ma
 
 Le funzioni di carta, credito, pagamento, saldo, trasferimento, Open Banking e integrazione Wallester reale sono disattivate. Le schermate Trading e Portafoglio espongono solo placeholder protetti; la dashboard Wallester usa esclusivamente dati mock locali.
 
+Il sito informativo ufficiale è [agentpay.fslditta.com](https://agentpay.fslditta.com/). I moduli legacy di referral, link di pagamento, notifiche e documentazione API contengono ancora riferimenti a domini non FSL: **non abilitarli né condividerne gli URL** finché non saranno sostituiti da destinazioni reali e approvate. Questa avvertenza non attiva alcuna funzione finanziaria.
+
 ## Toolchain
 
 | Componente | Versione |
@@ -34,7 +36,7 @@ pnpm build
 pnpm lint
 ```
 
-L'ultimo candidato verificato ha superato Expo Doctor 21/21, TypeScript, 931 test con 8 skip, build backend, lint senza errori ed export Android/web.
+La verifica indipendente nel sandbox del 1 ottobre 2026, sul commit `bf5102d`, ha prodotto **930 test superati, 9 saltati** (70 file superati, 3 saltati) e TypeScript senza errori. Expo Doctor, build backend, lint ed export Android/web **non sono stati ripetuti in questa verifica**; i conteggi storici di altri ambienti non sono direttamente confrontabili senza riconciliare configurazione e credenziali.
 
 ## Build interna Android
 

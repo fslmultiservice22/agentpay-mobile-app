@@ -67,17 +67,17 @@ export const wagmiConfig = Platform.OS === 'web' && createConfig
     metaMask({
       dappMetadata: {
         name: 'AgentPay Wallet',
-        url: 'https://agentpay.app',
-        iconUrl: 'https://agentpay.app/icon.png',
+        url: 'https://agentpay.fslditta.com/',
+        iconUrl: 'https://agentpay.fslditta.com/logo-icon.png',
       },
     }),
     walletConnect({
       projectId: process.env.EXPO_PUBLIC_WALLETCONNECT_PROJECT_ID || 'default-project-id',
       metadata: {
         name: 'AgentPay Wallet',
-        description: 'Multi-chain crypto wallet and trading platform',
-        url: 'https://agentpay.app',
-        icons: ['https://agentpay.app/icon.png'],
+        description: 'Beta tecnica informativa non transazionale di AgentPay Wallet',
+        url: 'https://agentpay.fslditta.com/',
+        icons: ['https://agentpay.fslditta.com/logo-icon.png'],
       },
     }),
     ledger({
