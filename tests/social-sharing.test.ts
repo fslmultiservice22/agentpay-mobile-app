@@ -21,6 +21,8 @@ describe('Social Sharing Service', () => {
       expect(message).toContain('+5.50%');
       expect(message).toContain('Bitcoin');
       expect(message).toContain('Total Assets: 5');
+      expect(message).toContain('https://agentpay.fslditta.com/');
+      expect(message).not.toContain('agentpay.app');
     });
 
     it('should handle negative portfolio change', async () => {
@@ -64,6 +66,8 @@ describe('Social Sharing Service', () => {
       expect(message).toContain('BTC');
       expect(message).toContain('0.5');
       expect(message).toContain('$45000.00');
+      expect(message).toContain('nessun trade eseguito');
+      expect(message).toContain('https://agentpay.fslditta.com/');
     });
 
     it('should generate sell trade report', () => {
@@ -102,7 +106,7 @@ describe('Social Sharing Service', () => {
         'First Trade',
         'Completed your first trade on AgentPay!'
       );
-      expect(typeof result).toBe('boolean');
+      expect(result).toBe(false);
     });
 
     it('should share milestone achievement', async () => {
@@ -118,7 +122,7 @@ describe('Social Sharing Service', () => {
     it('should generate referral share message', async () => {
       const referralCode = 'AGENTPAY2024';
       const result = await socialSharing.shareReferral(referralCode);
-      expect(typeof result).toBe('boolean');
+      expect(result).toBe(false);
     });
 
     it('should include referral code in message', async () => {
@@ -148,7 +152,7 @@ describe('Social Sharing Service', () => {
       const content = {
         title: 'Share on Twitter',
         message: 'Check out my portfolio on AgentPay!',
-        url: 'https://agentpay.app',
+        url: 'https://agentpay.fslditta.com/',
       };
 
       const result = await socialSharing.shareToSocialMedia('twitter', content);
@@ -159,7 +163,7 @@ describe('Social Sharing Service', () => {
       const content = {
         title: 'Share on Telegram',
         message: 'Join me on AgentPay!',
-        url: 'https://agentpay.app',
+        url: 'https://agentpay.fslditta.com/',
       };
 
       const result = await socialSharing.shareToSocialMedia('telegram', content);
@@ -170,7 +174,7 @@ describe('Social Sharing Service', () => {
       const content = {
         title: 'Share on WhatsApp',
         message: 'Check out AgentPay!',
-        url: 'https://agentpay.app',
+        url: 'https://agentpay.fslditta.com/',
       };
 
       const result = await socialSharing.shareToSocialMedia('whatsapp', content);
@@ -181,7 +185,7 @@ describe('Social Sharing Service', () => {
       const content = {
         title: 'Share on Facebook',
         message: 'Trading on AgentPay',
-        url: 'https://agentpay.app',
+        url: 'https://agentpay.fslditta.com/',
       };
 
       const result = await socialSharing.shareToSocialMedia('facebook', content);
