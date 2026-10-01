@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 const sendgridApiKey = process.env.SENDGRID_API_KEY;
+// La sola presenza di una chiave non autorizza una richiesta al provider.
+const liveTestAuthorized = process.env.AGENTPAY_RUN_LIVE_SENDGRID_TESTS === "true";
 
-describe.skipIf(!sendgridApiKey)("SendGrid API key integration", () => {
+describe.skipIf(!liveTestAuthorized || !sendgridApiKey)("SendGrid API key integration", () => {
   it(
     "valida la chiave in sola lettura e limita lo scope a Mail Send",
     async () => {
