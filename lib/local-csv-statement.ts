@@ -68,16 +68,40 @@ export function parseLocalCsvStatement(input: string): LocalCsvStatement {
   }
   if (input.includes("\uFFFD")) throw new LocalCsvImportError("Il CSV contiene un carattere di sostituzione non supportato.");
 
-  const parsed = Papa.parse<Record<string, string>>(input, {
+  // TextEncoder silently replaces lone UTF-16 surrogates; reject them before parsing.
+  for (let index = 0; index < input.length; index += 1) {
+    const code = input.charCodeAt(index);
+    if (code >= 0xD800 && code <= 0xDBFF) {
+      const next = input.charCodeAt(index + 1);
+      if (!(next >= 0xDC00 && next <= 0xDFFF)) throw new LocalCsvImportError("Il CSV contiene Unicode non valido.");
+      index += 1;
+    } else if (code >= 0xDC00 && code <= 0xDFFF) {
+      throw new LocalCsvImportError("Il CSV contiene Unicode non valido.");
+    }
+  }
+
+  const normalizedInput = input.startsWith("\uFEFF") ? input.slice(1) : input;
+  if (/\r(?!\n)/.test(normalizedInput)) {
+    throw new LocalCsvImportError("Terminatori di riga non validi: usa LF o CRLF.");
+  }
+  if (normalizedInput.split(/\r?\n/, 1)[0] !== EXPECTED_COLUMNS.join(";")) {
+    throw new LocalCsvImportError("Colonne richieste, nell'ordine: data;descrizione;importo;valuta. Altre colonne non sono accettate.");
+  }
+  if (normalizedInput.includes("\uFEFF")) {
+    throw new LocalCsvImportError("BOM UTF-8 ammesso solo all'inizio del CSV.");
+  }
+
+  const parsed = Papa.parse<Record<string, string>>(normalizedInput, {
     delimiter: ";",
     header: true,
-    skipEmptyLines: "greedy",
+    // Only physically blank rows are ignorable; `;;;` must reach field validation.
+    skipEmptyLines: true,
     dynamicTyping: false,
     fastMode: false,
   });
   const columns = parsed.meta.fields ?? [];
   if (columns.length !== EXPECTED_COLUMNS.length ||
-    columns.some((column, index) => column.trim().replace(/^\uFEFF/, "") !== EXPECTED_COLUMNS[index])) {
+    columns.some((column, index) => column !== EXPECTED_COLUMNS[index])) {
     throw new LocalCsvImportError("Colonne richieste, nell'ordine: data;descrizione;importo;valuta. Altre colonne non sono accettate.");
   }
   if (parsed.errors.length) throw new LocalCsvImportError("Il CSV contiene righe malformate o colonne mancanti.");
@@ -87,7 +111,7 @@ export function parseLocalCsvStatement(input: string): LocalCsvStatement {
   const movements = parsed.data.map((item, index): LocalCsvMovement => {
     const row = index + 2;
     const description = item.descrizione?.trim().replace(/\s+/g, " ") ?? "";
-    if (!description || description.length > 160) {
+    if (!description || Array.from(description).length > 160) {
       throw new LocalCsvImportError(`Descrizione vuota o troppo lunga alla riga ${row}.`);
     }
     if (item.valuta?.trim() !== "EUR") {

@@ -45,6 +45,50 @@ describe("pilota CSV — parser puro", () => {
     ]);
   });
 
+  it("conta i punti di codice Unicode nella descrizione, non le unità UTF-16", () => {
+    const accepted = `${header}\n01/10/2026;${"💳".repeat(160)};-1,00;EUR`;
+    const rejected = `${header}\n01/10/2026;${"💳".repeat(161)};-1,00;EUR`;
+    expect(parseLocalCsvStatement(accepted).movements[0].description).toHaveLength(320);
+    expect(() => parseLocalCsvStatement(rejected)).toThrow(/Descrizione/);
+  });
+
+  it.each([
+    ["header tra virgolette", `"data";descrizione;importo;valuta\n01/10/2026;Demo;-1,00;EUR`],
+    ["spazio nel nome colonna", `data;descrizione;importo;valuta \n01/10/2026;Demo;-1,00;EUR`],
+    ["BOM non iniziale", `data;\uFEFFdescrizione;importo;valuta\n01/10/2026;Demo;-1,00;EUR`],
+    ["doppio BOM", `\uFEFF\uFEFF${header}\n01/10/2026;Demo;-1,00;EUR`],
+  ])("rifiuta %s come intestazione diversa dal contratto v1", (_label, csv) => {
+    expect(() => parseLocalCsvStatement(csv)).toThrow(/Colonne richieste/);
+  });
+
+  it("ignora soltanto le righe fisicamente vuote, preservando due movimenti", () => {
+    const csv = `${header}\n01/10/2026;Demo;-1,00;EUR\n\n02/10/2026;Demo accredito;1,00;EUR\n`;
+    expect(parseLocalCsvStatement(csv).movements).toHaveLength(2);
+  });
+
+  it("rifiuta un BOM fuori dall'inizio anche se trim lo eliminerebbe dal campo", () => {
+    for (const cell of ["\uFEFF01/10/2026;Demo;-1,00;EUR", "01/10/2026;De\uFEFFmo;-1,00;EUR", "01/10/2026;Demo;\uFEFF-1,00;EUR"]) {
+      const csv = `${header}\n${cell}`;
+      expect(() => parseLocalCsvStatement(csv)).toThrow(/BOM UTF-8/);
+    }
+  });
+
+  it("rifiuta terminatori CR isolati e surrogati Unicode non accoppiati", () => {
+    expect(() => parseLocalCsvStatement(`${header}\r01/10/2026;Demo;-1,00;EUR`)).toThrow(/LF o CRLF/);
+    const inputs = ["\uD83D", "\uDCB3"].map((orphan) => `${header}\n01/10/2026;Demo ${orphan};-1,00;EUR`);
+    inputs.push(`${header}\n01/10/2026;Demo;-1,00;EUR\uD83D`);
+    for (const input of inputs) {
+      try {
+        parseLocalCsvStatement(input);
+        throw new Error("Il surrogato non è stato rifiutato");
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toMatch(/Unicode non valido/);
+        expect((error as Error).message).not.toContain("Demo");
+      }
+    }
+  });
+
   it.each([
     ["CSV vuoto", "", "vuoto"],
     ["colonna aggiuntiva", `${header};iban\n01/10/2026;Demo;-1,00;EUR;DEMO`, "Colonne"],
@@ -58,6 +102,9 @@ describe("pilota CSV — parser puro", () => {
     ["importo zero", `${header}\n01/10/2026;Demo;0,00;EUR`, "zero"],
     ["importo zero negativo", `${header}\n01/10/2026;Demo;-0,00;EUR`, "zero"],
     ["riga malformata", `${header}\n01/10/2026;Demo;-1,00`, "malformate"],
+    ["riga con soli delimitatori", `${header}\n01/10/2026;Demo;-1,00;EUR\n;;;`, "Descrizione"],
+    ["riga con delimitatori e spazi", `${header}\n01/10/2026;Demo;-1,00;EUR\n ; ; ; `, "Descrizione"],
+    ["riga con soli spazi", `${header}\n01/10/2026;Demo;-1,00;EUR\n   `, "malformate"],
     ["descrizione vuota", `${header}\n01/10/2026; ;1,00;EUR`, "Descrizione"],
     ["sostituzione Unicode", `${header}\n01/10/2026;Repl\uFFFDce;-1,00;EUR`, "sostituzione"],
     ["virgolette non chiuse", `${header}\n01/10/2026;"Demo;-1,00;EUR`, "malformate"],
