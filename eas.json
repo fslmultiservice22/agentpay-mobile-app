@@ -5,16 +5,28 @@
   },
   "build": {
     "preview": {
+      "env": {
+        "EXPO_PUBLIC_AGENTPAY_CSV_PILOT": "disabled",
+        "EXPO_PUBLIC_AGENTPAY_CSV_PILOT_PROFILE": "ordinary"
+      },
       "android": {
         "buildType": "apk"
       }
     },
     "preview2": {
+      "env": {
+        "EXPO_PUBLIC_AGENTPAY_CSV_PILOT": "disabled",
+        "EXPO_PUBLIC_AGENTPAY_CSV_PILOT_PROFILE": "ordinary"
+      },
       "android": {
         "buildType": "apk"
       }
     },
     "preview3": {
+      "env": {
+        "EXPO_PUBLIC_AGENTPAY_CSV_PILOT": "disabled",
+        "EXPO_PUBLIC_AGENTPAY_CSV_PILOT_PROFILE": "ordinary"
+      },
       "android": {
         "buildType": "apk"
       }
@@ -22,6 +34,10 @@
     "production-apk": {
       "distribution": "internal",
       "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_AGENTPAY_CSV_PILOT": "disabled",
+        "EXPO_PUBLIC_AGENTPAY_CSV_PILOT_PROFILE": "ordinary"
+      },
       "android": {
         "buildType": "apk"
       }
@@ -32,13 +48,28 @@
       "distribution": "internal",
       "developmentClient": false,
       "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_AGENTPAY_CSV_PILOT": "disabled",
+        "EXPO_PUBLIC_AGENTPAY_CSV_PILOT_PROFILE": "ordinary"
+      },
       "android": {
         "buildType": "apk",
         "credentialsSource": "remote"
       }
     },
+    "csv-pilot": {
+      "extends": "prelaunch",
+      "env": {
+        "EXPO_PUBLIC_AGENTPAY_CSV_PILOT": "enabled",
+        "EXPO_PUBLIC_AGENTPAY_CSV_PILOT_PROFILE": "csv-pilot-internal"
+      }
+    },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_AGENTPAY_CSV_PILOT": "disabled",
+        "EXPO_PUBLIC_AGENTPAY_CSV_PILOT_PROFILE": "ordinary"
+      },
       "android": {
         "buildType": "app-bundle"
       }

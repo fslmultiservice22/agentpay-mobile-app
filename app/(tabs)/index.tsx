@@ -6,6 +6,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { getMockStatementContent, type MockStatementFormat } from "@/lib/mock-statement";
+import { LOCAL_CSV_PILOT_ENABLED } from "@/lib/local-csv-pilot-gate";
 
 /**
  * Percorso tecnico principale. Le precedenti dashboard di saldi, trasferimenti,
@@ -98,6 +99,20 @@ export default function HomeScreen() {
           </View>
           <Text accessibilityLiveRegion="polite" style={[styles.downloadStatus, { color: colors.muted }]}>{downloadStatus}</Text>
         </View>
+
+        {LOCAL_CSV_PILOT_ENABLED && (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Apri la demo locale di analisi spese da CSV sintetico"
+            accessibilityHint="Mostra due movimenti fittizi incorporati, senza leggere file o contattare banche"
+            activeOpacity={0.82}
+            onPress={() => router.push("/local-csv-pilot")}
+            style={[styles.secondaryAction, { borderColor: colors.border }]}
+          >
+            <MaterialIcons name="insert-drive-file" size={21} color={colors.foreground} />
+            <Text style={[styles.secondaryActionText, { color: colors.foreground }]}>Analisi spese — demo sintetica</Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
           accessibilityRole="button"
