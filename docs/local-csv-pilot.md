@@ -12,7 +12,7 @@ data;descrizione;importo;valuta
 02/10/2026;Demo accredito;1450,00;EUR
 ```
 
-Il parser puro interpreta un CSV UTF-8 separato da punto e virgola, con esattamente queste quattro colonne, date `GG/MM/AAAA`, importi EUR con virgola decimale e centesimi interi. Nei test sintetici tratta delimitatori fra virgolette, date non valide, duplicati, limiti di 512 KiB e 2000 righe. Queste capacità **non** rendono disponibile un percorso per leggere CSV forniti dall’utente: tale sviluppo richiederà una decisione separata dopo privacy review, progettazione del formato reale e collaudo Android.
+Il parser puro interpreta un CSV UTF-8 separato da punto e virgola, con esattamente queste quattro colonne, date `GG/MM/AAAA`, importi EUR con virgola decimale e centesimi interi. Nei test sintetici tratta delimitatori fra virgolette, date non valide, importi zero rifiutati, duplicati, limiti di 512 KiB e 2000 righe. Il [formato normalizzato v1](csv-format-v1.md) chiarisce semantica e casi rifiutati. Queste capacità **non** rendono disponibile un percorso per leggere CSV forniti dall’utente: tale sviluppo richiederà una decisione separata dopo [verifica privacy](csv-privacy-gate.md) e [collaudo Android fisico](android-physical-test.md).
 
 ## Attivazione confinata al profilo interno
 

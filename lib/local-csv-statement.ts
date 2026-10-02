@@ -53,6 +53,7 @@ function parseAmount(value: string, row: number): number {
   if (!match) throw new LocalCsvImportError(`Importo non valido alla riga ${row}. Usa -12,50 o 12,50.`);
   const cents = Number(match[2]) * 100 + Number(match[3]);
   if (!Number.isSafeInteger(cents)) throw new LocalCsvImportError(`Importo troppo alto alla riga ${row}.`);
+  if (cents === 0) throw new LocalCsvImportError(`Importo zero non ammesso alla riga ${row}.`);
   return match[1] === "-" ? -cents : cents;
 }
 
