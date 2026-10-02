@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { LOCAL_CSV_DEMO } from "../lib/local-csv-demo";
 import {
@@ -67,6 +67,24 @@ describe("pilota CSV — parser puro", () => {
     expect(() => parseLocalCsvStatement("X".repeat(MAX_CSV_BYTES + 1))).toThrow(/512 KiB/);
     const rows = Array.from({ length: MAX_CSV_ROWS + 1 }, () => "01/10/2026;Demo;-1,00;EUR");
     expect(() => parseLocalCsvStatement([header, ...rows].join("\n"))).toThrow(/2000/);
+  });
+
+  it("misura il limite sui byte UTF-8, non sui caratteri JavaScript", () => {
+    for (const description of ["é".repeat(300_000), "💳".repeat(150_000)]) {
+      const csv = `${header}\n01/10/2026;${description};-1,00;EUR`;
+      expect(csv.length).toBeLessThan(MAX_CSV_BYTES);
+      expect(new TextEncoder().encode(csv).byteLength).toBeGreaterThan(MAX_CSV_BYTES);
+      expect(() => parseLocalCsvStatement(csv)).toThrow(/512 KiB/);
+    }
+  });
+
+  it("non accetta un input se il dispositivo non può verificarne la dimensione UTF-8", () => {
+    vi.stubGlobal("TextEncoder", undefined);
+    try {
+      expect(() => parseLocalCsvStatement(LOCAL_CSV_DEMO)).toThrow(/UTF-8/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
 

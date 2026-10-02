@@ -59,6 +59,12 @@ function parseAmount(value: string, row: number): number {
 export function parseLocalCsvStatement(input: string): LocalCsvStatement {
   if (!input.trim()) throw new LocalCsvImportError("Il CSV è vuoto.");
   if (input.length > MAX_CSV_BYTES) throw new LocalCsvImportError("Il CSV supera il limite di 512 KiB.");
+  if (typeof TextEncoder !== "function") {
+    throw new LocalCsvImportError("Impossibile verificare la dimensione UTF-8 su questo dispositivo.");
+  }
+  if (new TextEncoder().encode(input).byteLength > MAX_CSV_BYTES) {
+    throw new LocalCsvImportError("Il CSV supera il limite di 512 KiB.");
+  }
   if (input.includes("\uFFFD")) throw new LocalCsvImportError("Il CSV contiene un carattere di sostituzione non supportato.");
 
   const parsed = Papa.parse<Record<string, string>>(input, {
