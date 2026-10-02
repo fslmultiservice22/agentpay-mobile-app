@@ -55,6 +55,20 @@ if (prelaunch?.autoIncrement !== true) fail("autoIncrement deve essere true");
 if (prelaunch?.android?.buildType !== "apk") fail("il profilo prelaunch deve produrre un APK");
 if (prelaunch?.android?.credentialsSource !== "remote") fail("il profilo prelaunch deve usare credenziali remote");
 if (easConfig?.submit?.prelaunch) fail("il profilo prelaunch non deve avere configurazione submit");
+for (const name of ["preview", "preview2", "preview3", "production-apk", "prelaunch", "production"]) {
+  const vars = easConfig?.build?.[name]?.env;
+  if (vars?.EXPO_PUBLIC_AGENTPAY_CSV_PILOT !== "disabled" ||
+      vars?.EXPO_PUBLIC_AGENTPAY_CSV_PILOT_PROFILE !== "ordinary") {
+    fail(`il profilo ${name} non disattiva esplicitamente il pilota CSV`);
+  }
+}
+const csvPilot = easConfig?.build?.["csv-pilot"];
+if (csvPilot?.extends !== "prelaunch" ||
+    csvPilot?.env?.EXPO_PUBLIC_AGENTPAY_CSV_PILOT !== "enabled" ||
+    csvPilot?.env?.EXPO_PUBLIC_AGENTPAY_CSV_PILOT_PROFILE !== "csv-pilot-internal" ||
+    easConfig?.submit?.["csv-pilot"]) {
+  fail("il profilo csv-pilot deve restare interno, opt-in e senza submit");
+}
 if (!rootRoute.includes("financialServicesEnabled: false")) fail("la root tecnica non dichiara i servizi finanziari disattivati");
 for (const disabledFlag of ["networkRequestsAllowed: false", "consentAllowed: false", "registrationAllowed: false"]) {
   if (!bankingPolicy.includes(disabledFlag)) fail(`policy finanziaria non protetta: ${disabledFlag}`);
@@ -63,6 +77,7 @@ for (const disabledFlag of ["networkRequestsAllowed: false", "consentAllowed: fa
 const expoJson = run("npx", ["expo", "config", "--type", "public", "--json"]);
 const expoConfig = JSON.parse(expoJson);
 
+if (expoConfig.extra?.localCsvPilotBuildAllowed !== false) fail("il profilo prelaunch non deve abilitare il pilota CSV");
 if (expoConfig.name !== expected.name) fail(`nome app inatteso: ${expoConfig.name}`);
 if (expoConfig.slug !== expected.slug) fail(`slug inatteso: ${expoConfig.slug}`);
 if (expoConfig.owner !== expected.owner) fail(`owner inatteso: ${expoConfig.owner}`);

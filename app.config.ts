@@ -3,6 +3,12 @@ import "./scripts/load-env.js";
 import type { ExpoConfig } from "expo/config";
 
 const isProduction = process.env.NODE_ENV === "production";
+// EAS_BUILD_PROFILE is a system build variable on EAS workers. Never grant CSV
+// access based solely on EXPO_PUBLIC_* values shared across EAS environments.
+const localCsvPilotBuildAllowed =
+  process.env.EAS_BUILD_PROFILE === "csv-pilot" &&
+  process.env.EXPO_PUBLIC_AGENTPAY_CSV_PILOT === "enabled" &&
+  process.env.EXPO_PUBLIC_AGENTPAY_CSV_PILOT_PROFILE === "csv-pilot-internal";
 
 // Bundle ID format: space.manus.<project_name_dots>.<timestamp>
 // e.g., "my-app" created at 2024-01-15 10:30:45 -> "space.manus.my.app.t20240115103045"
@@ -129,6 +135,7 @@ const config: ExpoConfig = {
     ],
   ],
   extra: {
+    localCsvPilotBuildAllowed,
     eas: {
       projectId: "c929c360-26c3-44a6-87de-eac438bab003",
     },

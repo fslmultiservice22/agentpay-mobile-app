@@ -8,6 +8,10 @@ Le funzioni di carta, credito, pagamento, saldo, trasferimento, Open Banking e i
 
 Il sito informativo ufficiale è [agentpay.fslditta.com](https://agentpay.fslditta.com/). Gli hook legacy di **link di pagamento** e **referral** non creano né condividono URL e non simulano più premi; i controlli **aggiornamento app/OTA** non contattano host non verificati né dichiarano installazioni riuscite. Gli altri moduli legacy di notifiche, streaming e documentazione API contengono ancora riferimenti a domini non FSL: **non abilitarli né condividerne gli URL** finché non saranno sostituiti da destinazioni reali e approvate. Nessuna salvaguardia attiva funzioni finanziarie o una release Android.
 
+## Pilota locale CSV (spento per default)
+
+Il nuovo percorso `/local-csv-pilot` consente a una **build interna opt-in** di mostrare un riepilogo in memoria basato esclusivamente su due movimenti sintetici incorporati. Il [CSV demo](docs/local-csv-demo.csv) è un esempio per i revisori, **non** viene letto dall’app: non esiste un selettore per file personali o estratti bancari reali. Il manifest Expo richiede il profilo EAS `csv-pilot` e due variabili pubbliche opt-in; tutti i profili ordinari dichiarano valori disabilitati. L’ambiente remoto EAS va comunque verificato prima di creare un APK. Il pilota non collega banche e non modifica le route finanziarie protette. Formato e condizioni da soddisfare prima di una futura importazione reale sono descritti in [docs/local-csv-pilot.md](docs/local-csv-pilot.md).
+
 ## Toolchain
 
 | Componente | Versione |
@@ -36,7 +40,7 @@ pnpm build
 pnpm lint
 ```
 
-La [CI main del 1 ottobre 2026](https://github.com/fslmultiservice22/agentpay-mobile-app/actions/runs/36850238615), sul merge commit `856d5e1`, ha prodotto **930 test superati, 9 saltati** (70 file superati, 3 saltati) con esito complessivo riuscito. Il JSON pubblico delle metriche AgentPay riporta lo stesso 930/9 ma è uno **snapshot validato prima del merge** (`2026-10-01T08:36:21Z`), non un aggiornamento automatico della CI main. Expo Doctor, build backend, lint ed export Android/web **non sono stati ripetuti in questa verifica**; la CI non sostituisce il collaudo su dispositivo.
+I risultati aggiornati della [CI mobile](https://github.com/fslmultiservice22/agentpay-mobile-app/actions) vanno verificati per commit: i contatori pubblici del sito AgentPay sono **snapshot**, non un aggiornamento automatico. TypeScript, suite di test, lint, export Android/web e collaudo su dispositivo sono controlli distinti; una CI verde non dimostra un’operazione finanziaria reale.
 
 ## Build interna Android
 

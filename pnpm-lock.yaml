@@ -149,6 +149,9 @@ importers:
       nativewind:
         specifier: ^4.2.1
         version: 4.2.1(react-native-reanimated@4.5.1(react-native-worklets@0.10.1(@babel/core@7.28.5)(@react-native/metro-config@0.85.3(@babel/core@7.28.5))(react-native@0.86.3(@babel/core@7.28.5)(@react-native/metro-config@0.85.3(@babel/core@7.28.5))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.28.5)(@react-native/metro-config@0.85.3(@babel/core@7.28.5))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native-safe-area-context@5.7.0(react-native@0.86.3(@babel/core@7.28.5)(@react-native/metro-config@0.85.3(@babel/core@7.28.5))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native-svg@15.15.4(react-native@0.86.3(@babel/core@7.28.5)(@react-native/metro-config@0.85.3(@babel/core@7.28.5))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.28.5)(@react-native/metro-config@0.85.3(@babel/core@7.28.5))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+      papaparse:
+        specifier: 5.7.0
+        version: 5.7.0
       react:
         specifier: 19.2.3
         version: 19.2.3
@@ -207,6 +210,9 @@ importers:
       '@types/node':
         specifier: ^22.19.3
         version: 22.19.3
+      '@types/papaparse':
+        specifier: 5.5.2
+        version: 5.5.2
       '@types/qrcode':
         specifier: ^1.5.6
         version: 1.5.6
@@ -2228,6 +2234,9 @@ packages:
 
   '@types/node@22.7.5':
     resolution: {integrity: sha512-jML7s2NAzMWc//QSJ1a3prpk78cOPchGvXJsC3C6R6PSMoooztvRVQEz89gmBTBY1SPMaqo5teB4uNHPdetShQ==}
+
+  '@types/papaparse@5.5.2':
+    resolution: {integrity: sha512-gFnFp/JMzLHCwRf7tQHrNnfhN4eYBVYYI897CGX4MY1tzY9l2aLkVyx2IlKZ/SAqDbB3I1AOZW5gTMGGsqWliA==}
 
   '@types/qrcode@1.5.6':
     resolution: {integrity: sha512-te7NQcV2BOvdj2b1hCAHzAoMNuj65kNBMz0KBaxM6c3VGBOhU0dURQKOtH8CFNI/dsKkwlv32p26qYQTWoB5bw==}
@@ -4819,6 +4828,9 @@ packages:
   p-try@2.2.0:
     resolution: {integrity: sha512-R4nPAVTAU0B9D35/Gk3uJf/7XYbQcyohSKdvAxIRSNghFl4e71hVoGnBNQz9cWaXxO2I10KTC+3jMdvvoKw6dQ==}
     engines: {node: '>=6'}
+
+  papaparse@5.7.0:
+    resolution: {integrity: sha512-qBGxg/7Q3Kl9Wfhrz2Z74UnvnHTXLNG6jmKJFeBvP2+y4lV7So+7SR62+Zd47JvdrCkX+nDcnr0ObPzek/+6RA==}
 
   parent-module@1.0.1:
     resolution: {integrity: sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==}
@@ -8015,6 +8027,10 @@ snapshots:
     dependencies:
       undici-types: 6.19.8
 
+  '@types/papaparse@5.5.2':
+    dependencies:
+      '@types/node': 22.19.3
+
   '@types/qrcode@1.5.6':
     dependencies:
       '@types/node': 22.19.3
@@ -10972,6 +10988,8 @@ snapshots:
       p-limit: 3.1.0
 
   p-try@2.2.0: {}
+
+  papaparse@5.7.0: {}
 
   parent-module@1.0.1:
     dependencies:
