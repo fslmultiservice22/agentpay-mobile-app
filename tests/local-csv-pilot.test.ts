@@ -55,6 +55,8 @@ describe("pilota CSV — parser puro", () => {
     ["giorno non bisestile", `${header}\n29/02/2025;Demo;-1,00;EUR`, "Data"],
     ["importo con punto", `${header}\n01/10/2026;Demo;-1.00;EUR`, "Importo"],
     ["importo extra large", `${header}\n01/10/2026;Demo;9999999999,00;EUR`, "Importo"],
+    ["importo zero", `${header}\n01/10/2026;Demo;0,00;EUR`, "zero"],
+    ["importo zero negativo", `${header}\n01/10/2026;Demo;-0,00;EUR`, "zero"],
     ["riga malformata", `${header}\n01/10/2026;Demo;-1,00`, "malformate"],
     ["descrizione vuota", `${header}\n01/10/2026; ;1,00;EUR`, "Descrizione"],
     ["sostituzione Unicode", `${header}\n01/10/2026;Repl\uFFFDce;-1,00;EUR`, "sostituzione"],

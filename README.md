@@ -10,7 +10,7 @@ Il sito informativo ufficiale è [agentpay.fslditta.com](https://agentpay.fsldit
 
 ## Pilota locale CSV (spento per default)
 
-Il nuovo percorso `/local-csv-pilot` consente a una **build interna opt-in** di mostrare un riepilogo in memoria basato esclusivamente su due movimenti sintetici incorporati. Il [CSV demo](docs/local-csv-demo.csv) è un esempio per i revisori, **non** viene letto dall’app: non esiste un selettore per file personali o estratti bancari reali. Il manifest Expo richiede il profilo EAS `csv-pilot` e due variabili pubbliche opt-in; tutti i profili ordinari dichiarano valori disabilitati. L’ambiente remoto EAS va comunque verificato prima di creare un APK. Il pilota non collega banche e non modifica le route finanziarie protette. Formato e condizioni da soddisfare prima di una futura importazione reale sono descritti in [docs/local-csv-pilot.md](docs/local-csv-pilot.md).
+Il nuovo percorso `/local-csv-pilot` consente a una **build interna opt-in** di mostrare un riepilogo in memoria basato esclusivamente su due movimenti sintetici incorporati. Il [CSV demo](docs/local-csv-demo.csv) è un esempio per i revisori, **non** viene letto dall’app: non esiste un selettore per file personali o estratti bancari reali. Il manifest Expo richiede il profilo EAS `csv-pilot` e due variabili pubbliche opt-in; tutti i profili ordinari dichiarano valori disabilitati. L’ambiente remoto EAS va comunque verificato prima di creare un APK. Il pilota non collega banche e non modifica le route finanziarie protette. Leggere [la demo](docs/local-csv-pilot.md), [il formato normalizzato v1](docs/csv-format-v1.md), [il gate privacy ancora bloccante](docs/csv-privacy-gate.md) e [il protocollo Android fisico](docs/android-physical-test.md) prima di progettare una futura importazione reale.
 
 ## Toolchain
 
@@ -38,6 +38,7 @@ pnpm check
 pnpm test:ci
 pnpm build
 pnpm lint
+pnpm android:device:check # richiede un telefono fisico autorizzato via adb
 ```
 
 I risultati aggiornati della [CI mobile](https://github.com/fslmultiservice22/agentpay-mobile-app/actions) vanno verificati per commit: i contatori pubblici del sito AgentPay sono **snapshot**, non un aggiornamento automatico. TypeScript, suite di test, lint, export Android/web e collaudo su dispositivo sono controlli distinti; una CI verde non dimostra un’operazione finanziaria reale.
