@@ -102,8 +102,8 @@ export async function getMe(): Promise<{
   try {
     const result = await apiCall<{ user: any }>("/api/auth/me");
     return result.user || null;
-  } catch (error) {
-    console.error("[API] getMe failed:", error);
+  } catch {
+    console.error("[API] Unable to retrieve the current user");
     return null;
   }
 }
@@ -112,7 +112,6 @@ export async function getMe(): Promise<{
 // Called after receiving token via postMessage to get a proper Set-Cookie from the backend
 export async function establishSession(token: string): Promise<boolean> {
   try {
-    console.log("[API] establishSession: setting cookie on backend...");
     const baseUrl = getApiBaseUrl();
     const url = `${baseUrl}/api/auth/session`;
 
@@ -130,10 +129,9 @@ export async function establishSession(token: string): Promise<boolean> {
       return false;
     }
 
-    console.log("[API] establishSession: cookie set successfully");
     return true;
-  } catch (error) {
-    console.error("[API] establishSession error:", error);
+  } catch {
+    console.error("[API] Unable to establish the session");
     return false;
   }
 }
