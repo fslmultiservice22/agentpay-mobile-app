@@ -1,4 +1,5 @@
 import { apiCall } from "@/lib/_core/api";
+import { isRecord, isValidMonitoringSnapshot } from "./technical-monitor-validation";
 
 export type ConnectionStatus = "healthy" | "attention" | "unavailable";
 
@@ -52,5 +53,11 @@ export async function refreshOperationalStatus(): Promise<MonitorResponse> {
 }
 
 export async function getMonitorHistory(): Promise<MonitorHistoryResponse> {
-  return apiCall<MonitorHistoryResponse>("/api/operational-monitor/history");
+  const result = await apiCall<unknown>("/api/operational-monitor/history");
+  if (!isRecord(result) || result.success !== true || !Array.isArray(result.entries) || result.entries.length > 12 ||
+      !result.entries.every(isValidMonitoringSnapshot) || typeof result.retention !== "string" ||
+      !Array.isArray(result.safeguards) || !result.safeguards.every((value) => typeof value === "string")) {
+    throw new Error("Technical monitoring history is invalid");
+  }
+  return result as MonitorHistoryResponse;
 }

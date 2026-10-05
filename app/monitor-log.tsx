@@ -30,6 +30,7 @@ export default function MonitorLogScreen() {
       setEntries(result.entries);
       setError(null);
     } catch {
+      setEntries([]);
       setError("Il registro tecnico non è raggiungibile in questo momento.");
     } finally {
       setLoading(false);
