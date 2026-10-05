@@ -28,12 +28,27 @@ export type MonitorHistoryResponse = {
   safeguards: string[];
 };
 
+const MAX_SNAPSHOT_AGE_MS = 2 * 60 * 1000;
+const MAX_CLOCK_SKEW_MS = 30 * 1000;
+
+export function isFreshMonitoringSnapshot(snapshot: MonitorSnapshot | null | undefined, now = Date.now()): boolean {
+  if (!snapshot || typeof snapshot.checkedAt !== "string" || !Array.isArray(snapshot.checks)) return false;
+  if (!["healthy", "attention", "unavailable"].includes(snapshot.overallStatus)) return false;
+  const checkedAt = Date.parse(snapshot.checkedAt);
+  return Number.isFinite(checkedAt) && checkedAt <= now + MAX_CLOCK_SKEW_MS && now - checkedAt <= MAX_SNAPSHOT_AGE_MS;
+}
+
 export async function getOperationalStatus(): Promise<MonitorResponse> {
-  return apiCall<MonitorResponse>("/api/operational-monitor/status");
+  const response = await apiCall<MonitorResponse>("/api/operational-monitor/status");
+  // The server may return its last snapshot indefinitely. Refresh only when stale.
+  if (isFreshMonitoringSnapshot(response?.monitoring)) return response;
+  return refreshOperationalStatus();
 }
 
 export async function refreshOperationalStatus(): Promise<MonitorResponse> {
-  return apiCall<MonitorResponse>("/api/operational-monitor/refresh", { method: "POST" });
+  const response = await apiCall<MonitorResponse>("/api/operational-monitor/refresh", { method: "POST" });
+  if (!isFreshMonitoringSnapshot(response?.monitoring)) throw new Error("Technical monitoring snapshot is stale or invalid");
+  return response;
 }
 
 export async function getMonitorHistory(): Promise<MonitorHistoryResponse> {
