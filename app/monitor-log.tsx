@@ -1,11 +1,12 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { getMonitorHistory, type ConnectionStatus, type MonitorSnapshot } from "@/lib/operational-status";
+import { buildTechnicalLogCsv } from "@/lib/technical-log-csv";
 import { exportTechnicalLogLocally } from "@/lib/technical-log-export";
 
 function statusColor(status: ConnectionStatus, colors: ReturnType<typeof useColors>) {
@@ -21,10 +22,12 @@ export default function MonitorLogScreen() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewCsv, setPreviewCsv] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setPreviewCsv(null);
     try {
       const result = await getMonitorHistory();
       setEntries(result.entries);
@@ -45,8 +48,18 @@ export default function MonitorLogScreen() {
     return entries.filter((entry) => entry.checks.some((check) => `${check.label} ${check.detail} ${check.status}`.toLocaleLowerCase("it-IT").includes(normalized)));
   }, [entries, query]);
 
+  const openPreview = useCallback(() => {
+    if (loading || error || !entries.length) return;
+    try {
+      setPreviewCsv(buildTechnicalLogCsv(entries));
+    } catch {
+      setPreviewCsv(null);
+      Alert.alert("Anteprima non disponibile", "Il registro tecnico non è valido. Aggiorna il registro prima di riprovare.");
+    }
+  }, [entries, error, loading]);
+
   const exportLocally = useCallback(async () => {
-    if (!entries.length) {
+    if (loading || error || !entries.length) {
       Alert.alert("Nessun dato tecnico", "Aggiorna il registro prima di esportarlo.");
       return;
     }
@@ -59,7 +72,7 @@ export default function MonitorLogScreen() {
     } finally {
       setExporting(false);
     }
-  }, [entries]);
+  }, [entries, error, loading]);
 
   return (
     <ScreenContainer className="flex-1">
@@ -99,11 +112,16 @@ export default function MonitorLogScreen() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Esporta il registro tecnico in CSV locale" accessibilityHint="Crea un file locale senza caricarlo a servizi esterni" accessibilityState={{ disabled: exporting || !entries.length, busy: exporting }} activeOpacity={0.82} disabled={exporting || !entries.length} onPress={() => void exportLocally()} style={{ minHeight: 48, borderRadius: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, justifyContent: "center", alignItems: "center", flexDirection: "row", gap: 8, opacity: exporting || !entries.length ? 0.55 : 1 }}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Mostra anteprima locale del CSV tecnico" accessibilityHint="Mostra solo le quattro colonne tecniche senza creare o condividere un file" accessibilityState={{ disabled: loading || !!error || !entries.length }} activeOpacity={0.82} disabled={loading || !!error || !entries.length} onPress={openPreview} style={{ minHeight: 48, borderRadius: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, justifyContent: "center", alignItems: "center", flexDirection: "row", gap: 8, opacity: loading || error || !entries.length ? 0.55 : 1 }}>
+          <MaterialIcons name="visibility" size={19} color={colors.primary} />
+          <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "800" }}>Vedi anteprima CSV</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Esporta il registro tecnico in CSV locale" accessibilityHint="Crea un file locale senza caricarlo a servizi esterni" accessibilityState={{ disabled: loading || !!error || exporting || !entries.length, busy: exporting }} activeOpacity={0.82} disabled={loading || !!error || exporting || !entries.length} onPress={() => void exportLocally()} style={{ minHeight: 48, borderRadius: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, justifyContent: "center", alignItems: "center", flexDirection: "row", gap: 8, opacity: loading || error || exporting || !entries.length ? 0.55 : 1 }}>
           {exporting ? <ActivityIndicator size="small" color={colors.primary} /> : <MaterialIcons name="file-download" size={19} color={colors.primary} />}
           <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "800" }}>{exporting ? "Esportazione locale…" : "Esporta CSV locale"}</Text>
         </TouchableOpacity>
-        <Text style={{ color: colors.muted, fontSize: 11, lineHeight: 16 }}>Il CSV contiene solo orario, stato e identificativo tecnico. Non viene caricato o inviato a servizi esterni.</Text>
+        <Text style={{ color: colors.muted, fontSize: 11, lineHeight: 16 }}>L’anteprima resta nell’app e non crea file. Il CSV contiene solo orario, stato e identificativo tecnico; l’esportazione apre il foglio di condivisione del dispositivo.</Text>
 
         {loading ? <ActivityIndicator color={colors.primary} /> : null}
         {error ? <Text style={{ color: colors.error, fontSize: 13 }}>{error}</Text> : null}
@@ -127,6 +145,22 @@ export default function MonitorLogScreen() {
           </View>
         ))}
       </ScrollView>
+      <Modal visible={previewCsv !== null} transparent animationType="slide" onRequestClose={() => setPreviewCsv(null)}>
+        <View style={{ flex: 1, justifyContent: "center", padding: 20, backgroundColor: "#00000099" }}>
+          <View accessibilityViewIsModal style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 18, maxHeight: "85%", gap: 12 }}>
+            <Text style={{ color: colors.foreground, fontSize: 20, fontWeight: "900" }}>Anteprima CSV tecnica</Text>
+            <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>Solo sul dispositivo. Nessun file è stato creato o condiviso da questa anteprima.</Text>
+            <ScrollView horizontal nestedScrollEnabled accessibilityLabel="Colonne del CSV tecnico" style={{ flexGrow: 0 }}>
+              <ScrollView nestedScrollEnabled style={{ maxHeight: 420 }}>
+                <Text selectable style={{ color: colors.foreground, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace", fontSize: 12, lineHeight: 19 }}>{previewCsv ?? ""}</Text>
+              </ScrollView>
+            </ScrollView>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Chiudi anteprima CSV" onPress={() => setPreviewCsv(null)} style={{ minHeight: 48, borderRadius: 12, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ color: "#ffffff", fontSize: 14, fontWeight: "800" }}>Chiudi</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }
