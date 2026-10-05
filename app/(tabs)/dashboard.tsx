@@ -1,4 +1,4 @@
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   dismissFinancialNotice,
@@ -8,7 +8,6 @@ import {
 } from "@/lib/financial-notice";
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useRouter } from "expo-router";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
@@ -42,6 +41,8 @@ export default function DashboardScreen() {
       setStatus(result);
       setUnavailable(false);
     } catch {
+      // A previous successful check must not appear current after a failed refresh.
+      setStatus(null);
       setUnavailable(true);
     } finally {
       setLoading(false);
@@ -116,17 +117,17 @@ export default function DashboardScreen() {
             <View style={{ flex: 1, gap: 3 }}>
               <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: "900" }}>Stato tecnico</Text>
               <Text style={{ color: tone, fontSize: 12, fontWeight: "800" }}>{loading ? "Aggiornamento in corso" : statusLabel}</Text>
-              <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 17 }}>{monitoring ? `${monitoring.checks.filter((check) => check.status === "healthy").length} controlli tecnici disponibili.` : "Lo stato non è raggiungibile in questo momento."}</Text>
+              <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 17 }}>{monitoring && !unavailable ? `${monitoring.checks.filter((check) => check.status === "healthy").length} controlli tecnici disponibili.` : "Il backend tecnico non è raggiungibile da questo dispositivo. Verifica la connessione e riprova; nessun provider finanziario viene avviato."}</Text>
             </View>
           </View>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Aggiorna lo stato tecnico" accessibilityHint="Rilegge soltanto gli stati locali di app e backend" accessibilityState={{ disabled: refreshing, busy: refreshing }} activeOpacity={0.82} disabled={refreshing} onPress={() => void load(true)} style={{ alignSelf: "flex-start", flexDirection: "row", gap: 7, alignItems: "center", minHeight: 44, borderRadius: 12, backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 9, opacity: refreshing ? 0.7 : 1 }}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Aggiorna lo stato tecnico" accessibilityHint="Riprova il controllo del backend tecnico senza avviare provider finanziari" accessibilityState={{ disabled: refreshing, busy: refreshing }} activeOpacity={0.82} disabled={refreshing} onPress={() => void load(true)} style={{ alignSelf: "flex-start", flexDirection: "row", gap: 7, alignItems: "center", minHeight: 44, borderRadius: 12, backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 9, opacity: refreshing ? 0.7 : 1 }}>
             {refreshing ? <ActivityIndicator size="small" color="#ffffff" /> : <MaterialIcons name="refresh" size={16} color="#ffffff" />}
             <Text style={{ color: "#ffffff", fontSize: 12, fontWeight: "900" }}>{refreshing ? "Aggiornamento…" : "Aggiorna stato"}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={{ backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 16, padding: 16, gap: 10 }}>
-          <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: "900" }}>Controlli attivi</Text>
+          <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: "900" }}>Controlli tecnici</Text>
           {(monitoring?.checks ?? []).map((check) => (
             <View key={check.id} style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
               <MaterialIcons name="check-circle-outline" size={18} color={statusColor(check.status, colors)} />
@@ -136,7 +137,7 @@ export default function DashboardScreen() {
               </View>
             </View>
           ))}
-          {!loading && !(monitoring?.checks.length) ? <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 17 }}>Nessun controllo tecnico è disponibile al momento. Puoi aggiornare lo stato senza avviare provider o richieste finanziarie.</Text> : null}
+          {!loading && !(monitoring?.checks.length) ? <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 17 }}>Nessun controllo remoto confermato. Controlla la connessione del dispositivo e riprova; nessuna richiesta finanziaria viene inviata.</Text> : null}
         </View>
 
         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Apri il registro tecnico" accessibilityHint="Mostra la cronologia locale non finanziaria dei controlli" activeOpacity={0.82} onPress={() => router.push("/monitor-log")} style={{ minHeight: 74, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 16, padding: 16, flexDirection: "row", alignItems: "center", gap: 13 }}>
