@@ -4,6 +4,7 @@ import type { MonitorSnapshot } from "../lib/operational-status";
 
 const mock = vi.hoisted(() => ({
   platform: { OS: "android" },
+  getInitial: vi.fn(),
   request: vi.fn(),
   create: vi.fn(),
   write: vi.fn(),
@@ -15,7 +16,7 @@ vi.mock("react-native", () => ({ Platform: mock.platform }));
 vi.mock("expo-file-system/legacy", () => ({
   EncodingType: { UTF8: "utf8" },
   StorageAccessFramework: {
-    getUriForDirectoryInRoot: () => "content://com.android.externalstorage.documents/tree/primary%3ADownload",
+    getUriForDirectoryInRoot: mock.getInitial,
     requestDirectoryPermissionsAsync: mock.request,
     createFileAsync: mock.create,
   },
@@ -38,10 +39,12 @@ const entries: MonitorSnapshot[] = [{
 }];
 const downloadTree = "content://com.android.externalstorage.documents/tree/primary%3ADownload";
 const documentTree = "content://com.android.externalstorage.documents/tree/primary%3ADocuments";
+const documentInitialUri = "content://com.android.externalstorage.documents/tree/primary:Documents/document/primary:Documents";
 
 beforeEach(() => {
   mock.platform.OS = "android";
-  for (const fn of [mock.request, mock.create, mock.write, mock.read, mock.remove]) fn.mockReset();
+  for (const fn of [mock.getInitial, mock.request, mock.create, mock.write, mock.read, mock.remove]) fn.mockReset();
+  mock.getInitial.mockReturnValue(documentInitialUri);
   mock.request.mockResolvedValue({ granted: true, directoryUri: downloadTree });
   mock.create.mockImplementation(async (_dir: string, name: string) =>
     `content://com.android.externalstorage.documents/document/primary%3ADownload%2F${name}.csv`);
@@ -72,6 +75,8 @@ describe("salvataggio CSV sul dispositivo, senza cloud", () => {
     if (result.status !== "saved") throw new Error("Unexpected cancelled result");
     expect(result.mode).toBe("device");
     expect(result.filename).toMatch(/^agentpay-registro-tecnico-.*\.csv$/);
+    expect(mock.getInitial).toHaveBeenCalledWith("Documents");
+    expect(mock.request).toHaveBeenCalledWith(documentInitialUri);
     expect(mock.create).toHaveBeenCalledWith(downloadTree, result.filename.slice(0, -4), "text/csv");
     expect(mock.write).toHaveBeenCalledWith(expect.stringContaining("/document/primary%3ADownload%2F"), buildTechnicalLogCsv(entries), { encoding: "utf8" });
     expect(mock.read).toHaveBeenCalledTimes(1);
@@ -92,7 +97,16 @@ describe("salvataggio CSV sul dispositivo, senza cloud", () => {
       `content://com.android.externalstorage.documents/document/primary%3ADocuments%2F${name}.csv`);
     const result = await saveTechnicalLogOnDevice(entries);
     expect(result.status).toBe("saved");
+    expect(mock.request).toHaveBeenCalledWith(documentInitialUri);
     expect(mock.create).toHaveBeenCalledWith(documentTree, expect.any(String), "text/csv");
+  });
+
+  it("verifica comunque la directory restituita se il suggerimento iniziale non è disponibile", async () => {
+    mock.getInitial.mockImplementation(() => { throw new Error("initial location unavailable"); });
+    const result = await saveTechnicalLogOnDevice(entries);
+    expect(result.status).toBe("saved");
+    expect(mock.request).toHaveBeenCalledWith(undefined);
+    expect(mock.create).toHaveBeenCalledWith(downloadTree, expect.any(String), "text/csv");
   });
 
   it("rifiuta una URI file restituita sotto un albero diverso", async () => {

@@ -76,7 +76,9 @@ export async function saveTechnicalLogOnDevice(entries: MonitorSnapshot[]): Prom
 
   let initialUri: string | undefined;
   try {
-    initialUri = FileSystem.StorageAccessFramework.getUriForDirectoryInRoot("Download");
+    // Android 11+ does not grant ACTION_OPEN_DOCUMENT_TREE access to the Download root.
+    // Suggest Documents instead; the selected tree is validated independently below.
+    initialUri = FileSystem.StorageAccessFramework.getUriForDirectoryInRoot("Documents");
   } catch {
     // Some Android providers ignore the initial location. The returned URI is
     // still checked against the strict local-only allowlist before any write.
@@ -86,7 +88,7 @@ export async function saveTechnicalLogOnDevice(entries: MonitorSnapshot[]): Prom
 
   const treeId = localStorageTreeId(permission.directoryUri);
   if (!treeId) {
-    throw new DeviceSaveError("Scegli Download o Documenti nella memoria interna; le cartelle cloud non sono consentite.");
+    throw new DeviceSaveError("Scegli Documenti nella memoria interna (o Download solo se Android lo permette); le cartelle cloud non sono consentite.");
   }
 
   let createdUri: string | null = null;
