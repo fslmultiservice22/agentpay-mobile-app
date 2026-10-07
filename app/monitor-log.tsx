@@ -1,13 +1,13 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { getMonitorHistory, type ConnectionStatus, type MonitorSnapshot } from "@/lib/operational-status";
 import { buildTechnicalLogCsv } from "@/lib/technical-log-csv";
-import { exportTechnicalLogLocally } from "@/lib/technical-log-export";
+import { DeviceSaveError, saveTechnicalLogOnDevice } from "@/lib/technical-log-export";
 
 function statusColor(status: ConnectionStatus, colors: ReturnType<typeof useColors>) {
   if (status === "healthy") return colors.success;
@@ -20,7 +20,8 @@ export default function MonitorLogScreen() {
   const [entries, setEntries] = useState<MonitorSnapshot[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [previewCsv, setPreviewCsv] = useState<string | null>(null);
 
@@ -58,19 +59,25 @@ export default function MonitorLogScreen() {
     }
   }, [entries, error, loading]);
 
-  const exportLocally = useCallback(async () => {
+  const saveLocally = useCallback(async () => {
     if (loading || error || !entries.length) {
-      Alert.alert("Nessun dato tecnico", "Aggiorna il registro prima di esportarlo.");
+      Alert.alert("Nessun dato tecnico", "Aggiorna il registro prima di salvarlo.");
       return;
     }
-    setExporting(true);
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
     try {
-      const result = await exportTechnicalLogLocally(entries);
-      Alert.alert("Esportazione locale pronta", result.mode === "download" ? `Il file ${result.filename} è stato scaricato localmente.` : `Il file ${result.filename} è disponibile nel foglio di condivisione del dispositivo.`);
-    } catch (exportError) {
-      Alert.alert("Esportazione non disponibile", exportError instanceof Error ? exportError.message : "Impossibile creare il file locale.");
+      const result = await saveTechnicalLogOnDevice(entries);
+      if (result.status === "cancelled") return;
+      Alert.alert("CSV salvato", result.mode === "download"
+        ? `Il download del file ${result.filename} è stato richiesto al browser.`
+        : `Il file ${result.filename} è stato scritto e verificato nella cartella locale scelta. Aprilo con I miei file per completare il controllo.`);
+    } catch (saveError) {
+      Alert.alert("Salvataggio non riuscito", saveError instanceof DeviceSaveError ? saveError.message : "Impossibile verificare il file locale.");
     } finally {
-      setExporting(false);
+      savingRef.current = false;
+      setSaving(false);
     }
   }, [entries, error, loading]);
 
@@ -117,11 +124,11 @@ export default function MonitorLogScreen() {
           <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "800" }}>Vedi anteprima CSV</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Esporta il registro tecnico in CSV locale" accessibilityHint="Crea un file locale senza caricarlo a servizi esterni" accessibilityState={{ disabled: loading || !!error || exporting || !entries.length, busy: exporting }} activeOpacity={0.82} disabled={loading || !!error || exporting || !entries.length} onPress={() => void exportLocally()} style={{ minHeight: 48, borderRadius: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, justifyContent: "center", alignItems: "center", flexDirection: "row", gap: 8, opacity: loading || error || exporting || !entries.length ? 0.55 : 1 }}>
-          {exporting ? <ActivityIndicator size="small" color={colors.primary} /> : <MaterialIcons name="file-download" size={19} color={colors.primary} />}
-          <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "800" }}>{exporting ? "Esportazione locale…" : "Esporta CSV locale"}</Text>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Salva il CSV tecnico sul dispositivo" accessibilityHint="Scegli Download o Documenti nella memoria interna; Drive e le altre cartelle cloud vengono rifiutate" accessibilityState={{ disabled: loading || !!error || saving || !entries.length || Platform.OS === "ios", busy: saving }} activeOpacity={0.82} disabled={loading || !!error || saving || !entries.length || Platform.OS === "ios"} onPress={() => void saveLocally()} style={{ minHeight: 48, borderRadius: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, justifyContent: "center", alignItems: "center", flexDirection: "row", gap: 8, opacity: loading || error || saving || !entries.length || Platform.OS === "ios" ? 0.55 : 1 }}>
+          {saving ? <ActivityIndicator size="small" color={colors.primary} /> : <MaterialIcons name="file-download" size={19} color={colors.primary} />}
+          <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "800" }}>{saving ? "Salvataggio in corso…" : "Salva CSV sul dispositivo"}</Text>
         </TouchableOpacity>
-        <Text style={{ color: colors.muted, fontSize: 11, lineHeight: 16 }}>L’anteprima resta nell’app e non crea file. Il CSV contiene solo orario, stato e identificativo tecnico; l’esportazione apre il foglio di condivisione del dispositivo.</Text>
+        <Text style={{ color: colors.muted, fontSize: 11, lineHeight: 16 }}>{Platform.OS === "ios" ? "Il salvataggio locale iOS non è ancora disponibile." : "L’anteprima non crea file. Per salvare scegli Download o Documenti in Memoria interna; non viene aperto il foglio Condividi. Il CSV contiene solo orario, stato e identificativo tecnico."}</Text>
 
         {loading ? <ActivityIndicator color={colors.primary} /> : null}
         {error ? <Text style={{ color: colors.error, fontSize: 13 }}>{error}</Text> : null}
