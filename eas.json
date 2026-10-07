@@ -53,6 +53,7 @@
         "EXPO_PUBLIC_AGENTPAY_CSV_PILOT_PROFILE": "ordinary"
       },
       "android": {
+        "image": "latest",
         "buildType": "apk",
         "credentialsSource": "remote"
       }
