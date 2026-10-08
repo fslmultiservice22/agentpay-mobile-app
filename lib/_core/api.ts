@@ -8,6 +8,11 @@ type ApiResponse<T> = {
 };
 
 export async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const baseUrl = getApiBaseUrl();
+  if (Platform.OS !== "web" && !baseUrl) {
+    throw new Error("API base URL is not configured");
+  }
+
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...((options.headers as Record<string, string>) || {}),
@@ -24,7 +29,6 @@ export async function apiCall<T>(endpoint: string, options: RequestInit = {}): P
     }
   }
 
-  const baseUrl = getApiBaseUrl();
   // Ensure no double slashes between baseUrl and endpoint
   const cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
@@ -113,6 +117,9 @@ export async function getMe(): Promise<{
 export async function establishSession(token: string): Promise<boolean> {
   try {
     const baseUrl = getApiBaseUrl();
+    if (Platform.OS !== "web" && !baseUrl) {
+      return false;
+    }
     const url = `${baseUrl}/api/auth/session`;
 
     const response = await fetch(url, {

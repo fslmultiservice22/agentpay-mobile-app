@@ -37,6 +37,11 @@ jobs:
       - name: ESLint
         run: pnpm lint
 
+      - name: Native API origin regression gate (offline)
+        run: |
+          NODE_OPTIONS=--require=./tests/helpers/api-origin-deny-network.cjs node -e 'try { require("node:net").connect(1, "127.0.0.1"); process.exit(9); } catch (error) { process.exit(error.message === "AUDIT_NETWORK_BLOCKED" ? 0 : 8); }'
+          NODE_OPTIONS=--require=./tests/helpers/api-origin-deny-network.cjs node tests/api-origin-native-gate.test.cjs "$RUNNER_TEMP/api-origin-results.json"
+
       - name: Financial boundary and regression tests
         run: pnpm test:ci
 
