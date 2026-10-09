@@ -1,5 +1,6 @@
 import * as Linking from "expo-linking";
 import * as ReactNative from "react-native";
+import { APPROVED_NATIVE_API_ORIGINS } from "./native-api-origin-policy";
 
 // Must stay aligned with app.config.ts.
 const schemeFromBundleId = "agentpay";
@@ -22,14 +23,82 @@ export const OWNER_NAME = env.ownerName;
 export const API_BASE_URL = env.apiBaseUrl;
 
 /**
- * Get the API base URL, deriving from current hostname if not set.
+ * Return a configured API origin only when it is a canonical HTTPS origin.
+ *
+ * Native callers must not turn a missing or malformed configuration into a
+ * relative request. The helper deliberately accepts no path (including a
+ * trailing slash), port, userinfo, query, fragment, whitespace, or controls.
+ * It is pure so callers and tests can validate an explicit candidate without
+ * reading host environment values.
+ */
+export function getConfiguredApiOrigin(value: unknown): string {
+  if (typeof value !== "string" || !value) return "";
+  if (value !== value.trim() || /[\s\u0000-\u001F\u007F-\u009F]/u.test(value)) {
+    return "";
+  }
+
+  try {
+    const url = new URL(value);
+    if (
+      url.protocol !== "https:" ||
+      !url.hostname ||
+      url.username ||
+      url.password ||
+      url.port ||
+      url.search ||
+      url.hash ||
+      url.pathname !== "/" ||
+      value !== url.origin
+    ) {
+      return "";
+    }
+    return url.origin;
+  } catch {
+    return "";
+  }
+}
+
+/** Syntax is not trust: native credentials require a separately approved origin. */
+export function getApprovedNativeApiOrigin(value: unknown): string {
+  const origin = getConfiguredApiOrigin(value);
+  if (!origin) return "";
+
+  const hostname = new URL(origin).hostname.toLowerCase();
+  if (
+    hostname === "localhost" ||
+    hostname.endsWith(".localhost") ||
+    hostname.endsWith(".local") ||
+    hostname.endsWith(".") ||
+    !hostname.includes(".") ||
+    /^[\d.]+$/.test(hostname) ||
+    hostname.includes(":") ||
+    hostname.startsWith("[")
+  ) {
+    return "";
+  }
+
+  return APPROVED_NATIVE_API_ORIGINS.includes(origin) ? origin : "";
+}
+
+/**
+ * Get the API base URL, deriving from current hostname if not configured.
  * Metro runs on 8081, API server runs on 3000.
  * URL pattern: https://PORT-sandboxid.region.domain
+ *
+ * A configured value is used only when getConfiguredApiOrigin accepts it.
+ * On web an absent or invalid configured value may still use the existing
+ * 8081-to-3000 derivation, otherwise the empty string intentionally preserves
+ * relative same-origin requests. On native an empty string means unavailable;
+ * network clients must fail closed before reading auth or fetching.
  */
 export function getApiBaseUrl(): string {
-  // If API_BASE_URL is set, use it
-  if (API_BASE_URL) {
-    return API_BASE_URL.replace(/\/$/, "");
+  if (ReactNative.Platform.OS !== "web") {
+    return getApprovedNativeApiOrigin(API_BASE_URL);
+  }
+
+  const configuredOrigin = getConfiguredApiOrigin(API_BASE_URL);
+  if (configuredOrigin) {
+    return configuredOrigin;
   }
 
   // On web, derive from current hostname by replacing port 8081 with 3000

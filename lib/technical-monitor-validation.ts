@@ -1,4 +1,4 @@
-import type { ConnectionStatus, MonitorCheck, MonitorSnapshot } from "./operational-status";
+import type { ConnectionStatus, MonitorCheck, MonitorResponse, MonitorSnapshot } from "./operational-status";
 
 const CHECK_IDS = ["api", "runtime", "financial_policy"] as const;
 const CONNECTION_STATUSES: readonly string[] = ["healthy", "attention", "unavailable"];
@@ -26,4 +26,10 @@ export function isValidMonitoringSnapshot(value: unknown): value is MonitorSnaps
     seen.add(check.id);
   }
   return seen.size === CHECK_IDS.length;
+}
+
+/** A recent timestamp alone does not establish a valid API response. */
+export function isValidMonitoringResponse(value: unknown): value is MonitorResponse {
+  return isRecord(value) && value.success === true && isValidMonitoringSnapshot(value.monitoring) &&
+    Array.isArray(value.safeguards) && value.safeguards.every((item) => typeof item === "string");
 }
