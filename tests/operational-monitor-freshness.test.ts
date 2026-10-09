@@ -14,7 +14,15 @@ const mockApiCall = vi.mocked(apiCall);
 function response(checkedAt: string): MonitorResponse {
   return {
     success: true,
-    monitoring: { checkedAt, overallStatus: "healthy", checks: [] },
+    monitoring: {
+      checkedAt,
+      overallStatus: "healthy",
+      checks: [
+        { id: "api", label: "API tecnica", status: "healthy", detail: "Fixture sintetica" },
+        { id: "runtime", label: "Runtime", status: "healthy", detail: "Fixture sintetica" },
+        { id: "financial_policy", label: "Policy", status: "healthy", detail: "Funzioni finanziarie inattive" },
+      ],
+    },
     safeguards: ["Nessuna funzione finanziaria"],
   };
 }
@@ -55,5 +63,34 @@ describe("monitor tecnico: freschezza fail-closed", () => {
     await expect(getOperationalStatus()).rejects.toThrow(/stale or invalid/);
     mockApiCall.mockRejectedValueOnce(new Error("offline"));
     await expect(refreshOperationalStatus()).rejects.toThrow("offline");
+  });
+
+  it("rifiuta GET malformate prima di un refresh o dell'esposizione in UI", async () => {
+    const valid = response(new Date().toISOString());
+    for (const bad of [
+      { ...valid, success: false },
+      { ...valid, safeguards: [123] },
+      { ...valid, monitoring: { ...valid.monitoring, checks: [] } },
+    ]) {
+      mockApiCall.mockReset();
+      mockApiCall.mockResolvedValueOnce(bad);
+      await expect(getOperationalStatus()).rejects.toThrow("Technical monitoring response is invalid");
+      expect(mockApiCall).toHaveBeenCalledTimes(1);
+      expect(mockApiCall).toHaveBeenCalledWith("/api/operational-monitor/status");
+    }
+  });
+
+  it("rifiuta POST refresh con timestamp recente ma risposta invalida", async () => {
+    const valid = response(new Date().toISOString());
+    for (const bad of [
+      { ...valid, success: false },
+      { ...valid, safeguards: [123] },
+      { ...valid, monitoring: { ...valid.monitoring, checks: [] } },
+    ]) {
+      mockApiCall.mockReset();
+      mockApiCall.mockResolvedValueOnce(bad);
+      await expect(refreshOperationalStatus()).rejects.toThrow(/stale or invalid/);
+      expect(mockApiCall).toHaveBeenCalledTimes(1);
+    }
   });
 });
