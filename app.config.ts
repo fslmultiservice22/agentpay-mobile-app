@@ -71,7 +71,10 @@ const config: ExpoConfig = {
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
     permissions: ["POST_NOTIFICATIONS"],
-    blockedPermissions: ["android.permission.RECORD_AUDIO"],
+    blockedPermissions: [
+      "android.permission.RECORD_AUDIO",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+    ],
     intentFilters: [
       {
         action: "VIEW",
