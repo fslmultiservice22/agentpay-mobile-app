@@ -1,15 +1,17 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
-import { ScreenContainer } from '@/components/screen-container';
-import { useColors } from '@/hooks/use-colors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useCallback, useMemo, useState } from "react";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Haptics from "expo-haptics";
+import { useFocusEffect, useRouter } from "expo-router";
 
-const PLANNER_HISTORY_KEY = 'agentpay_planner_history';
+import type { ThemeColorPalette } from "@/constants/theme";
+import { ScreenContainer } from "@/components/screen-container";
+import { useColors } from "@/hooks/use-colors";
+
+const PLANNER_HISTORY_KEY = "agentpay_planner_history";
 
 interface PlanRecord {
-  month: string; // "2026-06"
+  month: string;
   savedAt: string;
   income: number;
   recurring: number;
@@ -18,61 +20,56 @@ interface PlanRecord {
   available: number;
 }
 
-export default function MonthlyComparisonScreen() {
-  const router = useRouter();
-  const colors = useColors();
-  const [history, setHistory] = useState<PlanRecord[]>([]);
+interface BarChartProps {
+  data: number[];
+  history: PlanRecord[];
+  maxValue: number;
+  color: string;
+  label: string;
+}
 
-  useEffect(() => {
-    loadHistory();
-  }, []);
+function formatMonth(monthYear: string) {
+  const [year, month] = monthYear.split("-");
+  const months = [
+    "Gen",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mag",
+    "Giu",
+    "Lug",
+    "Ago",
+    "Set",
+    "Ott",
+    "Nov",
+    "Dic",
+  ];
+  return `${months[Number.parseInt(month, 10) - 1]} ${year.slice(2)}`;
+}
 
-  const loadHistory = async () => {
-    try {
-      const stored = await AsyncStorage.getItem(PLANNER_HISTORY_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as PlanRecord[];
-        // Sort by month descending, take last 6
-        const sorted = parsed.sort((a, b) => b.month.localeCompare(a.month)).slice(0, 6).reverse();
-        setHistory(sorted);
-      }
-    } catch {}
-  };
+function formatAmount(value: number) {
+  return value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value.toFixed(0);
+}
 
-  const maxIncome = useMemo(() => Math.max(...history.map(h => h.income), 1), [history]);
-  const maxRecurring = useMemo(() => Math.max(...history.map(h => h.recurring), 1), [history]);
-  const maxSavings = useMemo(() => Math.max(...history.map(h => h.savings), 1), [history]);
-
-  const formatMonth = (m: string) => {
-    const [year, month] = m.split('-');
-    const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
-    return `${months[parseInt(month) - 1]} ${year.slice(2)}`;
-  };
-
-  const fmt = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n.toFixed(0);
-
-  // Trend calculation
-  const trend = useMemo(() => {
-    if (history.length < 2) return null;
-    const last = history[history.length - 1];
-    const prev = history[history.length - 2];
-    const incomeChange = ((last.income - prev.income) / prev.income) * 100;
-    const savingsChange = last.savingsRate - prev.savingsRate;
-    return { incomeChange, savingsChange };
-  }, [history]);
-
-  const BarChart = ({ data, maxVal, color, label }: { data: number[]; maxVal: number; color: string; label: string }) => (
+function BarChart({ data, history, maxValue, color, label }: BarChartProps) {
+  return (
     <View className="gap-2">
       <Text className="text-xs font-semibold text-foreground">{label}</Text>
       <View className="flex-row items-end gap-1" style={{ height: 100 }}>
-        {data.map((val, i) => {
-          const height = Math.max((val / maxVal) * 90, 4);
+        {data.map((value, index) => {
+          const height = Math.max((value / maxValue) * 90, 4);
           return (
-            <View key={i} className="flex-1 items-center justify-end" style={{ height: 100 }}>
-              <Text className="text-[9px] text-muted mb-1">€{fmt(val)}</Text>
+            <View
+              key={`${history[index]?.month ?? "month"}-${index}`}
+              className="flex-1 items-center justify-end"
+              style={{ height: 100 }}
+            >
+              <Text className="text-[9px] text-muted mb-1">
+                €{formatAmount(value)}
+              </Text>
               <View
                 style={{
-                  width: '70%',
+                  width: "70%",
                   height,
                   backgroundColor: color,
                   borderRadius: 4,
@@ -83,28 +80,53 @@ export default function MonthlyComparisonScreen() {
         })}
       </View>
       <View className="flex-row gap-1">
-        {history.map((h, i) => (
-          <View key={i} className="flex-1 items-center">
-            <Text className="text-[9px] text-muted">{formatMonth(h.month)}</Text>
+        {history.map((record, index) => (
+          <View
+            key={`${record.month}-${index}`}
+            className="flex-1 items-center"
+          >
+            <Text className="text-[9px] text-muted">
+              {formatMonth(record.month)}
+            </Text>
           </View>
         ))}
       </View>
     </View>
   );
+}
 
-  const SavingsRateChart = () => (
+interface SavingsRateChartProps {
+  history: PlanRecord[];
+  colors: ThemeColorPalette;
+}
+
+function SavingsRateChart({ history, colors }: SavingsRateChartProps) {
+  return (
     <View className="gap-2">
-      <Text className="text-xs font-semibold text-foreground">Tasso di Risparmio (%)</Text>
+      <Text className="text-xs font-semibold text-foreground">
+        Tasso di Risparmio (%)
+      </Text>
       <View className="flex-row items-end gap-1" style={{ height: 80 }}>
-        {history.map((h, i) => {
-          const height = Math.max((h.savingsRate / 100) * 70, 4);
-          const barColor = h.savingsRate >= 20 ? colors.success : h.savingsRate >= 10 ? colors.warning : colors.error;
+        {history.map((record, index) => {
+          const height = Math.max((record.savingsRate / 100) * 70, 4);
+          const barColor =
+            record.savingsRate >= 20
+              ? colors.success
+              : record.savingsRate >= 10
+                ? colors.warning
+                : colors.error;
           return (
-            <View key={i} className="flex-1 items-center justify-end" style={{ height: 80 }}>
-              <Text className="text-[9px] text-muted mb-1">{h.savingsRate.toFixed(0)}%</Text>
+            <View
+              key={`${record.month}-${index}`}
+              className="flex-1 items-center justify-end"
+              style={{ height: 80 }}
+            >
+              <Text className="text-[9px] text-muted mb-1">
+                {record.savingsRate.toFixed(0)}%
+              </Text>
               <View
                 style={{
-                  width: '70%',
+                  width: "70%",
                   height,
                   backgroundColor: barColor,
                   borderRadius: 4,
@@ -115,30 +137,102 @@ export default function MonthlyComparisonScreen() {
         })}
       </View>
       <View className="flex-row gap-1">
-        {history.map((h, i) => (
-          <View key={i} className="flex-1 items-center">
-            <Text className="text-[9px] text-muted">{formatMonth(h.month)}</Text>
+        {history.map((record, index) => (
+          <View
+            key={`${record.month}-${index}`}
+            className="flex-1 items-center"
+          >
+            <Text className="text-[9px] text-muted">
+              {formatMonth(record.month)}
+            </Text>
           </View>
         ))}
       </View>
     </View>
   );
+}
+
+export default function MonthlyComparisonScreen() {
+  const router = useRouter();
+  const colors = useColors();
+  const [history, setHistory] = useState<PlanRecord[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isCurrent = true;
+
+      AsyncStorage.getItem(PLANNER_HISTORY_KEY)
+        .then((stored) => {
+          if (!isCurrent) return;
+          if (!stored) {
+            setHistory([]);
+            return;
+          }
+
+          const parsed = JSON.parse(stored) as PlanRecord[];
+          const sorted = parsed
+            .sort((first, second) => second.month.localeCompare(first.month))
+            .slice(0, 6)
+            .reverse();
+          setHistory(sorted);
+        })
+        .catch(() => {
+          if (isCurrent) setHistory([]);
+        });
+
+      return () => {
+        isCurrent = false;
+      };
+    }, []),
+  );
+
+  const maxIncome = useMemo(
+    () => Math.max(...history.map((record) => record.income), 1),
+    [history],
+  );
+  const maxRecurring = useMemo(
+    () => Math.max(...history.map((record) => record.recurring), 1),
+    [history],
+  );
+  const maxSavings = useMemo(
+    () => Math.max(...history.map((record) => record.savings), 1),
+    [history],
+  );
+
+  const trend = useMemo(() => {
+    if (history.length < 2) return null;
+
+    const last = history[history.length - 1];
+    const previous = history[history.length - 2];
+    const incomeChange =
+      previous.income === 0
+        ? 0
+        : ((last.income - previous.income) / previous.income) * 100;
+    const savingsChange = last.savingsRate - previous.savingsRate;
+    return { incomeChange, savingsChange };
+  }, [history]);
 
   return (
-    <ScreenContainer edges={['top', 'left', 'right', 'bottom']}>
+    <ScreenContainer edges={["top", "left", "right", "bottom"]}>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View className="flex-1 p-6 gap-5">
-          {/* Header */}
           <View className="flex-row items-center gap-3">
             <TouchableOpacity
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.back();
+              }}
               style={{ padding: 8 }}
             >
               <Text className="text-2xl text-foreground">←</Text>
             </TouchableOpacity>
             <View className="flex-1">
-              <Text className="text-xl font-bold text-foreground">Confronto Mensile</Text>
-              <Text className="text-xs text-muted">Ultimi {history.length} mesi dal Pianificatore</Text>
+              <Text className="text-xl font-bold text-foreground">
+                Confronto Mensile
+              </Text>
+              <Text className="text-xs text-muted">
+                Ultimi {history.length} mesi dal Pianificatore
+              </Text>
             </View>
           </View>
 
@@ -149,98 +243,138 @@ export default function MonthlyComparisonScreen() {
                 Nessun dato disponibile
               </Text>
               <Text className="text-sm text-muted text-center px-8">
-                Genera almeno 2 piani mensili dal Pianificatore Finanziario per visualizzare il confronto.
+                Genera almeno 2 piani mensili dal Pianificatore Finanziario per
+                visualizzare il confronto.
               </Text>
               <TouchableOpacity
-                onPress={() => router.push('/financial-planner')}
+                onPress={() => router.push("/financial-planner")}
                 className="bg-primary rounded-xl px-6 py-3 mt-2"
               >
-                <Text className="text-background font-semibold">Vai al Pianificatore</Text>
+                <Text className="text-background font-semibold">
+                  Vai al Pianificatore
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
             <>
-              {/* Trend KPI */}
-              {trend && (
+              {trend ? (
                 <View className="flex-row gap-3">
                   <View className="flex-1 bg-surface rounded-xl p-4 border border-border">
-                    <Text className="text-xs text-muted">Variazione Entrate</Text>
+                    <Text className="text-xs text-muted">
+                      Variazione Entrate
+                    </Text>
                     <Text
                       className="text-lg font-bold"
-                      style={{ color: trend.incomeChange >= 0 ? colors.success : colors.error }}
+                      style={{
+                        color:
+                          trend.incomeChange >= 0
+                            ? colors.success
+                            : colors.error,
+                      }}
                     >
-                      {trend.incomeChange >= 0 ? '↑' : '↓'} {Math.abs(trend.incomeChange).toFixed(1)}%
+                      {trend.incomeChange >= 0 ? "↑" : "↓"}{" "}
+                      {Math.abs(trend.incomeChange).toFixed(1)}%
                     </Text>
                   </View>
                   <View className="flex-1 bg-surface rounded-xl p-4 border border-border">
-                    <Text className="text-xs text-muted">Variazione Risparmio</Text>
+                    <Text className="text-xs text-muted">
+                      Variazione Risparmio
+                    </Text>
                     <Text
                       className="text-lg font-bold"
-                      style={{ color: trend.savingsChange >= 0 ? colors.success : colors.error }}
+                      style={{
+                        color:
+                          trend.savingsChange >= 0
+                            ? colors.success
+                            : colors.error,
+                      }}
                     >
-                      {trend.savingsChange >= 0 ? '↑' : '↓'} {Math.abs(trend.savingsChange).toFixed(1)}pp
+                      {trend.savingsChange >= 0 ? "↑" : "↓"}{" "}
+                      {Math.abs(trend.savingsChange).toFixed(1)}pp
                     </Text>
                   </View>
                 </View>
-              )}
+              ) : null}
 
-              {/* Income Chart */}
               <View className="bg-surface rounded-xl p-4 border border-border">
                 <BarChart
-                  data={history.map(h => h.income)}
-                  maxVal={maxIncome}
+                  data={history.map((record) => record.income)}
+                  history={history}
+                  maxValue={maxIncome}
                   color={colors.primary}
                   label="Entrate Mensili (€)"
                 />
               </View>
 
-              {/* Recurring Chart */}
               <View className="bg-surface rounded-xl p-4 border border-border">
                 <BarChart
-                  data={history.map(h => h.recurring)}
-                  maxVal={maxRecurring}
+                  data={history.map((record) => record.recurring)}
+                  history={history}
+                  maxValue={maxRecurring}
                   color={colors.warning}
                   label="Spese Ricorrenti (€)"
                 />
               </View>
 
-              {/* Savings Chart */}
               <View className="bg-surface rounded-xl p-4 border border-border">
                 <BarChart
-                  data={history.map(h => h.savings)}
-                  maxVal={maxSavings}
+                  data={history.map((record) => record.savings)}
+                  history={history}
+                  maxValue={maxSavings}
                   color={colors.success}
                   label="Risparmio Mensile (€)"
                 />
               </View>
 
-              {/* Savings Rate Chart */}
               <View className="bg-surface rounded-xl p-4 border border-border">
-                <SavingsRateChart />
+                <SavingsRateChart history={history} colors={colors} />
               </View>
 
-              {/* Summary Table */}
               <View className="bg-surface rounded-xl border border-border overflow-hidden">
                 <View className="flex-row bg-primary/10 p-3">
-                  <Text className="flex-1 text-xs font-bold text-foreground">Mese</Text>
-                  <Text className="w-16 text-xs font-bold text-foreground text-right">Entrate</Text>
-                  <Text className="w-16 text-xs font-bold text-foreground text-right">Spese</Text>
-                  <Text className="w-14 text-xs font-bold text-foreground text-right">Risp.%</Text>
+                  <Text className="flex-1 text-xs font-bold text-foreground">
+                    Mese
+                  </Text>
+                  <Text className="w-16 text-xs font-bold text-foreground text-right">
+                    Entrate
+                  </Text>
+                  <Text className="w-16 text-xs font-bold text-foreground text-right">
+                    Spese
+                  </Text>
+                  <Text className="w-14 text-xs font-bold text-foreground text-right">
+                    Risp.%
+                  </Text>
                 </View>
-                {history.map((h, i) => (
+                {history.map((record, index) => (
                   <View
-                    key={i}
+                    key={`${record.month}-${index}`}
                     className="flex-row p-3"
-                    style={{ borderTopWidth: i > 0 ? 0.5 : 0, borderTopColor: colors.border }}
+                    style={{
+                      borderTopWidth: index > 0 ? 0.5 : 0,
+                      borderTopColor: colors.border,
+                    }}
                   >
-                    <Text className="flex-1 text-xs text-foreground">{formatMonth(h.month)}</Text>
-                    <Text className="w-16 text-xs text-foreground text-right">€{fmt(h.income)}</Text>
-                    <Text className="w-16 text-xs text-foreground text-right">€{fmt(h.recurring)}</Text>
+                    <Text className="flex-1 text-xs text-foreground">
+                      {formatMonth(record.month)}
+                    </Text>
+                    <Text className="w-16 text-xs text-foreground text-right">
+                      €{formatAmount(record.income)}
+                    </Text>
+                    <Text className="w-16 text-xs text-foreground text-right">
+                      €{formatAmount(record.recurring)}
+                    </Text>
                     <Text
                       className="w-14 text-xs font-semibold text-right"
-                      style={{ color: h.savingsRate >= 20 ? colors.success : h.savingsRate >= 10 ? colors.warning : colors.error }}
+                      style={{
+                        color:
+                          record.savingsRate >= 20
+                            ? colors.success
+                            : record.savingsRate >= 10
+                              ? colors.warning
+                              : colors.error,
+                      }}
                     >
-                      {h.savingsRate.toFixed(0)}%
+                      {record.savingsRate.toFixed(0)}%
                     </Text>
                   </View>
                 ))}

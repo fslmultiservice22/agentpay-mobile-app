@@ -38,7 +38,8 @@ const env = {
   appSlug: "agentpay-mobile-app",
   // S3 URL of the app logo - set this to the URL returned by generate_image when creating custom logo
   // Leave empty to use the default icon from assets/images/icon.png
-  logoUrl: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663692213404/MMYywMlPdGhygMJN.png",
+  logoUrl:
+    "https://files.manuscdn.com/user_upload_by_module/session_file/310519663692213404/MMYywMlPdGhygMJN.png",
   scheme: schemeFromBundleId,
   iosBundleId: bundleId,
   androidPackage: bundleId,
@@ -70,6 +71,7 @@ const config: ExpoConfig = {
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
     permissions: ["POST_NOTIFICATIONS"],
+    blockedPermissions: ["android.permission.RECORD_AUDIO"],
     intentFilters: [
       {
         action: "VIEW",
@@ -92,9 +94,14 @@ const config: ExpoConfig = {
   plugins: [
     "expo-router",
     "expo-asset",
-    "expo-audio",
     "expo-font",
     "expo-image",
+    [
+      "expo-image-picker",
+      {
+        microphonePermission: false,
+      },
+    ],
     "expo-secure-store",
     "expo-sharing",
     "expo-status-bar",
@@ -102,8 +109,9 @@ const config: ExpoConfig = {
     [
       "expo-local-authentication",
       {
-        "faceIDPermission": "Allow $(PRODUCT_NAME) to use Face ID for secure access."
-      }
+        faceIDPermission:
+          "Allow $(PRODUCT_NAME) to use Face ID for secure access.",
+      },
     ],
     [
       "expo-video",
