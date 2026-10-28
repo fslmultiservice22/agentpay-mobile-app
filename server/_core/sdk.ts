@@ -14,7 +14,8 @@ import type {
   GetUserInfoWithJwtRequest,
   GetUserInfoWithJwtResponse,
 } from "./types/manusTypes";
-import { consumeOAuthState } from "./oauth-state";
+import { exchangeWithOAuthState } from "./oauth-state";
+import { requireTrustedOAuthServerUrl, validateOAuthServerUrl } from "./oauth-server-url-policy";
 // Utility function
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0;
@@ -31,32 +32,36 @@ const GET_USER_INFO_WITH_JWT_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserI
 
 class OAuthService {
   constructor(private client: ReturnType<typeof axios.create>) {
-    console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
-    if (!ENV.oAuthServerUrl) {
+    const trustedUrl = validateOAuthServerUrl(ENV.oAuthServerUrl);
+    if (trustedUrl) {
+      console.log("[OAuth] Initialized with trusted OAuth origin");
+    } else {
       console.error(
-        "[OAuth] ERROR: OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable.",
+        "[OAuth] ERROR: OAUTH_SERVER_URL is missing or not a trusted HTTPS OAuth origin",
       );
     }
   }
 
-  private decodeState(state: string): string {
-    return consumeOAuthState(state);
-  }
-
   async getTokenByCode(code: string, state: string): Promise<ExchangeTokenResponse> {
-    const payload: ExchangeTokenRequest = {
-      clientId: ENV.appId,
-      grantType: "authorization_code",
-      code,
-      redirectUri: this.decodeState(state),
-    };
+    requireTrustedOAuthServerUrl(ENV.oAuthServerUrl);
+    return exchangeWithOAuthState(state, async (redirectUri) => {
+      const payload: ExchangeTokenRequest = {
+        clientId: ENV.appId,
+        grantType: "authorization_code",
+        code,
+        redirectUri,
+      };
 
-    const { data } = await this.client.post<ExchangeTokenResponse>(EXCHANGE_TOKEN_PATH, payload);
-
-    return data;
+      const { data } = await this.client.post<ExchangeTokenResponse>(
+        EXCHANGE_TOKEN_PATH,
+        payload,
+      );
+      return data;
+    });
   }
 
   async getUserInfoByToken(token: ExchangeTokenResponse): Promise<GetUserInfoResponse> {
+    requireTrustedOAuthServerUrl(ENV.oAuthServerUrl);
     const { data } = await this.client.post<GetUserInfoResponse>(GET_USER_INFO_PATH, {
       accessToken: token.accessToken,
     });
@@ -67,8 +72,11 @@ class OAuthService {
 
 const createOAuthHttpClient = (): AxiosInstance =>
   axios.create({
-    baseURL: ENV.oAuthServerUrl,
+    // Invalid configuration deliberately becomes unusable; each OAuth method
+    // asserts the same policy again immediately before sending credentials.
+    baseURL: validateOAuthServerUrl(ENV.oAuthServerUrl) ?? undefined,
     timeout: AXIOS_TIMEOUT_MS,
+    maxRedirects: 0,
   });
 
 class SDKServer {
@@ -186,6 +194,13 @@ class SDKServer {
       return null;
     }
 
+    // An empty app ID must never act as a wildcard, and a token copied from
+    // another application must not be accepted by this server.
+    if (!isNonEmptyString(ENV.appId)) {
+      console.error("[Auth] Session verification unavailable: app ID is not configured");
+      return null;
+    }
+
     try {
       const secretKey = this.getSessionSecret();
       const { payload } = await jwtVerify(cookieValue, secretKey, {
@@ -195,6 +210,11 @@ class SDKServer {
 
       if (!isNonEmptyString(openId) || !isNonEmptyString(appId) || !isNonEmptyString(name)) {
         console.warn("[Auth] Session payload missing required fields");
+        return null;
+      }
+
+      if (appId !== ENV.appId) {
+        console.warn("[Auth] Session app ID does not match this application");
         return null;
       }
 
@@ -210,6 +230,7 @@ class SDKServer {
   }
 
   async getUserInfoWithJwt(jwtToken: string): Promise<GetUserInfoWithJwtResponse> {
+    requireTrustedOAuthServerUrl(ENV.oAuthServerUrl);
     const payload: GetUserInfoWithJwtRequest = {
       jwtToken,
       projectId: ENV.appId,

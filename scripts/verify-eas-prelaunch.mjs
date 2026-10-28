@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
+import { parseEasShortVariableNames } from "./eas-preview-variable-names.mjs";
 
 const projectRoot = resolve(import.meta.dirname, "..");
 const expected = {
@@ -26,15 +27,21 @@ function fail(message) {
 }
 
 function run(command, args) {
-  const result = spawnSync(command, args, {
-    cwd: projectRoot,
-    encoding: "utf8",
-    env: process.env,
-  });
+  let result;
+  try {
+    result = spawnSync(command, args, {
+      cwd: projectRoot,
+      encoding: "utf8",
+      env: process.env,
+    });
+  } catch {
+    fail(`${command} ${args.join(" ")} — comando non eseguibile; dettagli omessi`);
+  }
 
-  if (result.status !== 0) {
-    const detail = (result.stderr || result.stdout || "comando fallito").trim().split("\n").slice(-3).join(" | ");
-    fail(`${command} ${args.join(" ")} — ${detail}`);
+  if (result.error || result.status !== 0) {
+    // env:list may include values in either stream, even when it fails.
+    // Never forward child output, exception messages, or environment contents.
+    fail(`${command} ${args.join(" ")} — comando fallito; dettagli omessi`);
   }
 
   return result.stdout.trim();
@@ -75,17 +82,25 @@ for (const disabledFlag of ["networkRequestsAllowed: false", "consentAllowed: fa
 }
 
 const expoJson = run("npx", ["expo", "config", "--type", "public", "--json"]);
-const expoConfig = JSON.parse(expoJson);
+let expoConfig;
+try {
+  expoConfig = JSON.parse(expoJson);
+} catch {
+  fail("configurazione Expo non interpretabile; output omesso");
+}
 
 if (expoConfig.extra?.localCsvPilotBuildAllowed !== false) fail("il profilo prelaunch non deve abilitare il pilota CSV");
-if (expoConfig.name !== expected.name) fail(`nome app inatteso: ${expoConfig.name}`);
-if (expoConfig.slug !== expected.slug) fail(`slug inatteso: ${expoConfig.slug}`);
-if (expoConfig.owner !== expected.owner) fail(`owner inatteso: ${expoConfig.owner}`);
-if (expoConfig.version !== expected.version) fail(`versione inattesa: ${expoConfig.version}`);
-if (expoConfig.android?.package !== expected.androidPackage) fail(`package Android inatteso: ${expoConfig.android?.package}`);
+if (expoConfig.name !== expected.name) fail("nome app inatteso; valore omesso");
+if (expoConfig.slug !== expected.slug) fail("slug inatteso; valore omesso");
+if (expoConfig.owner !== expected.owner) fail("owner inatteso; valore omesso");
+if (expoConfig.version !== expected.version) fail("versione inattesa; valore omesso");
+if (expoConfig.android?.package !== expected.androidPackage) fail("package Android inatteso; valore omesso");
 
 const offline = process.env.EAS_PREFLIGHT_OFFLINE === "1";
 let remoteVersionCode = null;
+const previewVariablePresence = Object.fromEntries(
+  requiredPreviewVariables.map((name) => [name, "skipped-offline"]),
+);
 if (!offline) {
   const whoami = run("npx", ["eas-cli@23.2.0", "whoami"]);
   const availableIdentities = whoami.split("\n").map((line) => line.trim().replace(/^•\s*/, ""));
@@ -117,12 +132,10 @@ if (!offline) {
     "--format",
     "short",
   ]);
-  const availablePreviewVariables = new Set(
-    previewEnvironmentOutput
-      .split("\n")
-      .map((line) => line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s/)?.[1])
-      .filter(Boolean),
-  );
+  const availablePreviewVariables = parseEasShortVariableNames(previewEnvironmentOutput);
+  for (const name of requiredPreviewVariables) {
+    previewVariablePresence[name] = availablePreviewVariables.has(name) ? "present" : "missing";
+  }
   const missingPreviewVariables = requiredPreviewVariables.filter(
     (name) => !availablePreviewVariables.has(name),
   );
@@ -148,6 +161,7 @@ console.log(
       remoteVersionCode: offline ? "skipped-offline" : remoteVersionCode,
       minimumRemoteVersionCode: expected.minimumRemoteVersionCode,
       previewVariableCheck: offline ? "skipped-offline" : "verified",
+      previewVariablePresence,
       submitConfigured: false,
       financialServicesEnabled: false,
     },

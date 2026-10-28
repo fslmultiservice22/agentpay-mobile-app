@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -93,4 +93,74 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+export type OAuthStateReservationInput = {
+  stateHash: string;
+  reservationId: string;
+  expiresAtMs: number;
+  nowMs: number;
+};
+
+async function requireOAuthStateDatabase() {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("OAuth state persistence database is not available");
+  }
+  return db;
+}
+
+/** Atomically inserts one reservation; duplicate state hashes never replace an existing row. */
+export async function reserveOAuthStateReservation(
+  input: OAuthStateReservationInput,
+): Promise<boolean> {
+  const db = await requireOAuthStateDatabase();
+  const retainUntilMs = input.nowMs - 24 * 60 * 60 * 1000;
+
+  // Retain consumed/recovery records for 24h after token expiry, then prune a bounded batch.
+  await db.execute(sql`
+    DELETE FROM oauth_state_reservations
+    WHERE expiresAtMs <= ${retainUntilMs}
+    ORDER BY expiresAtMs
+    LIMIT 500
+  `);
+
+  const [result] = await db.execute(sql`
+    INSERT IGNORE INTO oauth_state_reservations
+      (stateHash, status, reservationId, expiresAtMs)
+    VALUES
+      (${input.stateHash}, 'reserved', ${input.reservationId}, ${input.expiresAtMs})
+  `);
+  return result.affectedRows === 1;
+}
+
+/** Consumes only a live reservation owned by this attempt. */
+export async function consumeOAuthStateReservation(input: {
+  stateHash: string;
+  reservationId: string;
+  nowMs: number;
+}): Promise<boolean> {
+  const db = await requireOAuthStateDatabase();
+  const [result] = await db.execute(sql`
+    UPDATE oauth_state_reservations
+    SET status = 'consumed', reservationId = NULL, consumedAt = CURRENT_TIMESTAMP(3)
+    WHERE stateHash = ${input.stateHash}
+      AND status = 'reserved'
+      AND reservationId = ${input.reservationId}
+      AND expiresAtMs > ${input.nowMs}
+  `);
+  return result.affectedRows === 1;
+}
+
+/** Releases only a still-reserved row owned by this attempt. */
+export async function releaseOAuthStateReservation(input: {
+  stateHash: string;
+  reservationId: string;
+}): Promise<boolean> {
+  const db = await requireOAuthStateDatabase();
+  const [result] = await db.execute(sql`
+    DELETE FROM oauth_state_reservations
+    WHERE stateHash = ${input.stateHash}
+      AND status = 'reserved'
+      AND reservationId = ${input.reservationId}
+  `);
+  return result.affectedRows === 1;
+}
