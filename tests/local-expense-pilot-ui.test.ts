@@ -7,39 +7,27 @@ const screen = readFileSync(
   resolve(process.cwd(), "app/local-expense-pilot.tsx"),
   "utf8",
 );
-const settings = readFileSync(
-  resolve(process.cwd(), "app/(tabs)/settings.tsx"),
-  "utf8",
-);
-
 describe("pilota CSV UI isolato", () => {
-  it("è raggiungibile dalle Impostazioni senza togliere le guardie al Portafoglio", () => {
-    expect(settings).toContain('router.push("/local-expense-pilot")');
+  it("rende esplicito che l'import CSV reale è disabilitato", () => {
+    expect(screen).toContain("Import CSV reale non disponibile");
+    expect(screen).toContain(
+      "La selezione di file personali o di estratti conto è disabilitata",
+    );
+    expect(screen).toContain("revisione privacy non sarà approvata");
+    expect(screen).toContain("Nessun file viene");
+    expect(screen).toContain("aperto, letto, copiato o inviato.");
+    expect(screen).toContain('accessibilityLabel="Torna alle impostazioni"');
+    expect(screen).toContain("router.back()");
+  });
+
+  it("mantiene le guardie finanziarie e non effettua I/O", () => {
     expect(isFinancialRouteBlocked("/portfolio")).toBe(true);
     expect(isFinancialRouteBlocked("/ob-connect")).toBe(true);
     expect(isFinancialRouteBlocked("/wallet-import")).toBe(true);
-  });
-
-  it("richiede una conferma esplicita per un CSV anonimo e limita la preview", () => {
-    expect(screen).toContain(
-      "Confermo che il CSV contiene solo dati fittizi o anonimizzati",
-    );
-    expect(screen).toContain("disabled={!confirmed || busy}");
-    expect(screen).toContain("slice(0, previewLimit)");
-    expect(screen).toContain("MAX_LOCAL_CSV_BYTES");
-  });
-
-  it("elimina soltanto la copia cache del picker e cancella lo stato in memoria", () => {
-    expect(screen).toContain("asset.uri.startsWith(Paths.cache.uri)");
-    expect(screen).toContain("new File(copiedUri).delete()");
-    expect(screen).toContain("setResult(null)");
-    expect(screen).toContain("URL.revokeObjectURL(blobUri)");
-  });
-
-  it("non importa moduli di rete o servizi finanziari", () => {
     expect(screen).not.toMatch(
       /\b(?:fetch\s*\(|axios|trpc|AsyncStorage|wallester|enable-banking|useBankAccounts)\b/i,
     );
+    expect(screen).not.toMatch(/expo-document-picker|DocumentPicker|getDocumentAsync/i);
     expect(screen).not.toContain("File.upload(");
   });
 });

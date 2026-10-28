@@ -4,6 +4,7 @@ import { getUserByOpenId, upsertUser } from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { createOAuthState } from "./oauth-state";
 import { sdk } from "./sdk";
+import { isTrustedSessionCookieOrigin } from "./origin-guard";
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -138,9 +139,25 @@ export function registerOAuthRoutes(app: Express) {
     }
   });
 
-  app.post("/api/auth/logout", (req: Request, res: Response) => {
+  app.post("/api/auth/logout", async (req: Request, res: Response) => {
+    // Browsers automatically attach the session cookie, making this a
+    // state-changing cookie-authenticated operation. Native bearer-only
+    // callers do not send a cookie and may not have an Origin header.
+    if (!(await isTrustedSessionCookieOrigin(req))) {
+      res.status(403).json({ error: "Origin non consentita" });
+      return;
+    }
+
+    try {
+      await sdk.revokeSessionsFromRequest(req);
+    } catch {
+      console.error("[Auth] Session revocation failed");
+      res.status(503).json({ error: "Logout could not be completed" });
+      return;
+    }
+
     const cookieOptions = getSessionCookieOptions(req);
-    res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+    res.clearCookie(COOKIE_NAME, cookieOptions);
     res.json({ success: true });
   });
 

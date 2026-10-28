@@ -1,5 +1,12 @@
 import * as Linking from "expo-linking";
 import * as ReactNative from "react-native";
+import { savePendingOAuthState } from "../lib/oauth-pending-state";
+import {
+  isTrustedApiOrigin,
+  PUBLISHED_API_BASE_URL,
+  resolveApiBaseUrl,
+  validateApiBaseUrl,
+} from "../lib/api-base-url-policy";
 
 // Must stay aligned with app.config.ts.
 const schemeFromBundleId = "agentpay";
@@ -27,27 +34,33 @@ export const API_BASE_URL = env.apiBaseUrl;
  * URL pattern: https://PORT-sandboxid.region.domain
  */
 export function getApiBaseUrl(): string {
-  // If API_BASE_URL is set, use it
-  if (API_BASE_URL) {
-    return API_BASE_URL.replace(/\/$/, "");
-  }
+  const isDevelopment = typeof __DEV__ !== "undefined" && __DEV__ === true;
 
-  // On web, derive from current hostname by replacing port 8081 with 3000
+  // Explicit configuration is accepted only when the policy allowlists it.
+  if (API_BASE_URL) return resolveApiBaseUrl(API_BASE_URL, { isDevelopment });
+
+  // On web, derive a development preview API only from a known preview host.
   if (
     ReactNative.Platform.OS === "web" &&
     typeof window !== "undefined" &&
     window.location
   ) {
-    const { protocol, hostname } = window.location;
-    // Pattern: 8081-sandboxid.region.domain -> 3000-sandboxid.region.domain
-    const apiHostname = hostname.replace(/^8081-/, "3000-");
-    if (apiHostname !== hostname) {
-      return `${protocol}//${apiHostname}`;
+    const { protocol, hostname, origin } = window.location;
+    if (isDevelopment && hostname === "localhost" && protocol === "http:") {
+      return resolveApiBaseUrl("http://localhost:3000", { isDevelopment });
     }
+    // Pattern: 8081-preview...us1/us2.manus.computer -> 3000-preview...
+    const apiHostname = hostname.replace(/^8081-/, "3000-");
+    if (isDevelopment && apiHostname !== hostname) {
+      const candidate = `${protocol}//${apiHostname}`;
+      const validated = validateApiBaseUrl(candidate, { isDevelopment });
+      if (validated) return validated;
+    }
+    // Relative URLs are safe only on the published backend's own origin.
+    if (isTrustedApiOrigin(origin)) return "";
   }
 
-  // Fallback to empty (will use relative URL)
-  return "";
+  return PUBLISHED_API_BASE_URL;
 }
 
 export const SESSION_TOKEN_KEY = "app_session_token";
@@ -60,7 +73,7 @@ export const USER_INFO_KEY = "manus-runtime-user-info";
  */
 export const getRedirectUri = () => {
   if (ReactNative.Platform.OS === "web") {
-    return `${getApiBaseUrl()}/api/oauth/callback`;
+    return `${getApiBaseUrl() || PUBLISHED_API_BASE_URL}/api/oauth/callback`;
   } else {
     return Linking.createURL("/oauth/callback", {
       scheme: env.deepLinkScheme,
@@ -71,7 +84,6 @@ export const getRedirectUri = () => {
 export const getLoginUrl = async () => {
   const redirectUri = getRedirectUri();
   const apiBaseUrl = getApiBaseUrl();
-  if (!apiBaseUrl) throw new Error("OAuth API base URL is not configured");
   const stateResponse = await fetch(`${apiBaseUrl}/api/oauth/state`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -79,13 +91,14 @@ export const getLoginUrl = async () => {
   });
   if (!stateResponse.ok) throw new Error("Unable to initialize OAuth state");
   const { state } = (await stateResponse.json()) as { state?: string };
-  if (!state) throw new Error("OAuth state is missing");
+  if (typeof state !== "string" || !state) throw new Error("OAuth state is missing");
 
   const url = new URL(`${OAUTH_PORTAL_URL}/app-auth`);
   url.searchParams.set("appId", APP_ID);
   url.searchParams.set("redirectUri", redirectUri);
   url.searchParams.set("state", state);
   url.searchParams.set("type", "signIn");
+  await savePendingOAuthState(state);
 
   return url.toString();
 };

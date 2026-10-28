@@ -1,5 +1,8 @@
 import { COOKIE_NAME } from "../shared/const.js";
+import { TRPCError } from "@trpc/server";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { isTrustedSessionCookieOrigin } from "./_core/origin-guard";
+import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 
@@ -8,9 +11,16 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
-    logout: publicProcedure.mutation(({ ctx }) => {
+    logout: publicProcedure.mutation(async ({ ctx }) => {
+      if (!(await isTrustedSessionCookieOrigin(ctx.req))) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Origin non consentita",
+        });
+      }
+      await sdk.revokeSessionsFromRequest(ctx.req);
       const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      ctx.res.clearCookie(COOKIE_NAME, cookieOptions);
       return {
         success: true,
       } as const;

@@ -9,7 +9,6 @@ const ignoredDirectories = new Set(["node_modules", ".git", "dist", ".expo", "te
 const allowedBoundaryFiles = new Set([
   "server/_core/index.ts",
   "server/routes/enable-banking.ts",
-  "server/routes/codego.ts",
 ]);
 const ignoredFiles = new Set([
   "financial-import-boundary.test.ts",

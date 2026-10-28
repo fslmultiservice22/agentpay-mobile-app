@@ -107,10 +107,6 @@ export default function TechnicalSettingsScreen() {
             <View style={styles.rowLeading}><MaterialIcons name="format-list-bulleted" size={21} color={colors.primary} /><Text style={[styles.rowText, { color: colors.foreground }]}>Registro tecnico</Text></View>
             <MaterialIcons name="chevron-right" size={22} color={colors.muted} />
           </TouchableOpacity>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Apri pilota CSV locale con dati anonimi" activeOpacity={0.82} onPress={() => router.push("/local-expense-pilot")} style={styles.rowAction}>
-            <View style={styles.rowLeading}><MaterialIcons name="description" size={21} color={colors.primary} /><Text style={[styles.rowText, { color: colors.foreground }]}>Pilota CSV locale</Text></View>
-            <MaterialIcons name="chevron-right" size={22} color={colors.muted} />
-          </TouchableOpacity>
         </View>
 
         <Text style={[styles.footer, { color: colors.muted }]}>AgentPay · Beta tecnica italiana · Funzioni finanziarie disattivate</Text>

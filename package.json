@@ -14,6 +14,7 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:ci": "vitest run --pool=threads --maxWorkers=1 --minWorkers=1",
+    "test:session-revocation:mysql": "node --import tsx scripts/test-session-token-revocation-mysql.mjs",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "android": "expo start --android",
     "ios": "expo start --ios",

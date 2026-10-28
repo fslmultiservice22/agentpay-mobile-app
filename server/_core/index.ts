@@ -5,7 +5,6 @@ import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerEnableBankingRoutes } from "../routes/enable-banking";
-import { registerCodegoRoutes } from "../routes/codego";
 import { createTechnicalMonitor } from "../operational-monitor";
 import { registerOperationalMonitorRoutes } from "../routes/operational-monitor";
 import { registerReadOnlyProviderRoutes } from "../routes/read-only-providers";
@@ -55,7 +54,6 @@ async function startServer() {
   registerRootRoute(app);
   registerOAuthRoutes(app);
   registerEnableBankingRoutes(app);
-  registerCodegoRoutes(app);
   const technicalMonitor = createTechnicalMonitor();
   technicalMonitor.run();
   registerOperationalMonitorRoutes(app, technicalMonitor);
