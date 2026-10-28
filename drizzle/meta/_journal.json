@@ -15,6 +15,13 @@
       "when": 1793172555028,
       "tag": "0001_oauth-state-reservations",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1793222415289,
+      "tag": "0002_session-token-revocations",
+      "breakpoints": true
     }
   ]
 }

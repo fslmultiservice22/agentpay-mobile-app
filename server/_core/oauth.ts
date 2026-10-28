@@ -148,8 +148,16 @@ export function registerOAuthRoutes(app: Express) {
       return;
     }
 
+    try {
+      await sdk.revokeSessionsFromRequest(req);
+    } catch {
+      console.error("[Auth] Session revocation failed");
+      res.status(503).json({ error: "Logout could not be completed" });
+      return;
+    }
+
     const cookieOptions = getSessionCookieOptions(req);
-    res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+    res.clearCookie(COOKIE_NAME, cookieOptions);
     res.json({ success: true });
   });
 

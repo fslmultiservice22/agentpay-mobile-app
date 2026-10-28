@@ -44,6 +44,16 @@ export const oauthStateReservations = mysqlTable(
   (table) => [index("oauth_state_reservations_expires_idx").on(table.expiresAtMs)],
 );
 
+export const sessionTokenRevocations = mysqlTable(
+  "session_token_revocations",
+  {
+    tokenHash: varchar("tokenHash", { length: 64 }).primaryKey(),
+    expiresAtMs: bigint("expiresAtMs", { mode: "number", unsigned: true }).notNull(),
+    revokedAt: timestamp("revokedAt", { mode: "date", fsp: 3 }).defaultNow().notNull(),
+  },
+  (table) => [index("session_token_revocations_expires_idx").on(table.expiresAtMs)],
+);
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 

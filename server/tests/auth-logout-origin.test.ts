@@ -1,8 +1,24 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { COOKIE_NAME } from "../../shared/const";
 import { ENV } from "../_core/env";
-import { sdk } from "../_core/sdk";
+import { sdk, setSessionTokenRevocationPersistenceForTests } from "../_core/sdk";
 import { appRouter } from "../routers";
+import { createMemorySessionTokenRevocationPersistence } from "./session-revocation-fixtures";
+
+const originalAppId = ENV.appId;
+const originalCookieSecret = ENV.cookieSecret;
+
+beforeEach(() => {
+  ENV.appId = "test-app";
+  ENV.cookieSecret = "test-secret-with-sufficient-entropy-1234567890";
+  setSessionTokenRevocationPersistenceForTests(createMemorySessionTokenRevocationPersistence());
+});
+
+afterEach(() => {
+  setSessionTokenRevocationPersistenceForTests(null);
+  ENV.appId = originalAppId;
+  ENV.cookieSecret = originalCookieSecret;
+});
 
 function makeContext({ cookie, origin, authorization }: { cookie?: string; origin?: string; authorization?: string } = {}) {
   const clearCookie = vi.fn();
@@ -65,29 +81,35 @@ describe("auth.logout cookie origin guard", () => {
   });
 
   it("consente senza Origin un cookie accompagnato da un Bearer valido", async () => {
-    const previousAppId = ENV.appId;
-    const previousCookieSecret = ENV.cookieSecret;
-    ENV.appId = "test-app";
-    ENV.cookieSecret = "test-secret-with-sufficient-entropy-1234567890";
-    try {
-      const token = await sdk.signSession({
-        openId: "native-user",
-        appId: ENV.appId,
-        name: "Native User",
-      });
-      const { ctx, clearCookie } = makeContext({
-        cookie: `${COOKIE_NAME}=session`,
-        authorization: `Bearer ${token}`,
-      });
+    const token = await sdk.createSessionToken("native-user", { name: "Native User" });
+    const { ctx, clearCookie } = makeContext({
+      cookie: `${COOKIE_NAME}=session`,
+      authorization: `Bearer ${token}`,
+    });
 
-      await expect(appRouter.createCaller(ctx).auth.logout()).resolves.toEqual({
-        success: true,
-      });
-      expect(clearCookie).toHaveBeenCalledOnce();
-    } finally {
-      ENV.appId = previousAppId;
-      ENV.cookieSecret = previousCookieSecret;
-    }
+    await expect(sdk.verifySession(token)).resolves.not.toBeNull();
+    await expect(appRouter.createCaller(ctx).auth.logout()).resolves.toEqual({
+      success: true,
+    });
+    expect(clearCookie).toHaveBeenCalledOnce();
+    await expect(sdk.verifySession(token)).resolves.toBeNull();
+  });
+
+  it("revoca una sessione cookie-only e imposta un clearCookie coerente", async () => {
+    const token = await sdk.createSessionToken("browser-user", { name: "Browser User" });
+    const { ctx, clearCookie } = makeContext({
+      cookie: `${COOKIE_NAME}=${token}`,
+      origin: "http://localhost:8081",
+    });
+
+    await expect(sdk.verifySession(token)).resolves.not.toBeNull();
+    await expect(appRouter.createCaller(ctx).auth.logout()).resolves.toEqual({
+      success: true,
+    });
+    expect(clearCookie).toHaveBeenCalledOnce();
+    expect(clearCookie.mock.calls[0]?.[0]).toBe(COOKIE_NAME);
+    expect(clearCookie.mock.calls[0]?.[1]).not.toHaveProperty("maxAge");
+    await expect(sdk.verifySession(token)).resolves.toBeNull();
   });
 
   it("non accetta un Bearer non valido come sostituto dell'Origin", async () => {
