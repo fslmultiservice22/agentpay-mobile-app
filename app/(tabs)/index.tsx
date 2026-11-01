@@ -62,7 +62,7 @@ export default function HomeScreen() {
           <Text style={[styles.cardTitle, { color: colors.foreground }]}>Controlli disponibili</Text>
           <Text style={[styles.cardLine, { color: colors.muted }]}>Monitor tecnico locale e registro non finanziario.</Text>
           <Text style={[styles.cardLine, { color: colors.muted }]}>Stato policy e disponibilità dei servizi senza richieste a provider.</Text>
-          <Text style={[styles.cardLine, { color: colors.muted }]}>Esportazione locale del solo registro tecnico.</Text>
+          <Text style={[styles.cardLine, { color: colors.muted }]}>Ricerca e consultazione dello storico dei controlli tecnici.</Text>
         </View>
 
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>

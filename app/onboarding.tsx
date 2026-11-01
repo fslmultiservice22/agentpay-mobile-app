@@ -36,10 +36,10 @@ const ONBOARDING_STEPS = [
   {
     emoji: '🔐',
     title: 'Sicurezza & Privacy',
-    description: 'Le credenziali restano separate dal codice. Il monitor tecnico e l’export CSV non includono saldi, indirizzi, carte o segreti.',
+    description: 'Le credenziali restano separate dal codice. Il monitor tecnico mostra gli esiti dei controlli e non espone saldi, indirizzi, carte o segreti.',
     color: '#8B5CF6',
     bg: '#F5F3FF',
-    features: ['Monitor tecnico', 'Export locale', 'Provider disattivati'],
+    features: ['Monitor tecnico', 'Registro tecnico', 'Provider disattivati'],
   },
 ];
 

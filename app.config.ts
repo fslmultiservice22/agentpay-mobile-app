@@ -82,7 +82,8 @@ const config: ExpoConfig = {
         data: [
           {
             scheme: env.scheme,
-            host: "*",
+            host: "oauth",
+            path: "/callback",
           },
         ],
         category: ["BROWSABLE", "DEFAULT"],
