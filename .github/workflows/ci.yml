@@ -12,7 +12,7 @@ permissions:
 jobs:
   quality-and-financial-boundary:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,6 +39,25 @@ jobs:
 
       - name: Financial boundary and regression tests
         run: pnpm test:ci
+
+      - name: Install MySQL 8 binaries for disposable integration tests
+        run: |
+          packages=()
+          if ! mysqld --version 2>/dev/null | grep -Eq 'Ver 8\.'; then
+            packages+=(mysql-server-core-8.0)
+          fi
+          if ! mysql --version 2>/dev/null | grep -Eq 'Ver 8\.'; then
+            packages+=(mysql-client-core-8.0)
+          fi
+          if ((${#packages[@]})); then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends "${packages[@]}"
+          fi
+          mysqld --version
+          mysql --version
+
+      - name: Disposable MySQL 8 OAuth and session integration tests
+        run: pnpm test:auth:mysql
 
       - name: Backend build
         run: pnpm build

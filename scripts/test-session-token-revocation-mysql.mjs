@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
- * Disposable, loopback-only MySQL 8 integration check for session-token revocation.
- * Requires `mysqld`, `mysql`, pnpm, and repository dependencies to be installed.
- * It creates a fresh datadir and DB/user, applies Drizzle migrations, checks
- * hash-only persistence plus bearer/cookie rejection in new processes, removes
- * migration 0002's table and ledger row, proves Drizzle can replay it, verifies
- * SQL cleanup, then stops the server and deletes the entire datadir.
+ * Disposable, loopback-only MySQL 8 integration check for OAuth state and
+ * session-token revocation. Requires `mysqld`, `mysql`, pnpm, and repository
+ * dependencies. It creates a fresh datadir and DB/user, applies Drizzle
+ * migrations, runs the six OAuth anti-replay DB tests, checks hash-only session
+ * revocation plus bearer/cookie rejection in new processes, removes migration
+ * 0002's table and ledger row, proves Drizzle can replay it, verifies SQL
+ * cleanup, then stops the server and deletes the entire datadir.
  */
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
@@ -15,6 +16,7 @@ import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { createServer } from "node:net";
 import { delimiter, dirname, join, resolve, basename } from "node:path";
 import { tmpdir } from "node:os";
+import { stripVTControlCharacters } from "node:util";
 import { fileURLToPath } from "node:url";
 import { createConnection } from "mysql2/promise";
 
@@ -24,7 +26,7 @@ const TEMP_PREFIX = "agentpay-session-revocation-mysql-";
 const TEST_APP_ID = "agentpay-session-revocation-disposable";
 const TEST_JWT_SECRET =
   "session-revocation-disposable-only-secret-9f3e72d8a4c15b6e";
-const TEST_DB_USER = "agentpay_revocation_test";
+const TEST_DB_USER = "agentpay_oauth_test";
 const MIGRATION_TAG = "0002_session-token-revocations";
 const ENV_KEYS_TO_CLEAR = [
   "DATABASE_URL",
@@ -78,7 +80,7 @@ function findExecutable(name) {
 function runSync(
   command,
   args,
-  { env = cleanEnvironment(), timeout = 60_000 } = {},
+  { env = cleanEnvironment(), timeout = 60_000, includeStderr = false } = {},
 ) {
   const result = spawnSync(command, args, {
     cwd: ROOT,
@@ -102,7 +104,9 @@ function runSync(
       `${basename(command)} failed with status ${result.status}: ${detail}`,
     );
   }
-  return (result.stdout ?? "").trim();
+  return includeStderr
+    ? `${result.stdout ?? ""}\n${result.stderr ?? ""}`.trim()
+    : (result.stdout ?? "").trim();
 }
 
 function runMysqlRoot(sql) {
@@ -403,6 +407,41 @@ function applyMigrations(pnpm) {
   if (output) console.log(output);
 }
 
+function runOAuthStateIntegrationTests(pnpm) {
+  const output = runSync(
+    pnpm,
+    [
+      "exec",
+      "vitest",
+      "run",
+      "server/tests/oauth-state.mysql.integration.test.ts",
+      "--pool=threads",
+      "--maxWorkers=1",
+      "--minWorkers=1",
+    ],
+    {
+      env: cleanEnvironment({
+        DATABASE_URL: testDatabaseUrl,
+        AGENTPAY_RUN_OAUTH_STATE_DB_TESTS: "1",
+        AGENTPAY_OAUTH_STATE_TEST_DATABASE_URL: testDatabaseUrl,
+        CI: "1",
+        EXPO_NO_DOTENV: "1",
+        EXPO_NO_TELEMETRY: "1",
+        RUN_LIVE_INTEGRATION_TESTS: "0",
+        NODE_ENV: "test",
+      }),
+      timeout: 180_000,
+      includeStderr: true,
+    },
+  );
+  if (output) console.log(output);
+  assert.match(
+    stripVTControlCharacters(output),
+    /Tests\s+6\s+passed\s+\(6\)/,
+    "all six OAuth-state MySQL integration tests must execute and pass",
+  );
+}
+
 async function workerMode() {
   await workerMain();
 }
@@ -492,7 +531,7 @@ async function main() {
       "temporary server must bind loopback only",
     );
 
-    databaseName = `agentpay_session_revocation_test_${process.pid}_${randomBytes(4).toString("hex")}`;
+    databaseName = `agentpay_oauth_state_test_${process.pid}_${randomBytes(4).toString("hex")}`;
     const password = randomBytes(24).toString("hex");
     runMysqlRoot(
       `CREATE DATABASE \`${databaseName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci; ` +
@@ -519,6 +558,7 @@ async function main() {
       .digest("hex");
 
     applyMigrations(pnpm);
+    runOAuthStateIntegrationTests(pnpm);
 
     process.env.DATABASE_URL = testDatabaseUrl;
     process.env.VITE_APP_ID = TEST_APP_ID;
@@ -684,6 +724,7 @@ async function main() {
     result = {
       mysqlVersion,
       boundTo: "127.0.0.1",
+      oauthState: "6/6 disposable MySQL integration tests passed",
       migration0002: "applied",
       bearer: "persisted and rejected by a fresh process",
       cookie: "persisted and rejected by a fresh process",
